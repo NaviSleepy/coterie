@@ -102,6 +102,9 @@ export function feed(character: CharacterState, bloodGained: number): FeedOutcom
  * no window where two clients disagree about whose turn it is.
  */
 export function spentThisTurn(character: CharacterState, sceneTurn: number): number {
+  // Outside a scene there is no turn to accumulate against (turnRef is -1), so
+  // the cap limits each expenditure on its own.
+  if (sceneTurn < 0) return 0;
   return character.bloodSpentTurnRef === sceneTurn ? character.bloodSpentThisTurn : 0;
 }
 

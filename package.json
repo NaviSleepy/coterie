@@ -1,0 +1,21 @@
+{
+  "name": "coterie",
+  "private": true,
+  "description": "A realtime table for Vampire: The Masquerade 20th Anniversary Edition.",
+  "type": "module",
+  "workspaces": [
+    "engine",
+    "functions",
+    "web"
+  ],
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "test": "npm run test -w engine && npm run test -w functions",
+    "typecheck": "npm run typecheck -w engine && npm run typecheck -w functions && npm run check -w web",
+    "build": "npm run build -w functions && npm run build -w web",
+    "provision": "node --experimental-strip-types scripts/provision.ts",
+    "dev": "npm run dev -w web"
+  }
+}
