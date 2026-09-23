@@ -17,7 +17,7 @@
  * one-time step in the console; see the README.
  */
 
-import { Client, Functions, Runtime, TablesDB, TablesDBIndexType, OrderBy } from 'node-appwrite';
+import { Client, Functions, OrderBy, Query, Runtime, TablesDB, TablesDBIndexType } from 'node-appwrite';
 
 import { DATABASE_ID, FUNCTIONS, TABLES, type Column, type TableDef } from '../functions/src/shared/schema.ts';
 
@@ -28,6 +28,8 @@ const key = need('APPWRITE_API_KEY');
 const client = new Client().setEndpoint(endpoint).setProject(project).setKey(key);
 const db = new TablesDB(client);
 const fns = new Functions(client);
+// List endpoints default to 25 results; characters alone has more columns than that.
+const ALL = [Query.limit(100)];
 
 function need(name: string): string {
   const v = process.env[name];
@@ -64,7 +66,7 @@ async function ensureTable(t: TableDef) {
     console.log(`+ table ${t.id}`);
   }
 
-  const { columns } = await db.listColumns({ ...base, queries: [] });
+  const { columns } = await db.listColumns({ ...base, queries: ALL });
   const have = new Set(columns.map((c: any) => c.key));
   for (const col of t.columns) {
     if (have.has(col.key)) continue;
@@ -74,7 +76,7 @@ async function ensureTable(t: TableDef) {
 
   await waitForColumns(t.id);
 
-  const { indexes } = await db.listIndexes({ ...base });
+  const { indexes } = await db.listIndexes({ ...base, queries: ALL });
   const haveIdx = new Set(indexes.map((i: any) => i.key));
   for (const idx of t.indexes) {
     if (haveIdx.has(idx.key)) continue;
@@ -125,7 +127,7 @@ function createColumn(tableId: string, col: Column) {
 /** Columns are created asynchronously; indexes on a processing column fail. */
 async function waitForColumns(tableId: string) {
   for (let i = 0; i < 60; i++) {
-    const { columns } = await db.listColumns({ databaseId: DATABASE_ID, tableId, queries: [] });
+    const { columns } = await db.listColumns({ databaseId: DATABASE_ID, tableId, queries: ALL });
     const pending = columns.filter((c: any) => c.status !== 'available');
     const failed = pending.filter((c: any) => c.status === 'failed' || c.status === 'stuck');
     if (failed.length) throw new Error(`${tableId}: columns failed: ${failed.map((c: any) => c.key).join(', ')}`);
