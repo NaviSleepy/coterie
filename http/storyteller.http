@@ -1,0 +1,108 @@
+### Coterie — the Storyteller: what the screen is for, and where it stops
+#
+# The ST reads everything in their chronicle. They still cannot write rows
+# directly: even the Storyteller's hand goes through a Function, so the ledger
+# sees every change.
+
+### Reads a hidden roll
+GET {{endpoint}}/tablesdb/{{db}}/tables/rolls/rows/{{hiddenRollId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+
+> {%
+  client.test("ST reads rolls made behind the screen", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    client.assert(response.body.visibility === "storyteller");
+  });
+%}
+
+### Reads its difficulty
+GET {{endpoint}}/tablesdb/{{db}}/tables/rollSecrets/rows/{{hiddenRollId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+
+> {%
+  client.test("ST reads the difficulty", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    client.assert(response.body.difficulty === 8);
+  });
+%}
+
+### Reads every sheet
+GET {{endpoint}}/tablesdb/{{db}}/tables/characters/rows/{{otherCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+
+> {%
+  client.test("ST reads any sheet in the chronicle", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+  });
+%}
+
+### Cannot edit a roll after the fact — not even the ST
+PATCH {{endpoint}}/tablesdb/{{db}}/tables/rolls/rows/{{tableRollId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+Content-Type: application/json
+
+{ "data": { "outcome": "botch" } }
+
+> {%
+  client.test("the roll log is append-only for every role", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
+### Cannot write a character row directly either
+PATCH {{endpoint}}/tablesdb/{{db}}/tables/characters/rows/{{playerCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+Content-Type: application/json
+
+{ "data": { "bloodPool": 0 } }
+
+> {%
+  client.test("ST writes go through a Function and the ledger", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
+### Seals a difficulty through the Function
+POST {{endpoint}}/functions/sealDifficulty/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"difficulty\":7}" }
+
+> {%
+  client.test("ST can seal a difficulty", () => {
+    client.assert(response.body.responseStatusCode === 200, `expected 200, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Breaks the seal on the hidden roll
+POST {{endpoint}}/functions/revealRoll/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"rollId\":\"{{hiddenRollId}}\"}" }
+
+> {%
+  client.test("ST can reveal a roll", () => {
+    client.assert(response.body.responseStatusCode === 200, `expected 200, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### …after which the other player can read it
+GET {{endpoint}}/tablesdb/{{db}}/tables/rollSecrets/rows/{{hiddenRollId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtOther}}
+
+> {%
+  client.test("a revealed difficulty reaches the table", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    client.assert(response.body.difficulty === 8);
+  });
+%}

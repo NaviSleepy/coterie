@@ -1,0 +1,24 @@
+### Coterie — no session at all
+
+### Functions refuse an unauthenticated execution
+POST {{endpoint}}/functions/rollPool/executions
+X-Appwrite-Project: {{project}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"traits\":[\"dexterity\"]}" }
+
+> {%
+  client.test("guests cannot execute", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
+### Rows are invisible to guests
+GET {{endpoint}}/tablesdb/{{db}}/tables/rolls/rows/{{tableRollId}}
+X-Appwrite-Project: {{project}}
+
+> {%
+  client.test("guests cannot read the feed", () => {
+    client.assert(response.status === 404 || response.status === 401, `expected 404/401, got ${response.status}`);
+  });
+%}

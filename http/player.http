@@ -1,0 +1,233 @@
+### Coterie — attacks by a player on their own table
+#
+# The permission matrix as an executable spec. Every request here is something
+# a player could send from devtools; every assertion is the refusal that proves
+# the model holds. Run `node --experimental-strip-types scripts/security-fixture.ts`
+# first (it writes http-client.private.env.json), then run this file in the
+# WebStorm HTTP client against the `staging` environment, or in CI with ijhttp.
+
+### The client never rolls: a direct POST to rolls is refused
+POST {{endpoint}}/tablesdb/{{db}}/tables/rolls/rows
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "rowId": "unique()", "data": { "chronicleId": "{{chronicleId}}", "rollerId": "sec-player", "label": "Dexterity + Firearms", "outcome": "success", "netSuccesses": 10 } }
+
+> {%
+  client.test("player cannot write a roll", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
+### A player PATCHing their own blood pool is refused
+PATCH {{endpoint}}/tablesdb/{{db}}/tables/characters/rows/{{playerCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "data": { "bloodPool": 13, "healthLethal": 0 } }
+
+> {%
+  client.test("player cannot write mechanical fields on their own sheet", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
+### …but may write their own cosmetic profile
+PATCH {{endpoint}}/tablesdb/{{db}}/tables/profiles/rows/{{playerCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "data": { "concept": "Tested, repeatedly" } }
+
+> {%
+  client.test("player can write their own profile", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+  });
+%}
+
+### Another player's sheet does not exist, as far as this player can tell
+GET {{endpoint}}/tablesdb/{{db}}/tables/characters/rows/{{otherCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("player cannot read another player's sheet", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### A secret about this player's character, held by someone else, is not readable
+GET {{endpoint}}/tablesdb/{{db}}/tables/secrets/rows/{{secretId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("player cannot read a secret they were not shown", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### …but its seal is: something exists, and it is closed
+GET {{endpoint}}/tablesdb/{{db}}/tables/seals/rows/{{secretId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("player sees the seal and a count, never the text", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    client.assert(response.body.body === undefined, "the seal row carries no text");
+    client.assert(response.body.knownCount === 1, `expected knownCount 1, got ${response.body.knownCount}`);
+  });
+%}
+
+### The difficulty of the player's own roll is not readable
+GET {{endpoint}}/tablesdb/{{db}}/tables/rollSecrets/rows/{{tableRollId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("player cannot read a sealed difficulty", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### Nor is the sealed difficulty waiting for their next roll
+GET {{endpoint}}/tablesdb/{{db}}/tables/sealedDifficulties/rows/{{playerCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("player cannot read the difficulty set for their next roll", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### A roll behind the screen is not in the player's feed at all
+GET {{endpoint}}/tablesdb/{{db}}/tables/rolls/rows?queries[]={"method":"equal","attribute":"chronicleId","values":["{{chronicleId}}"]}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("hidden rolls are absent from a player's list, not filtered after", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    const ids = response.body.rows.map((r) => r.$id);
+    client.assert(!ids.includes(request.environment.get("hiddenRollId")), "hidden roll leaked into the list");
+    client.assert(ids.includes(request.environment.get("tableRollId")), "the table roll should be visible");
+    client.assert(response.body.rows.every((r) => r.difficulty === undefined), "no roll row carries a difficulty");
+  });
+%}
+
+### rollPool: a player may not send the difficulty
+POST {{endpoint}}/functions/rollPool/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"traits\":[\"dexterity\",\"firearms\"],\"difficulty\":2}" }
+
+> {%
+  client.test("player-supplied difficulty is refused", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### rollPool: nor a dice count
+POST {{endpoint}}/functions/rollPool/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"basePool\":40}" }
+
+> {%
+  client.test("player-supplied pool size is refused", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### rollPool: nor bury a roll behind the screen
+POST {{endpoint}}/functions/rollPool/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"traits\":[\"dexterity\"],\"visibility\":\"storyteller\"}" }
+
+> {%
+  client.test("player cannot hide a roll", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### rollPool: nor roll another player's character
+POST {{endpoint}}/functions/rollPool/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{otherCharacterId}}\",\"traits\":[\"dexterity\"]}" }
+
+> {%
+  client.test("player cannot roll someone else's sheet", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### feedAndHeal: a player cannot conjure blood
+POST {{endpoint}}/functions/feedAndHeal/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"bloodGained\":13}" }
+
+> {%
+  client.test("feeding is the Storyteller's", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### applyDamage: a player cannot un-mark their own wounds
+POST {{endpoint}}/functions/applyDamage/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"amount\":-3,\"type\":\"lethal\"}" }
+
+> {%
+  client.test("negative damage is a Storyteller correction", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### sealDifficulty / revealRoll / revealSecret / scene: all Storyteller-only
+POST {{endpoint}}/functions/revealSecret/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"secretId\":\"{{secretId}}\",\"userId\":\"sec-player\"}" }
+
+> {%
+  client.test("a player cannot reveal a secret to themselves", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+###
+POST {{endpoint}}/functions/scene/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"advance\",\"chronicleId\":\"{{chronicleId}}\"}" }
+
+> {%
+  client.test("a player cannot advance the turn to reset their blood cap", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}

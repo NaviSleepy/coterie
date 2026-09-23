@@ -1,0 +1,4 @@
+{
+  "extends": "../engine/tsconfig.json",
+  "include": ["./**/*.ts", "../functions/src/shared/schema.ts"]
+}

@@ -13,9 +13,14 @@
   },
   "scripts": {
     "test": "npm run test -w engine && npm run test -w functions",
-    "typecheck": "npm run typecheck -w engine && npm run typecheck -w functions && npm run check -w web",
+    "typecheck": "npm run typecheck -w engine && npm run typecheck -w functions && tsc -p scripts --noEmit && npm run check -w web",
     "build": "npm run build -w functions && npm run build -w web",
     "provision": "node --experimental-strip-types scripts/provision.ts",
-    "dev": "npm run dev -w web"
+    "dev": "npm run dev -w web",
+    "fixture": "node --experimental-strip-types scripts/security-fixture.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "typescript": "^5.6.0"
   }
 }

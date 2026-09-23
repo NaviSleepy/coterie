@@ -1,0 +1,56 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck (engine, functions, scripts, web)
+        run: npm run typecheck
+      - name: Engine and Function tests
+        run: npm test
+      - name: Build Functions and web
+        run: npm run build
+
+  # The permission matrix, attacked for real. Runs only where a staging
+  # project is configured: seeds a fixture through the Functions' own
+  # handlers, mints 15-minute JWTs, and runs every .http file in http/.
+  attack-staging:
+    needs: check
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.APPWRITE_PROJECT_ID != '' }}
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Seed fixture and mint JWTs
+        env:
+          APPWRITE_ENDPOINT: ${{ vars.APPWRITE_ENDPOINT }}
+          APPWRITE_PROJECT_ID: ${{ vars.APPWRITE_PROJECT_ID }}
+          APPWRITE_API_KEY: ${{ secrets.APPWRITE_API_KEY }}
+        run: node --experimental-strip-types scripts/security-fixture.ts
+      - name: Run the attacks
+        run: |
+          docker run --rm -v "$PWD/http:/workdir" jetbrains/intellij-http-client \
+            --env-file http-client.env.json \
+            --private-env-file http-client.private.env.json \
+            --env staging \
+            --env-variables endpoint=${{ vars.APPWRITE_ENDPOINT }} \
+            --env-variables project=${{ vars.APPWRITE_PROJECT_ID }} \
+            player.http stranger.http anonymous.http storyteller.http

@@ -1,0 +1,154 @@
+# Coterie
+
+A realtime shared table for **Vampire: The Masquerade 20th Anniversary Edition**: character sheets, blood pool, dice and a Storyteller's screen, synced live across everyone in the chronicle.
+
+The threat model is the players themselves. Every number that matters is either a secret someone shouldn't see or a roll someone would love to fudge. Two properties fall out of that, and the rest of the design follows from them:
+
+- **Server-authoritative dice.** If the client rolls, the client can lie. The client never rolls. It never even says how many dice.
+- **Row-level disclosure.** The Storyteller, a character's owner and the rest of the coterie are each entitled to a different slice of the same game. The Masquerade is an access-control model, and Appwrite's row permissions enforce it: the client never filters a secret, because it is never sent one.
+
+```
+engine/      V20 rules arithmetic. Pure TypeScript, no I/O. Dice, wounds, blood, traits.
+functions/   Twelve Appwrite Functions — the only writers of anything with stakes.
+web/         SvelteKit single-page app. Reads with the player's own session; writes via Functions.
+scripts/     provision.ts builds an Appwrite project from the schema; security-fixture.ts seeds staging.
+http/        The permission matrix as executable attacks, one .http file per role.
+```
+
+Try the interface without an account at `/demo`, a local simulation of the chronicle from the design mockups. It is labelled as one, because its dice roll in the browser, which is exactly what the real app never does.
+
+## The permission matrix
+
+Every table has row security on. Rows carry their own read lists; almost no role has write permission on anything.
+
+| Table | Read | Write |
+| :-- | :-- | :-- |
+| chronicles | chronicle team | Functions only |
+| characters | owner + `storyteller` role | **Functions only**, for every role |
+| profiles | owner + `storyteller` role | owner (cosmetic fields live only here) |
+| rolls | team, or `storyteller` role only when rolled behind the screen | **nobody**; append-only, created by Functions |
+| rollSecrets | `storyteller` role; the team too once revealed | Functions only |
+| sealedDifficulties | `storyteller` role | Functions only |
+| secrets | `storyteller` role + each user in `visibleTo` | Functions only |
+| seals | `storyteller` role + the subject's owner | Functions only |
+| scenes | team | Functions only |
+| presence | team | own row only (table-level `create` for users) |
+| ledger | `storyteller` role | Functions only |
+
+Clients write exactly two things directly: their own presence heartbeat and their own character's cosmetic profile. Everything else, the Storyteller's actions included, goes through a Function. That leaves one write path to audit, and every change to a sheet lands in the ledger.
+
+### Row-level permissions can't express field-level rules, so the data is restructured
+
+Appwrite permissions are per row. V20 wants a player to see their own dice while the difficulty they were rolled against stays behind the screen. That is a per-field disclosure rule, and one row can't carry it. So the difficulty lives in its own row, `rollSecrets`, with its own permissions. A player's websocket is never delivered the number. It isn't delivered and then filtered; it is never sent.
+
+The build spec applies that fix to difficulties. The same constraint breaks one of its other rules. It asks for owners to write "cosmetic fields only" on their character. But an owner who can update the character row can update `bloodPool` on it too. So the sheet is split the same way: `characters` holds everything mechanical and nobody writes it; `profiles` holds name, concept, Nature and Demeanor, and its owner does. Filtering fields in application code would have been the tempting shortcut, and it is exactly what the row model can't enforce.
+
+The same move appears twice more:
+
+- **`sealedDifficulties`.** The Storyteller sets the difficulty for a character's next roll without the player seeing it. The player's character row carries only `difficultySealed: true`, so the UI shows a closed envelope where the number would be: sealed, not absent.
+- **`seals`.** When a secret concerns a character, their player gets a seal row: that a secret exists, and how many others hold it. The text is on a row they can't read.
+
+## Dice
+
+`rollPool` takes trait names, never numbers. A player sends `{"traits": ["dexterity", "firearms"]}`. The Function reads the sheet from the database, sums the dots, reads marked health for the wound penalty, reads temporary Willpower, checks any claimed specialty against the 4-dot rule, and rolls every die with `crypto.getRandomValues`, using rejection sampling so a d10 from a byte carries no modulo bias.
+
+A player who sends `basePool`, `difficulty`, `modifier`, `label` or `visibility` gets a **403**, not a silently ignored field, so the attack specs can assert on it. Those are the Storyteller's inputs.
+
+The V20 arithmetic lives in `engine/src/dice.ts`, once:
+
+- **Ones subtract.** Each 1 cancels a success, including a 1 on a specialty reroll.
+- **Specialties reroll 10s**, cumulatively, capped at 20 deep so a pathological roll can't hang the Function.
+- **Willpower** buys one automatic success after resolution, **once per turn**. It can't rescue a botch.
+- **The botch rule is the chronicle's choice.** Tables disagree about whether ones cancelling successes to exactly zero is a botch. The Storyteller picks at setup; the engine never assumes.
+
+`virtueCheck` (degeneration, frenzy, rötschreck) routes through the same pipeline. Degeneration is Storyteller-only and requires the sin as text. A failure drops the Path rating in the same committed version as the roll, and the fall is logged to the table's feed.
+
+## Concurrency: a real compare-and-swap
+
+Appwrite has no conditional update. It does have primary keys and transactions, and together they make a real CAS.
+
+Every character mutation writes a **ledger** row whose id is `${characterId}.v${version + 1}`, in the same transaction as the character update. Two writers that both read version 5 both try to create `….v6`. The database accepts exactly one; the other's commit fails with 409, nothing it staged is applied, and it re-reads version 6 and recomputes. Callers send deltas (`applyDamage(+2)`), which compose, and never absolutes (`setHealth(2)`), which don't. So a player marking two boxes and the Storyteller marking three from the same attack is five boxes, in either order. `functions/test/state.test.ts` stages exactly that race.
+
+The ledger is also an append-only history of every change to every sheet, readable behind the screen, which gets the backlog's session-log export most of the way for free.
+
+## Realtime, optimistic updates, reconnect
+
+`web/src/lib/table.svelte.ts` holds one chronicle live.
+
+- **Subscriptions** cover every table's `tablesdb.coterie.tables.*.rows` channel. Appwrite applies read permissions to the socket, so a roll behind the screen produces no event on a player's socket: there is no event to filter, not a filtered one. A reveal arrives as an update event at the moment the row becomes readable.
+- **Optimistic updates.** Marking a health box or spending blood renders at once as a pending delta, folded over server state with the same engine functions the server uses. The delta drops once a row at or past the version the Function reported arrives. If the Function refuses, it drops at once and the field flashes to show the server corrected it.
+- **Reconnect.** When the socket reopens after a drop, the snapshot is refetched and replaced wholesale. Then every roll made since the last event is replayed into the feed, marked *While you were away*. A player who wakes their laptop three scenes later gets the story of what they missed, not a silent jump in the numbers.
+
+## Turns and the per-turn caps
+
+The blood cap per turn is set by generation (13th draws 1 a turn; 4th draws 10), and it's the rule tables forget most often. The counter on each sheet is stamped with a turn reference and reads as zero once the turn moves on. Nothing has to sweep the sheets, and there is no window where two clients disagree about the turn.
+
+Turn references are chronicle-wide: `chronicle.turnSerial` only increases, and a scene's turn *N* is `turnBase + N`. So blood spent in the third turn of one scene can't be mistaken for the third turn of the next. Outside a scene there is no turn, and the cap limits each spend on its own.
+
+## Running it
+
+### 1. Appwrite projects
+
+Two projects on Appwrite Cloud, `coterie-staging` and `coterie-production`, for this one app. Create an API key in each with the tables, columns, indexes, functions, users and teams scopes, then:
+
+```sh
+npm install
+APPWRITE_ENDPOINT=https://<region>.cloud.appwrite.io/v1 \
+APPWRITE_PROJECT_ID=coterie-staging \
+APPWRITE_API_KEY=… \
+npm run provision
+```
+
+`provision.ts` reads `functions/src/shared/schema.ts`, the single declaration of every table, column and index. It creates what's missing and never deletes. Functions are created with runtime `node-22`, `execute: ["users"]` (each Function authorizes its caller itself), the scopes they need, and the build command `npm ci --workspace functions --include-workspace-root && npm run build --workspace functions`, with entrypoint `functions/dist/<name>.js`.
+
+Then, once per Function in the console: **Settings → Git → connect** this repository, root directory `.`, production branch `main`. From then on, a push to `main` deploys the backend.
+
+Enable **Magic URL** under Auth, and add your site's origin as a Web platform.
+
+### 2. The web app
+
+```sh
+cp web/.env.example web/.env      # PUBLIC_APPWRITE_ENDPOINT, PUBLIC_APPWRITE_PROJECT_ID
+npm run dev
+```
+
+It is a static single-page app (`adapter-static`, `index.html` fallback). On Appwrite Sites: root `web`, install `npm ci`, build `npm run build`, output `build`.
+
+### 3. Appwrite MCP for Claude Code
+
+`.mcp.json` registers Appwrite's hosted MCP server for this repository. In Claude Code, run `/mcp`, select **appwrite**, then **Authenticate**. After that, Claude Code can inspect and manage the projects directly.
+
+## Tests
+
+```sh
+npm test          # engine (76) + Functions (51), node:test, no network
+npm run typecheck # engine, functions, scripts, web (svelte-check, warnings fail)
+```
+
+The Function tests run the real handlers against an in-memory TablesDB (`functions/test/fake.ts`) that honours the contract the design depends on: 404 on a missing row, 409 on a duplicate id, and all-or-nothing commits. A `beforeCommit` hook runs a competing write inside a transaction's window.
+
+### Test it like an attacker
+
+`http/` holds one file per role: `player.http`, `storyteller.http`, `stranger.http`, `anonymous.http`. Each request is something that role could send from devtools, and each assertion is the refusal that proves the model holds: a player POSTing to `rolls` (401), PATCHing their own blood pool (401), reading another sheet (404), sending a difficulty to `rollPool` (403), advancing the turn to reset their own blood cap (403). The Storyteller can't edit a roll after the fact either.
+
+```sh
+APPWRITE_ENDPOINT=… APPWRITE_PROJECT_ID=coterie-staging APPWRITE_API_KEY=… npm run fixture
+```
+
+seeds a known table through the Functions' own handlers and writes 15-minute JWTs to `http/http-client.private.env.json` (gitignored). Then run the files in the WebStorm HTTP client against the `staging` environment. CI does the same on pushes to `main` once the repository has `APPWRITE_ENDPOINT` and `APPWRITE_PROJECT_ID` variables (repository-level, so the job's `if` can see them) and a `staging` environment holding an `APPWRITE_API_KEY` secret.
+
+## Deliberate choices, written down
+
+- **Feeding is the Storyteller's.** Blood entering the pool comes from the story. Players may heal (1 blood a box, inside the per-turn cap); aggravated healing is downtime and Storyteller-only.
+- **Rerolled 1s cancel.** Tables differ; this is the reading the engine takes, and it lives in one function.
+- **The invite code sits on the team-readable chronicle row.** Anyone at the table could invite a friend anyway; `rotateInvite` answers a leak.
+- **A revealed secret tells prior holders who else now knows.** Appwrite sends the update to everyone who can read the row, and `visibleTo` is on it. That's arguably the fiction working; it's a choice, not an oversight.
+- **Player-created sheets are range-checked, not balanced.** Dots are validated (1–5, specialties at 4+, generation 4–13); character-creation point budgets aren't. The Storyteller adjusts via `character.adjust`, which goes through the ledger like everything else.
+
+## Not in v1
+
+Maps, tokens, grid combat, voice, chat, roll macros, a creation wizard, XP spend tracking, mobile-native apps. From the backlog: combat resolution and soak, Discipline activation with blood costs, the V20 XP cost table, blood bonds, merits/flaws/derangements, and the session-log export (the ledger and the append-only roll log already hold the data).
+
+## Content and licensing
+
+Vampire: The Masquerade is owned by Paradox Interactive; V20 is published under licence by Onyx Path. Coterie is a free, non-commercial fan tool. It ships the engine, not the book: dice arithmetic, trackers, the permission model, and bare game statistics (the generation and health tables, trait names). It carries no clan write-ups, Discipline text, Hierarchy of Sins or rulebook prose; players type their own. Before making anything public, read the current Dark Pack terms and check the disclaimer in the app footer against them. The wording here was not verified against the live terms.
