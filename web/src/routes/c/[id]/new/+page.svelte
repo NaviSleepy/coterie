@@ -47,7 +47,7 @@
 
 <main class="panel">
   <h1>Bring a character to the table</h1>
-  <p class="hint">Mechanical traits are checked by the server when you submit. The Storyteller can adjust them later; you can always edit your name, concept, Nature and Demeanor yourself.</p>
+  <p class="hint">Mechanical traits are checked by the server when you submit. The Storyteller can adjust them later; you can always edit your profile and add a character portrait after taking your seat.</p>
 
   <form onsubmit={(e) => { e.preventDefault(); void submit(); }}>
     <fieldset class="grid">

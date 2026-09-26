@@ -8,9 +8,9 @@
  */
 
 import { env } from '$env/dynamic/public';
-import { Account, Channel, Client, Functions, Query, Realtime, TablesDB, Teams } from 'appwrite';
+import { Account, Channel, Client, Functions, Query, Realtime, Storage, TablesDB, Teams } from 'appwrite';
 
-import { DATABASE_ID, type FunctionId, type TableId } from '$schema';
+import { DATABASE_ID, PORTRAITS_BUCKET_ID, type FunctionId, type TableId } from '$schema';
 
 export const client = new Client()
   .setEndpoint(env.PUBLIC_APPWRITE_ENDPOINT ?? 'https://cloud.appwrite.io/v1')
@@ -21,6 +21,7 @@ export const tables = new TablesDB(client);
 export const teams = new Teams(client);
 export const functions = new Functions(client);
 export const realtime = new Realtime(client);
+export const storage = new Storage(client);
 
 export { Query };
 
@@ -45,6 +46,12 @@ export async function getRow<T extends AnyRow = AnyRow>(table: TableId, rowId: s
 
 export function channel(table: TableId): string {
   return Channel.tablesdb(DATABASE_ID).table(table).row().toString();
+}
+
+/** The authenticated URL for a portrait file, or nothing for profiles without one. */
+export function portraitUrl(fileId: unknown): string | null {
+  if (typeof fileId !== 'string' || !fileId) return null;
+  return storage.getFileView({ bucketId: PORTRAITS_BUCKET_ID, fileId });
 }
 
 /** A Function said no: forbidden, a rules refusal, a conflict. `message` is UI copy. */

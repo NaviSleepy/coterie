@@ -1,8 +1,8 @@
 /**
  * Builds (or brings up to date) one Appwrite project from
  * functions/src/shared/schema.ts: the database, every table with row security
- * on, every column and index, and a record for every Function with the scopes
- * and execute permission it needs.
+ * on, every column and index, the private portrait bucket, and a record for
+ * every Function with the scopes and execute permission it needs.
  *
  * Idempotent — run it against staging, then production, as often as you like.
  * It creates what's missing and leaves what exists alone; it never deletes.
@@ -12,14 +12,21 @@
  *   APPWRITE_API_KEY=... \
  *   npm run provision
  *
- * The key needs databases/tables/columns/indexes write and functions write.
+ * The key needs databases/tables/columns/indexes, buckets and functions write.
  * Connecting each Function to the GitHub repo (so pushes to main deploy) is a
  * one-time step in the console; see the README.
  */
 
-import { Client, Functions, Runtime, TablesDB, TablesDBIndexType, OrderBy } from 'node-appwrite';
+import { Client, Compression, Functions, Runtime, Storage, TablesDB, TablesDBIndexType, OrderBy } from 'node-appwrite';
 
-import { DATABASE_ID, FUNCTIONS, TABLES, type Column, type TableDef } from '../functions/src/shared/schema.ts';
+import {
+  DATABASE_ID,
+  FUNCTIONS,
+  PORTRAITS_BUCKET_ID,
+  TABLES,
+  type Column,
+  type TableDef,
+} from '../functions/src/shared/schema.ts';
 
 const endpoint = need('APPWRITE_ENDPOINT');
 const project = need('APPWRITE_PROJECT_ID');
@@ -28,6 +35,7 @@ const key = need('APPWRITE_API_KEY');
 const client = new Client().setEndpoint(endpoint).setProject(project).setKey(key);
 const db = new TablesDB(client);
 const fns = new Functions(client);
+const storage = new Storage(client);
 
 function need(name: string): string {
   const v = process.env[name];
@@ -52,6 +60,28 @@ async function ensureDatabase() {
   if (await exists(() => db.get({ databaseId: DATABASE_ID }))) return;
   await db.create({ databaseId: DATABASE_ID, name: 'Coterie' });
   console.log(`+ database ${DATABASE_ID}`);
+}
+
+async function ensurePortraitBucket() {
+  const spec = {
+    bucketId: PORTRAITS_BUCKET_ID,
+    name: 'Character portraits',
+    permissions: ['create("users")'],
+    fileSecurity: true,
+    enabled: true,
+    maximumFileSize: 5 * 1024 * 1024,
+    allowedFileExtensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+    compression: Compression.None,
+    encryption: true,
+    antivirus: true,
+    transformations: true,
+  };
+  if (await exists(() => storage.getBucket({ bucketId: PORTRAITS_BUCKET_ID }))) {
+    await storage.updateBucket(spec);
+  } else {
+    await storage.createBucket(spec);
+    console.log(`+ bucket ${PORTRAITS_BUCKET_ID}`);
+  }
 }
 
 async function ensureTable(t: TableDef) {
@@ -156,6 +186,7 @@ async function ensureFunction(id: string) {
 }
 
 await ensureDatabase();
+await ensurePortraitBucket();
 for (const table of Object.values(TABLES)) await ensureTable(table);
 for (const id of FUNCTIONS) await ensureFunction(id);
 console.log(`\n${project} is provisioned: ${Object.keys(TABLES).length} tables, ${FUNCTIONS.length} functions.`);

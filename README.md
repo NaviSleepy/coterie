@@ -26,6 +26,7 @@ Every table has row security on. Rows carry their own read lists; almost no role
 | chronicles | chronicle team | Functions only |
 | characters | owner + `storyteller` role | **Functions only**, for every role |
 | profiles | owner + `storyteller` role | owner (cosmetic fields live only here) |
+| character portraits | owner + `storyteller` role | owner (JPEG, PNG, GIF or WebP up to 5 MB) |
 | rolls | team, or `storyteller` role only when rolled behind the screen | **nobody**; append-only, created by Functions |
 | rollSecrets | `storyteller` role; the team too once revealed | Functions only |
 | sealedDifficulties | `storyteller` role | Functions only |
@@ -35,7 +36,7 @@ Every table has row security on. Rows carry their own read lists; almost no role
 | presence | team | own row only (table-level `create` for users) |
 | ledger | `storyteller` role | Functions only |
 
-Clients write exactly two things directly: their own presence heartbeat and their own character's cosmetic profile. Everything else, the Storyteller's actions included, goes through a Function. That leaves one write path to audit, and every change to a sheet lands in the ledger.
+Clients write only their own presence heartbeat, their own character's cosmetic profile and that profile's portrait file. Everything else, the Storyteller's actions included, goes through a Function. That leaves one mechanical write path to audit, and every change to a sheet lands in the ledger.
 
 ### Row-level permissions can't express field-level rules, so the data is restructured
 
@@ -89,7 +90,7 @@ Turn references are chronicle-wide: `chronicle.turnSerial` only increases, and a
 
 ### 1. Appwrite projects
 
-Two projects on Appwrite Cloud, `coterie-staging` and `coterie-production`, for this one app. Create an API key in each with the tables, columns, indexes, functions, users and teams scopes, then:
+Two projects on Appwrite Cloud, `coterie-staging` and `coterie-production`, for this one app. Create an API key in each with the tables, columns, indexes, buckets, functions, users and teams scopes, then:
 
 ```sh
 npm install
@@ -99,7 +100,7 @@ APPWRITE_API_KEY=… \
 npm run provision
 ```
 
-`provision.ts` reads `functions/src/shared/schema.ts`, the single declaration of every table, column and index. It creates what's missing and never deletes. Functions are created with runtime `node-22`, `execute: ["users"]` (each Function authorizes its caller itself), the scopes they need, and the build command `npm ci --workspace functions --include-workspace-root && npm run build --workspace functions`, with entrypoint `functions/dist/<name>.js`.
+`provision.ts` reads `functions/src/shared/schema.ts`, the single declaration of every table, column and index. It creates what's missing, including the private character-portrait bucket, and never deletes. Functions are created with runtime `node-22`, `execute: ["users"]` (each Function authorizes its caller itself), the scopes they need, and the build command `npm ci --workspace functions --include-workspace-root && npm run build --workspace functions`, with entrypoint `functions/dist/<name>.js`.
 
 Then, once per Function in the console: **Settings → Git → connect** this repository, root directory `.`, production branch `main`. From then on, a push to `main` deploys the backend.
 

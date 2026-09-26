@@ -11,6 +11,7 @@
  */
 
 export const DATABASE_ID = 'coterie';
+export const PORTRAITS_BUCKET_ID = 'character-portraits';
 
 export type Column =
   | { key: string; type: 'string'; size: number; required?: boolean; array?: boolean; default?: string }

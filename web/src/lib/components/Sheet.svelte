@@ -1,8 +1,9 @@
 <script lang="ts">
+  import { ID, Permission, Role } from 'appwrite';
   import { ABILITIES, ATTRIBUTES, traitLabel, woundPenalty } from '$engine/index.ts';
-  import { DATABASE_ID } from '$schema';
+  import { DATABASE_ID, PORTRAITS_BUCKET_ID } from '$schema';
   import { healthOf, type Character } from '$shared/codec.ts';
-  import { tables } from '$lib/appwrite';
+  import { portraitUrl, storage, tables } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
   import Dots from './Dots.svelte';
   import HealthTrack from './HealthTrack.svelte';
@@ -17,6 +18,12 @@
   let editing = $state(false);
   let draft = $state({ name: '', concept: '', nature: '', demeanor: '' });
   let saveError = $state<string | null>(null);
+  let portraitBusy = $state(false);
+  let portraitError = $state<string | null>(null);
+  let portraitInput = $state<HTMLInputElement>();
+
+  const portraitId = $derived(typeof profile.portrait === 'string' ? profile.portrait : '');
+  const portrait = $derived(portraitUrl(portraitId));
 
   function edit() {
     draft = {
@@ -40,6 +47,83 @@
     }
   }
 
+  async function uploadPortrait(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+
+    portraitError = null;
+    const previousPortraitId = portraitId;
+    if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
+      portraitError = 'Choose a JPEG, PNG, GIF or WebP image.';
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      portraitError = 'Portraits must be 5 MB or smaller.';
+      return;
+    }
+
+    const teamId = table.chronicle?.teamId as string | undefined;
+    if (!teamId) {
+      portraitError = 'The table is still connecting. Try again in a moment.';
+      return;
+    }
+
+    portraitBusy = true;
+    let uploadedId = '';
+    try {
+      const uploaded = await storage.createFile({
+        bucketId: PORTRAITS_BUCKET_ID,
+        fileId: ID.unique(),
+        file,
+        permissions: [
+          Permission.read(Role.user(table.me)),
+          Permission.read(Role.team(teamId, 'storyteller')),
+          Permission.update(Role.user(table.me)),
+          Permission.delete(Role.user(table.me)),
+        ],
+      });
+      uploadedId = uploaded.$id;
+      await tables.updateRow({
+        databaseId: DATABASE_ID,
+        tableId: 'profiles',
+        rowId: character.$id,
+        data: { portrait: uploadedId },
+      });
+      if (previousPortraitId && previousPortraitId !== uploadedId) {
+        await storage.deleteFile({ bucketId: PORTRAITS_BUCKET_ID, fileId: previousPortraitId }).catch(() => {});
+      }
+    } catch (e) {
+      if (uploadedId) {
+        await storage.deleteFile({ bucketId: PORTRAITS_BUCKET_ID, fileId: uploadedId }).catch(() => {});
+      }
+      portraitError = (e as Error).message;
+    } finally {
+      portraitBusy = false;
+    }
+  }
+
+  async function removePortrait() {
+    const fileId = portraitId;
+    if (!fileId) return;
+    portraitBusy = true;
+    portraitError = null;
+    try {
+      await tables.updateRow({
+        databaseId: DATABASE_ID,
+        tableId: 'profiles',
+        rowId: character.$id,
+        data: { portrait: '' },
+      });
+      await storage.deleteFile({ bucketId: PORTRAITS_BUCKET_ID, fileId }).catch(() => {});
+    } catch (e) {
+      portraitError = (e as Error).message;
+    } finally {
+      portraitBusy = false;
+    }
+  }
+
   const ABILITY_GROUPS = [
     ['Talents', ABILITIES.talents],
     ['Skills', ABILITIES.skills],
@@ -55,15 +139,24 @@
 
 <article class="sheet panel">
   <header>
-    <div>
-      {#if editing}
-        <input class="name-input" bind:value={draft.name} aria-label="Name" />
-      {:else}
-        <h1>{profile.name ?? 'Unnamed'}</h1>
-      {/if}
-      <p class="lineage caps">
-        {[character.clan, `${ordinal(character.generation)} Generation`, character.sect].filter(Boolean).join(' · ')}
-      </p>
+    <div class="identity">
+      <div class="portrait" class:empty={!portrait}>
+        {#if portrait}
+          <img src={portrait} alt={`${profile.name ?? 'Character'} portrait`} />
+        {:else}
+          <span aria-hidden="true">{(profile.name ?? '?').trim().charAt(0) || '?'}</span>
+        {/if}
+      </div>
+      <div>
+        {#if editing}
+          <input class="name-input" bind:value={draft.name} aria-label="Name" />
+        {:else}
+          <h1>{profile.name ?? 'Unnamed'}</h1>
+        {/if}
+        <p class="lineage caps">
+          {[character.clan, `${ordinal(character.generation)} Generation`, character.sect].filter(Boolean).join(' · ')}
+        </p>
+      </div>
     </div>
     <dl class="meta">
       {#if editing}
@@ -85,7 +178,21 @@
         {:else}
           <button class="linkish" onclick={edit}>Edit profile</button>
         {/if}
+        <input
+          class="portrait-input"
+          bind:this={portraitInput}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp"
+          onchange={uploadPortrait}
+        />
+        <button class="linkish" disabled={portraitBusy} onclick={() => portraitInput?.click()}>
+          {portraitBusy ? 'Uploading…' : portrait ? 'Replace portrait' : 'Upload portrait'}
+        </button>
+        {#if portrait}
+          <button class="linkish" disabled={portraitBusy} onclick={removePortrait}>Remove portrait</button>
+        {/if}
         {#if saveError}<span class="error">{saveError}</span>{/if}
+        {#if portraitError}<span class="error">{portraitError}</span>{/if}
       </div>
     {/if}
   </header>
@@ -180,6 +287,33 @@
     margin: 0;
     line-height: 1.1;
   }
+  .identity {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+  }
+  .portrait {
+    width: 112px;
+    aspect-ratio: 4 / 5;
+    flex: 0 0 auto;
+    overflow: hidden;
+    border: 1px solid var(--gold);
+    background: var(--blush);
+    box-shadow: inset 0 0 0 4px var(--paper), inset 0 0 0 5px var(--gold-soft);
+  }
+  .portrait img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .portrait.empty {
+    display: grid;
+    place-items: center;
+    color: var(--oxblood);
+    font-size: 3rem;
+  }
   .name-input {
     font-size: 1.8rem;
     width: 100%;
@@ -220,6 +354,10 @@
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
+  }
+  .portrait-input {
+    display: none;
   }
   .linkish {
     background: none;
@@ -290,6 +428,9 @@
     .cols,
     header {
       grid-template-columns: 1fr;
+    }
+    .portrait {
+      width: 88px;
     }
   }
 </style>
