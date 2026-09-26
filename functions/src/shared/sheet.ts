@@ -120,6 +120,29 @@ export function validateSheet(input: Rec, partial: boolean): CharacterPatch {
   return patch;
 }
 
+/**
+ * What a player may propose for their own sheet: the traits, never the state.
+ * Blood, Willpower spent, health and experience move only through the
+ * Functions that model them.
+ */
+export const PROPOSABLE = [
+  'clan',
+  'sect',
+  'sire',
+  'path',
+  'generation',
+  'attributes',
+  'abilities',
+  'specialties',
+  'disciplines',
+  'backgrounds',
+  'virtues',
+  'merits',
+  'flaws',
+  'pathRating',
+  'willpowerPermanent',
+] as const;
+
 /** Specialties are legal only at 4+ dots — checked against the merged sheet. */
 export function checkSpecialties(sheet: {
   attributes: Record<string, number>;

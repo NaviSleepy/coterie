@@ -66,6 +66,7 @@ const WATCHED: TableId[] = [
   'secrets',
   'seals',
   'presence',
+  'proposals',
 ];
 
 const HEARTBEAT_MS = 30_000;
@@ -85,6 +86,8 @@ export class TableState {
   secrets = $state<Record<string, AnyRow>>({});
   seals = $state<Record<string, AnyRow>>({});
   presence = $state<Record<string, AnyRow>>({});
+  /** Keyed by character id. The owner sees their own; the Storyteller sees all. */
+  proposals = $state<Record<string, AnyRow>>({});
   members = $state<Member[]>([]);
 
   pending = $state<Pending[]>([]);
@@ -194,7 +197,7 @@ export class TableState {
     if (!chronicle) throw new Error('This chronicle does not exist, or you are not at its table.');
     const by = [Query.equal('chronicleId', this.chronicleId), Query.limit(100)];
 
-    const [scene, characters, profiles, rolls, rollSecrets, secrets, seals, presence, memberships] = await Promise.all([
+    const [scene, characters, profiles, rolls, rollSecrets, secrets, seals, presence, proposals, memberships] = await Promise.all([
       chronicle.currentSceneId ? getRow('scenes', chronicle.currentSceneId) : Promise.resolve(null),
       listRows('characters', by),
       listRows('profiles', by),
@@ -203,6 +206,7 @@ export class TableState {
       listRows('secrets', by),
       listRows('seals', by),
       listRows('presence', by),
+      listRows('proposals', by),
       teams.listMemberships({ teamId: chronicle.teamId }),
     ]);
 
@@ -215,6 +219,7 @@ export class TableState {
     this.secrets = byId(secrets);
     this.seals = byId(seals);
     this.presence = byId(presence);
+    this.proposals = byId(proposals);
     this.members = memberships.memberships.map((m) => ({ userId: m.userId, name: m.userName || 'Someone', roles: m.roles }));
     this.settlePending();
   }
@@ -297,6 +302,7 @@ export class TableState {
       case 'secrets':
       case 'seals':
       case 'presence':
+      case 'proposals':
       case 'profiles': {
         const map = this[table === 'rollSecrets' ? 'rollSecrets' : table] as Record<string, AnyRow>;
         if (deleted) delete map[row.$id];

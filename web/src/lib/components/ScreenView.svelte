@@ -2,6 +2,7 @@
   import type { TableState } from '$lib/table.svelte';
   import BehindScreen from './BehindScreen.svelte';
   import CoterieCard from './CoterieCard.svelte';
+  import ProposalsReview from './ProposalsReview.svelte';
   import StControls from './StControls.svelte';
 
   let { table }: { table: TableState } = $props();
@@ -67,8 +68,10 @@
         {/if}
       </section>
 
+      <ProposalsReview {table} />
+
       {#if character}
-        <StControls {table} {character} onclose={() => (selected = null)} />
+        {#key character.$id}<StControls {table} {character} onclose={() => (selected = null)} />{/key}
       {/if}
 
       <div class="cards">

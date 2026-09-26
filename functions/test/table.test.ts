@@ -9,6 +9,7 @@ import { handler as scene } from '../src/fns/scene.ts';
 import {
   ashenCourt,
   CHRONICLE,
+  DMITRI,
   DMITRI_PLAYER,
   ISOLDE,
   ISOLDE_PLAYER,
@@ -124,6 +125,105 @@ describe('characters', () => {
     assert.equal(row.bloodPoolMax, 10);
     assert.equal(row.bloodPool, 8);
     assert.equal(row.version, 1);
+  });
+});
+
+describe('proposals', () => {
+  const propose = (w: any, who: string, sheet: any) =>
+    character(w.as(who), { action: 'propose', characterId: ISOLDE, sheet });
+
+  it("holds a player's edits apart from the sheet, readable by them and the ST only", async () => {
+    const w = ashenCourt();
+    const out: any = await propose(w, ISOLDE_PLAYER, {
+      abilities: { firearms: 3, performance: 4, subterfuge: 4 },
+      merits: [{ name: 'Eat Food', points: 1 }],
+    });
+    assert.equal(out.revision, 1);
+    assert.deepEqual(out.changes.sort(), ['abilities', 'merits']);
+
+    const p = w.tables.row('proposals', ISOLDE)!;
+    assert.equal(JSON.parse(p.sheet).merits[0].name, 'Eat Food');
+    assert.deepEqual(p.$permissions, [`read("user:${ISOLDE_PLAYER}")`, `read("team:${TEAM}/storyteller")`]);
+    assert.equal(JSON.parse(w.tables.row('characters', ISOLDE)!.abilities).firearms, 2, 'the sheet has not moved');
+    assert.equal(w.tables.row('characters', ISOLDE)!.version, 0);
+  });
+
+  it('keeps only real changes, bumps the revision on each edit, and clears when nothing differs', async () => {
+    const w = ashenCourt();
+    await propose(w, ISOLDE_PLAYER, { pathRating: 7 });
+    const second: any = await propose(w, ISOLDE_PLAYER, { pathRating: 7, clan: 'Toreador', willpowerPermanent: 6 });
+    assert.equal(second.revision, 2);
+    assert.deepEqual(Object.keys(JSON.parse(w.tables.row('proposals', ISOLDE)!.sheet)).sort(), ['pathRating', 'willpowerPermanent']);
+
+    const cleared: any = await propose(w, ISOLDE_PLAYER, { pathRating: 6 });
+    assert.equal(cleared.revision, 0);
+    assert.equal(w.tables.row('proposals', ISOLDE), undefined);
+  });
+
+  it('refuses state, other players, and a specialty below four dots', async () => {
+    const w = ashenCourt();
+    for (const sheet of [{ bloodPool: 13 }, { experienceTotal: 50 }, { willpowerTemporary: 5 }, { healthLethal: 0 }]) {
+      await rejects(propose(w, ISOLDE_PLAYER, sheet), 403);
+    }
+    await rejects(propose(w, DMITRI_PLAYER, { pathRating: 7 }), 403);
+    await rejects(propose(w, ST, { pathRating: 7 }), 403);
+    await rejects(propose(w, ISOLDE_PLAYER, { specialties: [{ trait: 'firearms', text: 'Pistols' }] }), 400);
+  });
+
+  it('lets only the ST approve, applies it through the ledger, and removes the proposal with it', async () => {
+    const w = ashenCourt();
+    await propose(w, ISOLDE_PLAYER, { merits: [{ name: 'Eat Food', points: 1 }], flaws: [{ name: 'Nightmares', points: 1 }] });
+    await rejects(character(w.as(ISOLDE_PLAYER), { action: 'approve', characterId: ISOLDE, revision: 1 }), 403);
+
+    const out: any = await character(w.as(ST), { action: 'approve', characterId: ISOLDE, revision: 1 });
+    assert.equal(out.version, 1);
+    const row = w.tables.row('characters', ISOLDE)!;
+    assert.deepEqual(JSON.parse(row.merits), [{ name: 'Eat Food', points: 1 }]);
+    assert.deepEqual(JSON.parse(row.flaws), [{ name: 'Nightmares', points: 1 }]);
+    assert.equal(w.tables.row('proposals', ISOLDE), undefined);
+    assert.equal(w.tables.row('ledger', `${ISOLDE}.v1`)!.fn, 'approve');
+  });
+
+  it('refuses to approve a draft that changed after the ST read it', async () => {
+    const w = ashenCourt();
+    await propose(w, ISOLDE_PLAYER, { pathRating: 7 });
+    await propose(w, ISOLDE_PLAYER, { pathRating: 10 });
+    await rejects(character(w.as(ST), { action: 'approve', characterId: ISOLDE, revision: 1 }), 409, 'stale-proposal');
+    assert.equal(w.tables.row('characters', ISOLDE)!.pathRating, 6);
+  });
+
+  it('follows generation into the blood limits when approved', async () => {
+    const w = ashenCourt();
+    await propose(w, ISOLDE_PLAYER, { generation: 13 });
+    await character(w.as(ST), { action: 'approve', characterId: ISOLDE, revision: 1 });
+    const row = w.tables.row('characters', ISOLDE)!;
+    assert.equal(row.bloodPoolMax, 10);
+    assert.equal(row.bloodPool, 8);
+  });
+
+  it('lets the ST decline with a note, and the player withdraw', async () => {
+    const w = ashenCourt();
+    await propose(w, ISOLDE_PLAYER, { pathRating: 9 });
+    await rejects(character(w.as(ISOLDE_PLAYER), { action: 'reject', characterId: ISOLDE }), 403);
+    await character(w.as(ST), { action: 'reject', characterId: ISOLDE, note: 'Earn it in play.' });
+    const p = w.tables.row('proposals', ISOLDE)!;
+    assert.equal(p.status, 'declined');
+    assert.equal(p.note, 'Earn it in play.');
+
+    const again: any = await propose(w, ISOLDE_PLAYER, { pathRating: 7 });
+    assert.equal(w.tables.row('proposals', ISOLDE)!.status, 'pending', 'editing reopens it');
+    assert.equal(again.revision, 2);
+
+    await rejects(character(w.as(DMITRI_PLAYER), { action: 'withdraw', characterId: ISOLDE }), 403);
+    await character(w.as(ISOLDE_PLAYER), { action: 'withdraw', characterId: ISOLDE });
+    assert.equal(w.tables.row('proposals', ISOLDE), undefined);
+    await character(w.as(ISOLDE_PLAYER), { action: 'withdraw', characterId: ISOLDE });
+  });
+
+  it("lets the ST adjust merits and flaws directly", async () => {
+    const w = ashenCourt();
+    await character(w.as(ST), { action: 'adjust', characterId: DMITRI, sheet: { flaws: [{ name: 'Prey Exclusion', points: 1 }] } });
+    assert.deepEqual(JSON.parse(w.tables.row('characters', DMITRI)!.flaws), [{ name: 'Prey Exclusion', points: 1 }]);
   });
 });
 

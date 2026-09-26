@@ -3,7 +3,9 @@
   import type { Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
   import HealthTrack from './HealthTrack.svelte';
+  import SheetEditor from './SheetEditor.svelte';
   import { healthOf } from '$shared/codec.ts';
+  import { changesFrom, describe, draftOf, type Draft } from '$lib/sheet-edit';
 
   let { table, character, onclose }: { table: TableState; character: Character; onclose: () => void } = $props();
 
@@ -15,6 +17,16 @@
   let hiddenLabel = $state('Perception + Alertness');
   let hiddenDifficulty = $state(7);
   let xp = $state(0);
+
+  // Direct edits: the Storyteller's changes go straight to the sheet, through the ledger.
+  let draft = $state<Draft | null>(null);
+  const changes = $derived(draft ? changesFrom(character, draft) : {});
+  const lines = $derived(draft ? describe(character, changes) : []);
+
+  async function saveSheet() {
+    const out = await table.act('character', { action: 'adjust', characterId: character.$id, sheet: changes });
+    if (out) draft = null;
+  }
 </script>
 
 <section class="controls panel">
@@ -97,9 +109,36 @@
       </div>
     </div>
   </div>
+
+  <div class="block sheet-edit">
+    <div class="row between">
+      <h3 class="label">Sheet</h3>
+      {#if draft}
+        <div class="row">
+          <button class="btn solid" disabled={lines.length === 0} onclick={saveSheet}>Save {lines.length || ''} change{lines.length === 1 ? '' : 's'}</button>
+          <button class="btn quiet" onclick={() => (draft = null)}>Cancel</button>
+        </div>
+      {:else}
+        <button class="btn" onclick={() => (draft = draftOf(character))}>Edit traits, merits and flaws</button>
+      {/if}
+    </div>
+    {#if draft}
+      {#if lines.length}<ul class="lines">{#each lines as l (l)}<li>{l}</li>{/each}</ul>{/if}
+      <SheetEditor bind:draft />
+    {/if}
+  </div>
 </section>
 
 <style>
+  .between {
+    justify-content: space-between;
+    align-items: center;
+  }
+  .lines {
+    margin: 0;
+    padding-left: 1.2em;
+    columns: 2 200px;
+  }
   .controls {
     display: grid;
     gap: 18px;

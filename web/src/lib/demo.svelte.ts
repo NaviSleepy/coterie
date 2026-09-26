@@ -26,7 +26,7 @@ import {
   virtueForCheck,
   type DamageType,
 } from '$engine/index.ts';
-import { healthOf, sheetOf, stateOf, type Character } from '$shared/codec.ts';
+import { healthOf, parseJson, sheetOf, stateOf, type Character } from '$shared/codec.ts';
 import type { AnyRow } from './appwrite';
 import { presenceId } from './appwrite';
 import { TableState } from './table.svelte';
@@ -91,6 +91,7 @@ export class DemoTable extends TableState {
     secrets: {} as Record<string, AnyRow>,
     seals: {} as Record<string, AnyRow>,
     sealed: {} as Record<string, number>,
+    proposals: {} as Record<string, AnyRow>,
   };
 
   constructor() {
@@ -267,6 +268,20 @@ export class DemoTable extends TableState {
     this.rollSecrets = Object.fromEntries(Object.entries(w.rollSecrets).filter(([, s]) => st || s.revealed));
     this.secrets = Object.fromEntries(Object.entries(w.secrets).filter(([, s]) => st || s.visibleTo.includes(this.me)));
     this.seals = Object.fromEntries(Object.entries(w.seals).filter(([, s]) => st || s.ownerId === this.me));
+    this.proposals = Object.fromEntries(Object.entries(w.proposals).filter(([, p]) => st || p.ownerId === this.me));
+  }
+
+  /** The adjust and approve paths: traits set, derived limits kept true. */
+  private applySheet(c: Character, patch: Partial<Character>) {
+    const next: Partial<Character> = { ...patch };
+    if (patch.generation) {
+      next.bloodPoolMax = bloodPoolMax(patch.generation);
+      next.bloodPerTurn = bloodPerTurn(patch.generation);
+      if (c.bloodPool > next.bloodPoolMax) next.bloodPool = next.bloodPoolMax;
+    }
+    const wp = patch.willpowerPermanent ?? c.willpowerPermanent;
+    if (c.willpowerTemporary > wp) next.willpowerTemporary = wp;
+    this.commit(c, next);
   }
 
   private commit(c: Character, patch: Partial<Character>) {
@@ -414,6 +429,43 @@ export class DemoTable extends TableState {
           return {};
         }
         break;
+      case 'character': {
+        const c = w.characters[b.characterId];
+        if (!c) break;
+        const st = this.me === DEMO_ST;
+        const p = w.proposals[c.$id];
+        const drop = () => {
+          delete w.proposals[c.$id];
+          this.project();
+        };
+        if (b.action === 'propose' || b.action === 'withdraw') {
+          if (c.ownerId !== this.me) throw new Refusal('Only a character’s player proposes changes to it.');
+          if (b.action === 'withdraw' || Object.keys(b.sheet ?? {}).length === 0) return drop() ?? {};
+          w.proposals[c.$id] = row(c.$id, {
+            chronicleId: DEMO_ID, ownerId: c.ownerId, sheet: JSON.stringify(b.sheet),
+            revision: (p?.revision ?? 0) + 1, status: 'pending', note: '',
+          }, 0);
+          this.project();
+          return { revision: w.proposals[c.$id].revision };
+        }
+        if (!st) throw new Refusal('Only the Storyteller can do that.');
+        if (b.action === 'adjust') {
+          this.applySheet(c, b.sheet);
+          return {};
+        }
+        if (!p) throw new Refusal('Proposal not found.');
+        if (b.action === 'approve') {
+          if (p.revision !== b.revision) throw new Refusal('The player changed this proposal while you were reading it. Look again.');
+          this.applySheet(c, parseJson(p.sheet, {}));
+          return drop() ?? {};
+        }
+        if (b.action === 'reject') {
+          w.proposals[c.$id] = { ...p, status: 'declined', note: b.note ?? '' };
+          this.project();
+          return {};
+        }
+        break;
+      }
       case 'revealSecret': {
         const s = w.secrets[b.secretId];
         s.visibleTo = [...s.visibleTo, b.userId];

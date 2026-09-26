@@ -33,6 +33,7 @@ Every table has row security on. Rows carry their own read lists; almost no role
 | seals | `storyteller` role + the subject's owner | Functions only |
 | scenes | team | Functions only |
 | presence | team | own row only (table-level `create` for users) |
+| proposals | owner + `storyteller` role | Functions only |
 | ledger | `storyteller` role | Functions only |
 
 Clients write exactly two things directly: their own presence heartbeat and their own character's cosmetic profile. Everything else, the Storyteller's actions included, goes through a Function. That leaves one write path to audit, and every change to a sheet lands in the ledger.
@@ -47,6 +48,12 @@ The same move appears twice more:
 
 - **`sealedDifficulties`.** The Storyteller sets the difficulty for a character's next roll without the player seeing it. The player's character row carries only `difficultySealed: true`, so the UI shows a closed envelope where the number would be: sealed, not absent.
 - **`seals`.** When a secret concerns a character, their player gets a seal row: that a secret exists, and how many others hold it. The text is on a row they can't read.
+
+### A player changes their own sheet by proposing, not writing
+
+Players still can't write their mechanical traits: a player who could would raise Firearms just before a roll. So a player's edits go to `proposals`, one row per character, which only the owner and the Storyteller can read. The sheet editor saves the draft a moment after each edit, so the Storyteller watches it take shape on the screen, one line per change: `Firearms 2 → 3`, `+ Eat Food, 1 pt merit`. Approving applies it through the ledger and deletes the proposal in the same transaction; declining leaves it with a note for the player to revise.
+
+Only traits are proposable (clan through Willpower, merits and flaws included). A proposal that touches blood, spent Willpower, health or experience gets a 403. Every edit bumps the proposal's `revision`, and approving names the revision on the Storyteller's screen, so a draft changed in the moment before the click is refused with a 409 rather than applied unseen. The Storyteller edits sheets directly with the same editor, through `character.adjust`.
 
 ## Dice
 
@@ -121,7 +128,7 @@ It is a static single-page app (`adapter-static`, `index.html` fallback). On App
 ## Tests
 
 ```sh
-npm test          # engine (76) + Functions (52), node:test, no network
+npm test          # engine (76) + Functions (60), node:test, no network
 npm run typecheck # engine, functions, scripts, web (svelte-check, warnings fail)
 ```
 
@@ -143,7 +150,7 @@ seeds a known table through the Functions' own handlers and writes 15-minute JWT
 - **Rerolled 1s cancel.** Tables differ; this is the reading the engine takes, and it lives in one function.
 - **The invite code sits on the team-readable chronicle row.** Anyone at the table could invite a friend anyway; `rotateInvite` answers a leak.
 - **A revealed secret tells prior holders who else now knows.** Appwrite sends the update to everyone who can read the row, and `visibleTo` is on it. That's arguably the fiction working; it's a choice, not an oversight.
-- **Player-created sheets are range-checked, not balanced.** Dots are validated (1–5, specialties at 4+, generation 4–13), and merits and flaws are 1–7 points each; character-creation point budgets aren't, including V20's 7-point cap on flaws, which the form flags but the server leaves to the Storyteller. The Storyteller adjusts via `character.adjust`, which goes through the ledger like everything else.
+- **Player-created sheets are range-checked, not balanced.** Dots are validated (1–5, specialties at 4+, generation 4–13), and merits and flaws are 1–7 points each; character-creation point budgets aren't, including V20's 7-point cap on flaws, which the form flags but the server leaves to the Storyteller. The Storyteller adjusts via `character.adjust`, or approves a player's proposal, and both go through the ledger like everything else.
 
 ## Not in v1
 

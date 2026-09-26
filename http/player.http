@@ -204,6 +204,62 @@ Content-Type: application/json
   });
 %}
 
+### Proposals: a player cannot write the proposals table directly
+POST {{endpoint}}/tablesdb/{{db}}/tables/proposals/rows
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "rowId": "{{playerCharacterId}}", "data": { "chronicleId": "{{chronicleId}}", "ownerId": "sec-player", "sheet": "{}", "status": "pending" } }
+
+> {%
+  client.test("player cannot write a proposal row", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
+### Proposals: nor propose their own blood pool
+POST {{endpoint}}/functions/character/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"propose\",\"characterId\":\"{{playerCharacterId}}\",\"sheet\":{\"bloodPool\":13}}" }
+
+> {%
+  client.test("state is not proposable", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Proposals: nor approve their own
+POST {{endpoint}}/functions/character/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"approve\",\"characterId\":\"{{playerCharacterId}}\",\"revision\":1}" }
+
+> {%
+  client.test("only the Storyteller approves a proposal", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Proposals: nor propose changes to another player's sheet
+POST {{endpoint}}/functions/character/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"propose\",\"characterId\":\"{{otherCharacterId}}\",\"sheet\":{\"pathRating\":10}}" }
+
+> {%
+  client.test("a player cannot propose on someone else's sheet", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
 ### sealDifficulty / revealRoll / revealSecret / scene: all Storyteller-only
 POST {{endpoint}}/functions/revealSecret/executions
 X-Appwrite-Project: {{project}}
