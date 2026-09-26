@@ -89,12 +89,12 @@ Turn references are chronicle-wide: `chronicle.turnSerial` only increases, and a
 
 ### 1. Appwrite projects
 
-Two projects on Appwrite Cloud, `coterie-staging` and `coterie-production`, for this one app. Create an API key in each with the tables, columns, indexes, functions, users and teams scopes, then:
+Two projects on Appwrite Cloud, `coterie-staging` and `coterie-production`, for this one app. Those are their names; Appwrite gives each a generated ID, and commands take the ID. Staging is `6ab741a5001eb649271f`, in the nyc region. Create an API key in each with the tables, columns, indexes, functions, users and teams scopes, then:
 
 ```sh
 npm install
-APPWRITE_ENDPOINT=https://<region>.cloud.appwrite.io/v1 \
-APPWRITE_PROJECT_ID=coterie-staging \
+APPWRITE_ENDPOINT=https://nyc.cloud.appwrite.io/v1 \
+APPWRITE_PROJECT_ID=6ab741a5001eb649271f \
 APPWRITE_API_KEY=… \
 npm run provision
 ```
@@ -132,7 +132,7 @@ The Function tests run the real handlers against an in-memory TablesDB (`functio
 `http/` holds one file per role: `player.http`, `storyteller.http`, `stranger.http`, `anonymous.http`. Each request is something that role could send from devtools, and each assertion is the refusal that proves the model holds: a player POSTing to `rolls` (401), PATCHing their own blood pool (401), reading another sheet (404), sending a difficulty to `rollPool` (403), advancing the turn to reset their own blood cap (403). The Storyteller can't edit a roll after the fact either.
 
 ```sh
-APPWRITE_ENDPOINT=… APPWRITE_PROJECT_ID=coterie-staging APPWRITE_API_KEY=… npm run fixture
+APPWRITE_ENDPOINT=https://nyc.cloud.appwrite.io/v1 APPWRITE_PROJECT_ID=6ab741a5001eb649271f APPWRITE_API_KEY=… npm run fixture
 ```
 
 seeds a known table through the Functions' own handlers and writes 15-minute JWTs to `http/http-client.private.env.json` (gitignored). Then run the files in the WebStorm HTTP client against the `staging` environment. CI does the same on pushes to `main` once the repository has `APPWRITE_ENDPOINT` and `APPWRITE_PROJECT_ID` variables (repository-level, so the job's `if` can see them) and a `staging` environment holding an `APPWRITE_API_KEY` secret.

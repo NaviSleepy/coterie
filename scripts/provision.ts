@@ -7,8 +7,8 @@
  * Idempotent — run it against staging, then production, as often as you like.
  * It creates what's missing and leaves what exists alone; it never deletes.
  *
- *   APPWRITE_ENDPOINT=https://<region>.cloud.appwrite.io/v1 \
- *   APPWRITE_PROJECT_ID=coterie-staging \
+ *   APPWRITE_ENDPOINT=https://nyc.cloud.appwrite.io/v1 \
+ *   APPWRITE_PROJECT_ID=6ab741a5001eb649271f \
  *   APPWRITE_API_KEY=... \
  *   npm run provision
  *

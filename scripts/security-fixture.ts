@@ -6,7 +6,7 @@
  * key — the same code paths production runs — rather than writing rows
  * directly, so the fixture can't drift from what the app actually creates.
  *
- *   APPWRITE_ENDPOINT=… APPWRITE_PROJECT_ID=coterie-staging APPWRITE_API_KEY=… \
+ *   APPWRITE_ENDPOINT=… APPWRITE_PROJECT_ID=6ab741a5001eb649271f APPWRITE_API_KEY=… \
  *     node --experimental-strip-types scripts/security-fixture.ts
  *
  * Writes http/http-client.private.env.json (gitignored). JWTs last 15 minutes.
