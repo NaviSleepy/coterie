@@ -244,6 +244,30 @@ export const TABLES = {
     indexes: [byChronicle],
   },
 
+  /**
+   * Row id = character id: at most one open proposal per sheet. A player's
+   * edits to their own mechanical traits land here, never on the character
+   * row; the Storyteller approves them into the sheet through the ledger.
+   * `sheet` holds only the fields that differ from the sheet, as absolute
+   * values. `revision` goes up on every edit, so an approval names the exact
+   * draft the Storyteller looked at.
+   */
+  proposals: {
+    id: 'proposals',
+    name: 'Proposals',
+    permissions: [],
+    columns: [
+      str('chronicleId', 36, { required: true }),
+      str('ownerId', 36, { required: true }),
+      json('sheet'),
+      int('revision', 1, undefined, { default: 1 }),
+      int('baseVersion', 0, undefined, { default: 0 }),
+      { key: 'status', type: 'enum', elements: ['pending', 'declined'], default: 'pending' },
+      str('note', 280),
+    ],
+    indexes: [byChronicle],
+  },
+
   /** Clients create and heartbeat their own row. Table-level create for users. */
   presence: {
     id: 'presence',

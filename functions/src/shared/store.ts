@@ -92,6 +92,10 @@ export class Store {
     return this.tables.updateRow({ databaseId: DATABASE_ID, tableId: table, rowId, data, permissions });
   }
 
+  async remove(table: TableId, rowId: string): Promise<void> {
+    await this.tables.deleteRow({ databaseId: DATABASE_ID, tableId: table, rowId });
+  }
+
   /**
    * Runs `stage` against a fresh transaction and commits. Any error — staging
    * or commit — rolls back and rethrows, so a 409 on a ledger row surfaces to
