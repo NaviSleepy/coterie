@@ -132,6 +132,15 @@
       {:else}
         <p class="none">None</p>
       {/each}
+      {#if character.merits.length || character.flaws.length}
+        <h2 class="spaced">Merits and Flaws</h2>
+        {#each character.merits as m, i (i)}
+          <div class="trait"><span>{m.name}</span><span class="pts">{m.points} pt merit</span></div>
+        {/each}
+        {#each character.flaws as f, i (i)}
+          <div class="trait"><span>{f.name}</span><span class="pts">{f.points} pt flaw</span></div>
+        {/each}
+      {/if}
       <h2 class="spaced">Virtues</h2>
       {#each virtueKeys as key (key)}
         <div class="trait"><span>{traitLabel(key)}</span><Dots value={character.virtues[key as keyof typeof character.virtues] ?? 1} label={traitLabel(key)} /></div>
@@ -257,6 +266,10 @@
   .spec {
     color: var(--oxblood);
     font-size: 0.85rem;
+  }
+  .pts {
+    color: var(--ink-soft);
+    font-size: 0.9rem;
   }
   .none {
     color: var(--ink-faint);

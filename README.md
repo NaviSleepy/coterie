@@ -121,7 +121,7 @@ It is a static single-page app (`adapter-static`, `index.html` fallback). On App
 ## Tests
 
 ```sh
-npm test          # engine (76) + Functions (51), node:test, no network
+npm test          # engine (76) + Functions (52), node:test, no network
 npm run typecheck # engine, functions, scripts, web (svelte-check, warnings fail)
 ```
 
@@ -143,11 +143,11 @@ seeds a known table through the Functions' own handlers and writes 15-minute JWT
 - **Rerolled 1s cancel.** Tables differ; this is the reading the engine takes, and it lives in one function.
 - **The invite code sits on the team-readable chronicle row.** Anyone at the table could invite a friend anyway; `rotateInvite` answers a leak.
 - **A revealed secret tells prior holders who else now knows.** Appwrite sends the update to everyone who can read the row, and `visibleTo` is on it. That's arguably the fiction working; it's a choice, not an oversight.
-- **Player-created sheets are range-checked, not balanced.** Dots are validated (1–5, specialties at 4+, generation 4–13); character-creation point budgets aren't. The Storyteller adjusts via `character.adjust`, which goes through the ledger like everything else.
+- **Player-created sheets are range-checked, not balanced.** Dots are validated (1–5, specialties at 4+, generation 4–13), and merits and flaws are 1–7 points each; character-creation point budgets aren't, including V20's 7-point cap on flaws, which the form flags but the server leaves to the Storyteller. The Storyteller adjusts via `character.adjust`, which goes through the ledger like everything else.
 
 ## Not in v1
 
-Maps, tokens, grid combat, voice, chat, roll macros, a creation wizard, XP spend tracking, mobile-native apps. From the backlog: combat resolution and soak, Discipline activation with blood costs, the V20 XP cost table, blood bonds, merits/flaws/derangements, and the session-log export (the ledger and the append-only roll log already hold the data).
+Maps, tokens, grid combat, voice, chat, roll macros, a creation wizard, XP spend tracking, mobile-native apps. From the backlog: combat resolution and soak, Discipline activation with blood costs, the V20 XP cost table, blood bonds, derangements, and the session-log export (the ledger and the append-only roll log already hold the data).
 
 ## Content and licensing
 

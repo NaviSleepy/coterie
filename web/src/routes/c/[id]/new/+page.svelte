@@ -18,7 +18,14 @@
   let willpowerPermanent = $state(1);
   let disciplines = $state<{ name: string; level: number }[]>([]);
   let specialties = $state<{ trait: string; text: string }[]>([]);
+  let merits = $state<{ name: string; points: number }[]>([]);
+  let flaws = $state<{ name: string; points: number }[]>([]);
   let busy = $state(false);
+
+  const total = (list: { name: string; points: number }[]) =>
+    list.filter((m) => m.name.trim()).reduce((sum, m) => sum + m.points, 0);
+  const meritPoints = $derived(total(merits));
+  const flawPoints = $derived(total(flaws));
 
   const eligible = $derived(
     [...Object.entries(attributes), ...Object.entries(abilities)].filter(([, v]) => v >= 4).map(([k]) => k),
@@ -33,6 +40,8 @@
       sheet: {
         clan, sect, sire, generation, attributes, abilities, virtues, pathRating, willpowerPermanent,
         disciplines: disciplines.filter((d) => d.name.trim()),
+        merits: merits.filter((m) => m.name.trim()),
+        flaws: flaws.filter((f) => f.name.trim()),
         specialties: specialties.filter((s) => eligible.includes(s.trait)),
       },
     });
@@ -113,6 +122,35 @@
     {/each}
     <button type="button" class="btn quiet" onclick={() => (disciplines = [...disciplines, { name: '', level: 1 }])}>Add Discipline</button>
 
+    <h2>Merits and Flaws <span class="hint">— merits cost 1–7 freebie points, flaws give back 1–7</span></h2>
+    <div class="cols two">
+      <div>
+        <h3 class="label">Merits</h3>
+        {#each merits as m, i (i)}
+          <div class="row">
+            <input bind:value={m.name} placeholder="Eidetic Memory" aria-label="Merit name" />
+            <input type="number" min="1" max="7" bind:value={m.points} aria-label="Merit points" />
+            <button type="button" class="btn quiet" onclick={() => (merits = merits.filter((_, j) => j !== i))}>Remove</button>
+          </div>
+        {/each}
+        <button type="button" class="btn quiet" onclick={() => (merits = [...merits, { name: '', points: 1 }])}>Add merit</button>
+      </div>
+      <div>
+        <h3 class="label">Flaws</h3>
+        {#each flaws as f, i (i)}
+          <div class="row">
+            <input bind:value={f.name} placeholder="Nightmares" aria-label="Flaw name" />
+            <input type="number" min="1" max="7" bind:value={f.points} aria-label="Flaw points" />
+            <button type="button" class="btn quiet" onclick={() => (flaws = flaws.filter((_, j) => j !== i))}>Remove</button>
+          </div>
+        {/each}
+        <button type="button" class="btn quiet" onclick={() => (flaws = [...flaws, { name: '', points: 1 }])}>Add flaw</button>
+      </div>
+    </div>
+    {#if meritPoints || flawPoints}
+      <p class="hint">Merits {meritPoints} · Flaws {flawPoints} · net {meritPoints - flawPoints} freebie points{#if flawPoints > 7}. V20 allows at most 7 points of flaws; the Storyteller decides.{/if}</p>
+    {/if}
+
     <h2>Virtues, Path, Willpower</h2>
     <div class="grid">
       <label>Conscience <input type="number" min="1" max="5" bind:value={virtues.conscience} /></label>
@@ -168,6 +206,9 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 24px;
   }
+  .cols.two {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .trait {
     display: flex;
     justify-content: space-between;
@@ -187,7 +228,8 @@
     margin-top: 32px;
   }
   @media (max-width: 700px) {
-    .cols {
+    .cols,
+    .cols.two {
       grid-template-columns: 1fr;
     }
   }
