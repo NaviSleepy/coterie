@@ -66,7 +66,9 @@ async function ensurePortraitBucket() {
   const spec = {
     bucketId: PORTRAITS_BUCKET_ID,
     name: 'Character portraits',
-    permissions: ['create("users")'],
+    // Bucket access is the first gate; per-file permissions below it keep each
+    // portrait visible only to its owner and the Storyteller role.
+    permissions: ['create("users")', 'read("users")'],
     fileSecurity: true,
     enabled: true,
     maximumFileSize: 5 * 1024 * 1024,
