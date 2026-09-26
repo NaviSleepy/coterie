@@ -101,9 +101,9 @@ npm run provision
 
 `provision.ts` reads `functions/src/shared/schema.ts`, the single declaration of every table, column and index. It creates what's missing and never deletes. Functions are created with runtime `node-22`, `execute: ["users"]` (each Function authorizes its caller itself), the scopes they need, and the build command `npm ci --workspace functions --include-workspace-root && npm run build --workspace functions`, with entrypoint `functions/dist/<name>.js`.
 
-Then, once per Function in the console: **Settings → Git → connect** this repository, root directory `.`, production branch `main`. From then on, a push to `main` deploys the backend.
+Then connect the Functions to Git. Installing Appwrite's GitHub app on this repository is a console step, once per project: open any Function, **Settings → Git → Connect Git**. After that, every Function is connected with root directory `.` and production branch `main`, in the console or through the API; `provision.ts` doesn't do it, because an update that omits the provider fields can disconnect a Function. From then on, a push to `main` deploys the backend. Staging is connected.
 
-Enable **Magic URL** under Auth, and add your site's origin as a Web platform.
+Enable **Magic URL** under Auth. A site served from `*.appwrite.network` worked on staging without a Web platform; a custom domain needs its origin added as one.
 
 ### 2. The web app
 
@@ -112,7 +112,7 @@ cp web/.env.example web/.env      # PUBLIC_APPWRITE_ENDPOINT, PUBLIC_APPWRITE_PR
 npm run dev
 ```
 
-It is a static single-page app (`adapter-static`, `index.html` fallback). On Appwrite Sites: root `web`, install `npm ci`, build `npm run build`, output `build`.
+It is a static single-page app (`adapter-static`, `index.html` fallback). On Appwrite Sites it builds from the repository root, because `web` imports from `engine/` and `functions/`: root directory `.`, build runtime `node-22`, install `npm ci`, build `npm run build -w web`, output `web/build`, fallback `index.html`, production branch `main`. Set `PUBLIC_APPWRITE_ENDPOINT` and `PUBLIC_APPWRITE_PROJECT_ID` as site variables; they're baked in at build time. Staging's site is `coterie-web`, at `https://coterie-staging.appwrite.network`, and a push to `main` redeploys it.
 
 ### 3. Appwrite MCP for Claude Code
 
