@@ -10,7 +10,7 @@
  *     node --experimental-strip-types scripts/security-fixture.ts
  *
  * Writes http/http-client.private.env.json (gitignored). JWTs last 15 minutes.
- * Never point this at production: it creates users.
+ * It creates users, so it only runs against the project IDs in STAGING_PROJECTS.
  */
 
 import { writeFileSync } from 'node:fs';
@@ -33,8 +33,12 @@ if (!endpoint || !project || !key) {
   console.error('APPWRITE_ENDPOINT, APPWRITE_PROJECT_ID and APPWRITE_API_KEY are required.');
   process.exit(1);
 }
-if (/prod/i.test(project)) {
-  console.error(`Refusing to seed "${project}": this script is for staging.`);
+// Appwrite project IDs are generated, so a name check can't tell staging from
+// production. Only projects listed here are ever seeded; add a new staging
+// project's ID to run against it.
+const STAGING_PROJECTS = ['6ab741a5001eb649271f'];
+if (!STAGING_PROJECTS.includes(project)) {
+  console.error(`Refusing to seed "${project}": not a known staging project (${STAGING_PROJECTS.join(', ')}).`);
   process.exit(1);
 }
 
