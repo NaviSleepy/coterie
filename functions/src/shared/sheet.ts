@@ -36,13 +36,15 @@ function traitMap(input: unknown, keys: readonly string[], min: number, dflt: nu
   return out;
 }
 
+// Merits and flaws are both written as positive points (1–7): a merit's cost,
+// a flaw's refund. The sign lives in which list an entry is in.
 function named(input: unknown, what: string, levelKey: 'level' | 'points', max: number) {
   if (input === undefined) return [];
   if (!Array.isArray(input) || input.length > 40) throw badRequest(`${what} must be a list.`);
   return input.map((item: any) => {
     if (typeof item?.name !== 'string' || !item.name.trim()) throw badRequest(`Every ${what.toLowerCase()} needs a name.`);
     const entry: any = { name: item.name.trim().slice(0, 60) };
-    entry[levelKey] = dots(item[levelKey] ?? 1, levelKey === 'points' ? -7 : 0, max, `${entry.name}`);
+    entry[levelKey] = dots(item[levelKey] ?? 1, levelKey === 'points' ? 1 : 0, max, `${entry.name}`);
     if (typeof item.notes === 'string') entry.notes = item.notes.slice(0, 500);
     return entry;
   });

@@ -90,6 +90,24 @@ describe('characters', () => {
     await rejects(character(w.as(DMITRI_PLAYER), { ...base, sheet: { ...sheet, generation: 3 } }), 400);
   });
 
+  it('stores merits and flaws, and refuses points outside 1–7 or a blank name', async () => {
+    const w = ashenCourt();
+    const base = { action: 'create', chronicleId: CHRONICLE, profile: { name: 'X' } };
+    const { characterId }: any = await character(w.as(DMITRI_PLAYER), {
+      ...base,
+      sheet: { ...sheet, merits: [{ name: ' Eidetic Memory ', points: 2 }], flaws: [{ name: 'Nightmares', points: 1 }] },
+    });
+    const row = w.tables.row('characters', characterId)!;
+    assert.deepEqual(JSON.parse(row.merits), [{ name: 'Eidetic Memory', points: 2 }]);
+    assert.deepEqual(JSON.parse(row.flaws), [{ name: 'Nightmares', points: 1 }]);
+
+    for (const points of [0, -3, 8]) {
+      await rejects(character(w.as(DMITRI_PLAYER), { ...base, sheet: { ...sheet, merits: [{ name: 'M', points }] } }), 400);
+      await rejects(character(w.as(DMITRI_PLAYER), { ...base, sheet: { ...sheet, flaws: [{ name: 'F', points }] } }), 400);
+    }
+    await rejects(character(w.as(DMITRI_PLAYER), { ...base, sheet: { ...sheet, flaws: [{ name: '  ', points: 2 }] } }), 400);
+  });
+
   it('refuses someone not at the table', async () => {
     const w = ashenCourt();
     await rejects(
