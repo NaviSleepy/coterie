@@ -124,7 +124,7 @@
     </div>
     {#if draft}
       {#if lines.length}<ul class="lines">{#each lines as l (l)}<li>{l}</li>{/each}</ul>{/if}
-      <SheetEditor bind:draft />
+      <SheetEditor bind:draft library={table.library} />
     {/if}
   </div>
 </section>

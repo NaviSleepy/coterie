@@ -2,6 +2,7 @@
   import type { TableState } from '$lib/table.svelte';
   import BehindScreen from './BehindScreen.svelte';
   import CoterieCard from './CoterieCard.svelte';
+  import LibraryPanel from './LibraryPanel.svelte';
   import ProposalsReview from './ProposalsReview.svelte';
   import StControls from './StControls.svelte';
 
@@ -69,6 +70,7 @@
       </section>
 
       <ProposalsReview {table} />
+      <LibraryPanel {table} />
 
       {#if character}
         {#key character.$id}<StControls {table} {character} onclose={() => (selected = null)} />{/key}

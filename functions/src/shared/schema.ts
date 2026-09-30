@@ -268,6 +268,27 @@ export const TABLES = {
     indexes: [byChronicle],
   },
 
+  /**
+   * The table's reference library: merits, flaws, Disciplines, Backgrounds
+   * and house rules as the Storyteller writes them up. Summaries are the
+   * Storyteller's own words; the app ships no rulebook text. `page` is a
+   * pointer into a book the reader owns, never its contents.
+   */
+  library: {
+    id: 'library',
+    name: 'Library',
+    permissions: [],
+    columns: [
+      str('chronicleId', 36, { required: true }),
+      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule'], required: true },
+      str('name', 60, { required: true }),
+      int('points', 1, 7),
+      str('summary', 2000),
+      str('page', 60),
+    ],
+    indexes: [byChronicle],
+  },
+
   /** Clients create and heartbeat their own row. Table-level create for users. */
   presence: {
     id: 'presence',

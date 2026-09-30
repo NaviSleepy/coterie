@@ -4,6 +4,7 @@
   import { healthOf, type Character } from '$shared/codec.ts';
   import { tables } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
+  import { findEntry, gloss } from '$lib/library';
   import Dots from './Dots.svelte';
   import HealthTrack from './HealthTrack.svelte';
 
@@ -128,17 +129,17 @@
     <div>
       <h2>Disciplines</h2>
       {#each character.disciplines as d (d.name)}
-        <div class="trait"><span>{d.name}</span><Dots value={d.level} max={Math.max(5, d.level)} label={d.name} /></div>
+        <div class="trait" title={gloss(findEntry(table.library, 'discipline', d.name)) || undefined}><span>{d.name}</span><Dots value={d.level} max={Math.max(5, d.level)} label={d.name} /></div>
       {:else}
         <p class="none">None</p>
       {/each}
       {#if character.merits.length || character.flaws.length}
         <h2 class="spaced">Merits and Flaws</h2>
         {#each character.merits as m, i (i)}
-          <div class="trait"><span>{m.name}</span><span class="pts">{m.points} pt merit</span></div>
+          <div class="trait" title={gloss(findEntry(table.library, 'merit', m.name)) || undefined}><span>{m.name}</span><span class="pts">{m.points} pt merit</span></div>
         {/each}
         {#each character.flaws as f, i (i)}
-          <div class="trait"><span>{f.name}</span><span class="pts">{f.points} pt flaw</span></div>
+          <div class="trait" title={gloss(findEntry(table.library, 'flaw', f.name)) || undefined}><span>{f.name}</span><span class="pts">{f.points} pt flaw</span></div>
         {/each}
       {/if}
       <h2 class="spaced">Virtues</h2>

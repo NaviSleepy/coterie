@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
   import type { TableState } from '$lib/table.svelte';
+  import { entriesOf, findEntry, gloss } from '$lib/library';
 
   const table = getContext<TableState>('table');
 
@@ -21,6 +22,12 @@
   let merits = $state<{ name: string; points: number }[]>([]);
   let flaws = $state<{ name: string; points: number }[]>([]);
   let busy = $state(false);
+
+  /** Picking a merit or flaw from the table's library brings its cost with it. */
+  function priced(row: { name: string; points: number }, kind: 'merit' | 'flaw') {
+    const e = findEntry(table.library, kind, row.name);
+    if (e?.points) row.points = e.points;
+  }
 
   const total = (list: { name: string; points: number }[]) =>
     list.filter((m) => m.name.trim()).reduce((sum, m) => sum + m.points, 0);
@@ -55,6 +62,9 @@
 </script>
 
 <main class="panel">
+  {#each ['merit', 'flaw', 'discipline'] as const as kind (kind)}
+    <datalist id={`lib-${kind}`}>{#each entriesOf(table.library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
+  {/each}
   <h1>Bring a character to the table</h1>
   <p class="hint">Mechanical traits are checked by the server when you submit. The Storyteller can adjust them later; you can always edit your name, concept, Nature and Demeanor yourself.</p>
 
@@ -115,7 +125,7 @@
     <h2>Disciplines</h2>
     {#each disciplines as d, i (i)}
       <div class="row">
-        <input bind:value={d.name} placeholder="Auspex" />
+        <input bind:value={d.name} placeholder="Auspex" list="lib-discipline" />
         <input type="number" min="1" max="5" bind:value={d.level} />
         <button type="button" class="btn quiet" onclick={() => (disciplines = disciplines.filter((_, j) => j !== i))}>Remove</button>
       </div>
@@ -128,10 +138,11 @@
         <h3 class="label">Merits</h3>
         {#each merits as m, i (i)}
           <div class="row">
-            <input bind:value={m.name} placeholder="Eidetic Memory" aria-label="Merit name" />
+            <input bind:value={m.name} placeholder="Eidetic Memory" aria-label="Merit name" list="lib-merit" oninput={() => priced(m, 'merit')} />
             <input type="number" min="1" max="7" bind:value={m.points} aria-label="Merit points" />
             <button type="button" class="btn quiet" onclick={() => (merits = merits.filter((_, j) => j !== i))}>Remove</button>
           </div>
+          {#if gloss(findEntry(table.library, 'merit', m.name))}<p class="hint ref">{gloss(findEntry(table.library, 'merit', m.name))}</p>{/if}
         {/each}
         <button type="button" class="btn quiet" onclick={() => (merits = [...merits, { name: '', points: 1 }])}>Add merit</button>
       </div>
@@ -139,10 +150,11 @@
         <h3 class="label">Flaws</h3>
         {#each flaws as f, i (i)}
           <div class="row">
-            <input bind:value={f.name} placeholder="Nightmares" aria-label="Flaw name" />
+            <input bind:value={f.name} placeholder="Nightmares" aria-label="Flaw name" list="lib-flaw" oninput={() => priced(f, 'flaw')} />
             <input type="number" min="1" max="7" bind:value={f.points} aria-label="Flaw points" />
             <button type="button" class="btn quiet" onclick={() => (flaws = flaws.filter((_, j) => j !== i))}>Remove</button>
           </div>
+          {#if gloss(findEntry(table.library, 'flaw', f.name))}<p class="hint ref">{gloss(findEntry(table.library, 'flaw', f.name))}</p>{/if}
         {/each}
         <button type="button" class="btn quiet" onclick={() => (flaws = [...flaws, { name: '', points: 1 }])}>Add flaw</button>
       </div>
@@ -223,6 +235,9 @@
     gap: 8px;
     margin-bottom: 8px;
     flex-wrap: wrap;
+  }
+  .ref {
+    margin: -4px 0 8px;
   }
   .submit {
     margin-top: 32px;
