@@ -157,6 +157,7 @@ export class DemoTable extends TableState {
       'demo-dmitri': row('demo-dmitri', { name: 'Dmitri Voss' }),
       'demo-ceren': row('demo-ceren', { name: 'Ceren Aydın' }),
       'demo-luther': row('demo-luther', { name: 'Luther Bask' }),
+      'demo-anselm': row('demo-anselm', { name: 'Brother Anselm', concept: 'Lasombra confessor' }),
     };
 
     const w = this.world;
@@ -206,6 +207,16 @@ export class DemoTable extends TableState {
         willpowerPermanent: 7,
         willpowerTemporary: 7,
         bloodPool: 12,
+      }),
+      // The Storyteller's own DMPC.
+      'demo-anselm': character('demo-anselm', DEMO_ST, {
+        clan: 'Lasombra',
+        generation: 9,
+        attributes: { manipulation: 4, wits: 3 },
+        abilities: { subterfuge: 3, occult: 3 },
+        willpowerPermanent: 6,
+        willpowerTemporary: 6,
+        bloodPool: 10,
       }),
       'demo-luther': character('demo-luther', 'demo-p4', {
         clan: 'Nosferatu',

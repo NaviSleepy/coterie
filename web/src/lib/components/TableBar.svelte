@@ -27,7 +27,7 @@
   <nav>
     {#if table.isStoryteller}
       {#if page.url.pathname.endsWith('/screen')}
-        <a href={base}>My sheet</a>
+        {#if table.mine.length}<a href={base}>My sheet</a>{/if}
       {:else}
         <a href={`${base}/screen`}>The screen</a>
       {/if}

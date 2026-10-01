@@ -5,6 +5,7 @@ import { handler as character } from '../src/fns/character.ts';
 import { handler as chronicle, inviteCode } from '../src/fns/chronicle.ts';
 import { handler as createSecret } from '../src/fns/createSecret.ts';
 import { handler as revealSecret } from '../src/fns/revealSecret.ts';
+import { handler as rollPool } from '../src/fns/rollPool.ts';
 import { handler as scene } from '../src/fns/scene.ts';
 import {
   ashenCourt,
@@ -125,6 +126,23 @@ describe('characters', () => {
     assert.equal(row.bloodPoolMax, 10);
     assert.equal(row.bloodPool, 8);
     assert.equal(row.version, 1);
+  });
+});
+
+describe('DMPCs', () => {
+  it('lets the Storyteller create a character they own, and roll it from its traits', async () => {
+    const w = ashenCourt();
+    const { characterId }: any = await character(w.as(ST), {
+      action: 'create',
+      chronicleId: CHRONICLE,
+      profile: { name: 'Brother Anselm' },
+      sheet: { clan: 'Lasombra', attributes: { dexterity: 3 }, abilities: { melee: 2 } },
+    });
+    const row = w.tables.row('characters', characterId)!;
+    assert.equal(row.ownerId, ST);
+    assert.deepEqual(row.$permissions, [`read("user:${ST}")`, `read("team:${TEAM}/storyteller")`]);
+    const roll: any = await rollPool(w.as(ST, [8, 8, 8, 8, 8]), { characterId, traits: ['dexterity', 'melee'], difficulty: 6 });
+    assert.equal(roll.pool, 5);
   });
 });
 

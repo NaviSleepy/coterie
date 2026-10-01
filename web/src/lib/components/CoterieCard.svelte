@@ -17,7 +17,7 @@
 
 <button class="card" class:low onclick={onselect}>
   <div class="top">
-    <h3>{table.nameOf(character.$id)}</h3>
+    <h3>{table.nameOf(character.$id)}{#if table.isDmpc(character)} <span class="dmpc caps" title="Played by the Storyteller">DMPC</span>{/if}</h3>
     <span class="caps">{character.clan || 'Caitiff'} · {ordinal(character.generation)}</span>
   </div>
   <div class="line">
@@ -97,5 +97,13 @@
     font-variant: small-caps;
     color: var(--oxblood);
     font-size: 0.85rem;
+  }
+  .dmpc {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--oxblood);
+    border: 1px solid currentColor;
+    padding: 0 5px;
+    vertical-align: middle;
   }
 </style>
