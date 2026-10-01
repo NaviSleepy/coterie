@@ -153,7 +153,10 @@ export class DemoTable extends TableState {
     setInterval(keepFresh, 20_000);
 
     this.profiles = {
-      'demo-isolde': row('demo-isolde', { name: 'Isolde Marchetti', nature: 'Visionary', demeanor: 'Bon Vivant', concept: 'Fallen violinist' }),
+      'demo-isolde': row('demo-isolde', {
+        name: 'Isolde Marchetti', nature: 'Visionary', demeanor: 'Bon Vivant', concept: 'Fallen violinist',
+        equipment: JSON.stringify([{ name: 'Pistol, Lt.', note: 'In the violin case' }, { name: 'Knife' }]),
+      }),
       'demo-dmitri': row('demo-dmitri', { name: 'Dmitri Voss' }),
       'demo-ceren': row('demo-ceren', { name: 'Ceren Aydın' }),
       'demo-luther': row('demo-luther', { name: 'Luther Bask' }),
@@ -277,6 +280,17 @@ export class DemoTable extends TableState {
     entry('demo-l6', { kind: 'trait', name: 'Subterfuge', summary: "Lying well and seeing through others' lies.\n• Novice: White lies, now and then.\n•• Practiced: About what every vampire picks up.\n••• Competent: Courtroom-lawyer smooth.\n•••• Expert: Deep-cover operative.\n••••• Master: The last person anyone would suspect." });
     entry('demo-l7', { kind: 'archetype', name: 'Visionary', summary: "Sees past the mundane to what could be, and pushes society to get there. Willpower: regain it for persuading others to believe in your vision and act on it." });
     entry('demo-l8', { kind: 'archetype', name: 'Bon Vivant', summary: "Unlife is meaningless, so enjoy it. Not reckless, just set on a good time. Willpower: regain it for truly enjoying yourself and letting it show." });
+    entry('demo-l10', { kind: 'power', name: "Heightened Senses", page: "V20 p. 134", summary: "Auspex 1: Doubles the range and sharpness of your senses; reflexive, no roll, but sudden glare or noise can hurt." });
+    entry('demo-l11', { kind: 'power', name: "Aura Perception", page: "V20 p. 135", summary: "Auspex 2: Read auras: emotional state, plus signs like vampire, ghoul, diablerist or illusion. Perception + Empathy (8)." });
+    entry('demo-l12', { kind: 'power', name: "Celerity 1", page: "V20 p. 142", summary: "Celerity 1: +1 die to Dexterity rolls. Spend a blood point for one extra physical action at the end of the turn, at the cost of that die." });
+    entry('demo-l13', { kind: 'power', name: "Awe", page: "V20 p. 193", summary: "Presence 1: People nearby are drawn to you and lean toward your view; more successes reach more of a crowd. One blood; Charisma + Performance (7)." });
+    entry('demo-l14', { kind: 'power', name: "Dread Gaze", page: "V20 p. 194", summary: "Presence 2: Reveal your monstrous self to cow or rout a victim. Charisma + Intimidation vs Wits + Courage." });
+    entry('demo-l15', { kind: 'power', name: "Entrancement", page: "V20 p. 195", summary: "Presence 3: Make someone your devoted, willing servant for a time. One blood; Appearance + Empathy vs Willpower." });
+    entry('demo-l16', { kind: 'power', name: "Honeyed Words", page: "Lore of the Clans p. 29", summary: "Auspex 2 + Presence 1: Roll Manipulation + Expression: for the scene, whatever you say comes out as exactly the right thing." });
+    entry('demo-l17', { kind: 'power', name: "Divine Aura", page: "Lore of the Clans p. 262", summary: "Auspex 2 + Presence 3: 1 blood for the night: Kindred who study your aura risk being entranced by you." });
+    entry('demo-l18', { kind: 'power', name: "Under the Skin", page: "Lore of the Clans p. 204", summary: "Auspex 3 + Presence 3: Read someone's personality like a text, find the weak points, and press on them." });
+    entry('demo-l19', { kind: 'equipment', name: "Pistol, Lt.", page: "V20 p. 281", summary: "Ranged. 4 dice; range 20 yards (double at difficulty 8); rate 4; holds 15+1. Hides in a pocket. Against vampires, bashing unless aimed at the head." });
+    entry('demo-l20', { kind: 'equipment', name: "Knife", page: "V20 p. 280", summary: "Melee. Damage Strength +1 lethal. Hides in a jacket." });
     entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }
@@ -310,6 +324,13 @@ export class DemoTable extends TableState {
   private commit(c: Character, patch: Partial<Character>) {
     this.world.characters[c.$id] = { ...c, ...patch, version: c.version + 1 };
     this.project();
+  }
+
+  override async saveProfile(characterId: string, data: Record<string, unknown>) {
+    const row = this.profiles[characterId];
+    if (!row) return false;
+    this.profiles[characterId] = { ...row, ...data };
+    return true;
   }
 
   override async damage(characterId: string, amount: number, type: DamageType) {

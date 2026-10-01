@@ -60,6 +60,13 @@ Only traits are proposable (clan through Willpower, merits and flaws included). 
 
 A player may bring as many characters as they like to a table and switch between them on their screen. `character.delete` removes one for good: its player or the Storyteller can call it, and it must name the character, so a stray call deletes nothing. In one transaction it removes the sheet, profile, open proposal, sealed difficulty and the seals on secrets about it, and takes it out of scenes and initiative. Its rolls and ledger stay as history, and the transaction writes a last ledger line saying who deleted it. That line takes the next version, so a write racing the delete collides with it and the delete is refused with a 409 rather than half-applied.
 
+### Disciplines level by level, combinations, and gear
+
+The player screen's right column shows two more panels, built from the library.
+
+- **Disciplines** lists, for each Discipline on the sheet, the library's powers up to the character's rating. A power's write-up starts with what it needs, then a colon: `Auspex 2: …`, or `Thaumaturgy (Path of Blood) 3: …` for a path. If the sheet names a path-based Discipline without its path, the panel lists the paths the library knows. Below that, **Combinations open to you** lists every combination power, written `Auspex 2 + Presence 3: …` (with `or` for alternatives), whose requirements the character meets.
+- **Gear** is a list on the profile (`profiles.equipment`, JSON), which the owner writes directly, as with the rest of the profile. Picking a name from the library's weapons and armor shows its numbers next to it.
+
 ### The Storyteller can play a DMPC
 
 "Create a DMPC" on the screen opens the same creation form, and the character is created with the Storyteller as its owner. It goes through the same validation and blood roll as anyone else's and has the same permissions: the Storyteller reads it, players don't, and nobody writes it except through Functions. The screen marks it DMPC. The Storyteller plays it from "My sheet", where the roll panel builds pools from its traits as it does for a player. There's no proposal step, because the Storyteller edits the sheet directly from the screen.

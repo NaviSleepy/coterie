@@ -132,6 +132,8 @@ export const TABLES = {
       { key: 'appearance', type: 'text' },
       { key: 'notes', type: 'text' },
       str('portrait', 2000),
+      // What the character carries: [{ name, note }], written by the owner like the rest of the profile.
+      json('equipment'),
     ],
     indexes: [byChronicle],
   },
@@ -271,7 +273,7 @@ export const TABLES = {
   /**
    * The table's reference library: clans and bloodlines, merits, flaws,
    * Disciplines and their individual powers, Paths of Enlightenment, Nature and Demeanor
-   * archetypes, what each dot
+   * archetypes, weapons and armor, what each dot
    * of an Attribute or Ability means, Backgrounds and house rules as the Storyteller writes them up. Summaries are the
    * Storyteller's own words; the app ships no rulebook text. `page` is a
    * pointer into a book the reader owns, never its contents.
@@ -282,7 +284,7 @@ export const TABLES = {
     permissions: [],
     columns: [
       str('chronicleId', 36, { required: true }),
-      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path', 'trait', 'archetype'], required: true },
+      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path', 'trait', 'archetype', 'equipment'], required: true },
       str('name', 60, { required: true }),
       int('points', 1, 7),
       str('summary', 2000),

@@ -1,8 +1,6 @@
 <script lang="ts">
   import { ABILITIES, ATTRIBUTES, traitLabel, woundPenalty } from '$engine/index.ts';
-  import { DATABASE_ID } from '$schema';
   import { healthOf, type Character } from '$shared/codec.ts';
-  import { tables } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
   import { dotLadder, dotMeaning, entriesOf, findEntry, gloss } from '$lib/library';
   import Dots from './Dots.svelte';
@@ -36,12 +34,8 @@
   // profiles row, which is all their permissions reach.
   async function save() {
     saveError = null;
-    try {
-      await tables.updateRow({ databaseId: DATABASE_ID, tableId: 'profiles', rowId: character.$id, data: draft });
-      editing = false;
-    } catch (e) {
-      saveError = (e as Error).message;
-    }
+    if (await table.saveProfile(character.$id, draft)) editing = false;
+    else saveError = table.error;
   }
 
   const ABILITY_GROUPS = [
