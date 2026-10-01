@@ -399,6 +399,21 @@ export class TableState {
       return null;
     }
   }
+
+  /**
+   * The cosmetic profile — name, concept, Nature, Demeanor, gear — is the one
+   * row a player writes directly; the row's permissions are the check.
+   */
+  async saveProfile(characterId: string, data: Record<string, unknown>): Promise<boolean> {
+    this.error = null;
+    try {
+      await tables.updateRow({ databaseId: DATABASE_ID, tableId: 'profiles', rowId: characterId, data });
+      return true;
+    } catch (e) {
+      this.error = (e as Error).message;
+      return false;
+    }
+  }
 }
 
 function byId(rows: AnyRow[]): Record<string, AnyRow> {

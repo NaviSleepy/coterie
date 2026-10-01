@@ -2,6 +2,8 @@
   import type { TableState } from '$lib/table.svelte';
   import BloodPanel from './BloodPanel.svelte';
   import DeleteCharacter from './DeleteCharacter.svelte';
+  import DisciplinePanel from './DisciplinePanel.svelte';
+  import EquipmentPanel from './EquipmentPanel.svelte';
   import HungerPrompt from './HungerPrompt.svelte';
   import LibraryPanel from './LibraryPanel.svelte';
   import ProposalPanel from './ProposalPanel.svelte';
@@ -61,6 +63,8 @@
       <BloodPanel {table} {character} />
       {#if character.bloodPool === 0}<HungerPrompt {table} {character} />{/if}
       <RollPanel {table} {character} />
+      <DisciplinePanel {table} {character} />
+      <EquipmentPanel {table} {character} />
       <RollFeed {table} />
     </div>
   </main>
