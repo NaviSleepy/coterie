@@ -131,6 +131,11 @@ export class TableState {
     return Object.values(this.characters).filter((c) => c.ownerId === this.me);
   }
 
+  /** A character the Storyteller plays themselves. */
+  isDmpc(c: Character): boolean {
+    return !!this.chronicle && c.ownerId === this.chronicle.storytellerId;
+  }
+
   get coterie(): Character[] {
     return Object.values(this.characters).sort((a, b) => this.nameOf(a.$id).localeCompare(this.nameOf(b.$id)));
   }

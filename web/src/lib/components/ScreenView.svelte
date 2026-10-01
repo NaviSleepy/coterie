@@ -6,7 +6,7 @@
   import ProposalsReview from './ProposalsReview.svelte';
   import StControls from './StControls.svelte';
 
-  let { table }: { table: TableState } = $props();
+  let { table, canCreate = true }: { table: TableState; canCreate?: boolean } = $props();
 
   let selected = $state<string | null>(null);
   const character = $derived(selected ? table.view(selected) : null);
@@ -76,6 +76,12 @@
         {#key character.$id}<StControls {table} {character} onclose={() => (selected = null)} />{/key}
       {/if}
 
+      {#if canCreate}
+        <div class="dmpc-bar">
+          <a class="btn quiet" href={`/c/${table.chronicleId}/new`}>Create a DMPC</a>
+          {#if table.mine.length}<a class="btn quiet" href={`/c/${table.chronicleId}`}>Play your DMPC{table.mine.length > 1 ? 's' : ''}</a>{/if}
+        </div>
+      {/if}
       <div class="cards">
         {#each table.coterie as c (c.$id)}
           {@const v = table.view(c.$id)}
@@ -212,5 +218,11 @@
       border-left: none;
       padding-left: 0;
     }
+  }
+  .dmpc-bar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 </style>

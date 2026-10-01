@@ -49,7 +49,7 @@
         {#if canCreate}<a class="btn quiet" href={`${base}/new`}>Bring another character</a>{/if}
       </div>
       <Sheet {table} {character} />
-      {#key character.$id}<ProposalPanel {table} {character} />{/key}
+      {#if !table.isStoryteller}{#key character.$id}<ProposalPanel {table} {character} />{/key}{/if}
       <LibraryPanel {table} />
       <Secrets {table} />
       {#key character.$id}<DeleteCharacter {table} {character} ondeleted={() => (selected = null)} />{/key}

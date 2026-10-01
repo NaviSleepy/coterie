@@ -6,4 +6,4 @@
   const table = getContext<TableState>('table');
 </script>
 
-<ScreenView {table} />
+<ScreenView {table} canCreate={false} />

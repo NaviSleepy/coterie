@@ -54,7 +54,7 @@
       },
     });
     busy = false;
-    if (out) await goto(`/c/${table.chronicleId}`);
+    if (out) await goto(table.isStoryteller ? `/c/${table.chronicleId}/screen` : `/c/${table.chronicleId}`);
   }
 
   /** Paths of Enlightenment trade Conscience for Conviction and Self-Control for Instinct; the dots carry over. */
@@ -72,8 +72,13 @@
   {#each ['clan', 'merit', 'flaw', 'discipline', 'path', 'archetype'] as const as kind (kind)}
     <datalist id={`lib-${kind}`}>{#each entriesOf(table.library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
-  <h1>Bring a character to the table</h1>
-  <p class="hint">Mechanical traits are checked by the server when you submit. The Storyteller can adjust them later; you can always edit your name, concept, Nature and Demeanor yourself.</p>
+  {#if table.isStoryteller}
+    <h1>Create a DMPC</h1>
+    <p class="hint">A character you play yourself alongside the coterie. It sits on the screen with everyone else's, marked DMPC, and you play it from "My sheet". Players can't open its sheet, just as they can't open each other's, and its rolls show in the feed like anyone's.</p>
+  {:else}
+    <h1>Bring a character to the table</h1>
+    <p class="hint">Mechanical traits are checked by the server when you submit. The Storyteller can adjust them later; you can always edit your name, concept, Nature and Demeanor yourself.</p>
+  {/if}
 
   <form onsubmit={(e) => { e.preventDefault(); void submit(); }}>
     <fieldset class="grid">
@@ -186,7 +191,7 @@
       <button type="button" class="btn quiet" onclick={() => swapVirtue('selfControl', 'instinct')}>{'instinct' in virtues ? 'Back to Self-Control' : 'Instinct instead of Self-Control'}</button>
     </div>
 
-    <button class="btn solid submit" disabled={busy || !profile.name.trim()}>{busy ? 'Rolling starting blood…' : 'Take a seat'}</button>
+    <button class="btn solid submit" disabled={busy || !profile.name.trim()}>{busy ? 'Rolling starting blood…' : table.isStoryteller ? 'Create DMPC' : 'Take a seat'}</button>
   </form>
 </main>
 
