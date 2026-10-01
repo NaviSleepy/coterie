@@ -6,4 +6,4 @@
   const table = getContext<TableState>('table');
 </script>
 
-<PlayerView {table} base="/demo" />
+<PlayerView {table} base="/demo" canCreate={false} />

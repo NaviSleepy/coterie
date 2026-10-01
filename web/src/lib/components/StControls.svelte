@@ -2,6 +2,7 @@
   /** The Storyteller's hands on one character: seal, wound, feed, test, adjust. */
   import type { Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
+  import DeleteCharacter from './DeleteCharacter.svelte';
   import HealthTrack from './HealthTrack.svelte';
   import SheetEditor from './SheetEditor.svelte';
   import { healthOf } from '$shared/codec.ts';
@@ -126,6 +127,10 @@
       {#if lines.length}<ul class="lines">{#each lines as l (l)}<li>{l}</li>{/each}</ul>{/if}
       <SheetEditor bind:draft library={table.library} />
     {/if}
+  </div>
+  <div class="block">
+    <h3 class="label">Delete</h3>
+    <DeleteCharacter {table} {character} ondeleted={onclose} />
   </div>
 </section>
 

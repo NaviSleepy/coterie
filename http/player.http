@@ -260,6 +260,31 @@ Content-Type: application/json
   });
 %}
 
+### Deleting: a player cannot delete another player's character
+POST {{endpoint}}/functions/character/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"delete\",\"characterId\":\"{{otherCharacterId}}\",\"name\":\"anything\"}" }
+
+> {%
+  client.test("only its player or the Storyteller deletes a character", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Deleting: nor delete even their own sheet row directly, around the Function
+DELETE {{endpoint}}/tablesdb/{{db}}/tables/characters/rows/{{playerCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("player cannot delete a characters row", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
 ### Library: a player cannot write the table's reference library directly
 POST {{endpoint}}/tablesdb/{{db}}/tables/library/rows
 X-Appwrite-Project: {{project}}

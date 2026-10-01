@@ -477,6 +477,17 @@ export class DemoTable extends TableState {
           this.project();
           return { revision: w.proposals[c.$id].revision };
         }
+        if (b.action === 'delete') {
+          if (!st && c.ownerId !== this.me) throw new Refusal('Only its player or the Storyteller can delete a character.');
+          const name = String(this.profiles[c.$id]?.name ?? '');
+          if (String(b.name ?? '').trim().toLowerCase() !== name.toLowerCase()) throw new Refusal(`To delete this character, send its name: ${name}.`);
+          delete w.characters[c.$id];
+          delete w.proposals[c.$id];
+          delete w.sealed[c.$id];
+          for (const [id, s] of Object.entries(w.seals)) if (s.subjectCharacterId === c.$id) delete w.seals[id];
+          this.project();
+          return { deleted: true };
+        }
         if (!st) throw new Refusal('Only the Storyteller can do that.');
         if (b.action === 'adjust') {
           this.applySheet(c, b.sheet);
