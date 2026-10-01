@@ -2,6 +2,7 @@
   import type { TableState } from '$lib/table.svelte';
   import BloodPanel from './BloodPanel.svelte';
   import HungerPrompt from './HungerPrompt.svelte';
+  import LibraryPanel from './LibraryPanel.svelte';
   import ProposalPanel from './ProposalPanel.svelte';
   import RollFeed from './RollFeed.svelte';
   import RollPanel from './RollPanel.svelte';
@@ -46,6 +47,7 @@
       {/if}
       <Sheet {table} {character} />
       {#key character.$id}<ProposalPanel {table} {character} />{/key}
+      <LibraryPanel {table} />
       <Secrets {table} />
     </div>
     <div class="right">

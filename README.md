@@ -34,6 +34,7 @@ Every table has row security on. Rows carry their own read lists; almost no role
 | scenes | team | Functions only |
 | presence | team | own row only (table-level `create` for users) |
 | proposals | owner + `storyteller` role | Functions only |
+| library | team | Functions only (the Storyteller, through `chronicle.saveEntry`) |
 | ledger | `storyteller` role | Functions only |
 
 Clients write exactly two things directly: their own presence heartbeat and their own character's cosmetic profile. Everything else, the Storyteller's actions included, goes through a Function. That leaves one write path to audit, and every change to a sheet lands in the ledger.
@@ -54,6 +55,12 @@ The same move appears twice more:
 Players still can't write their mechanical traits: a player who could would raise Firearms just before a roll. So a player's edits go to `proposals`, one row per character, which only the owner and the Storyteller can read. The sheet editor saves the draft a moment after each edit, so the Storyteller watches it take shape on the screen, one line per change: `Firearms 2 → 3`, `+ Eat Food, 1 pt merit`. Approving applies it through the ledger and deletes the proposal in the same transaction; declining leaves it with a note for the player to revise.
 
 Only traits are proposable (clan through Willpower, merits and flaws included). A proposal that touches blood, spent Willpower, health or experience gets a 403. Every edit bumps the proposal's `revision`, and approving names the revision on the Storyteller's screen, so a draft changed in the moment before the click is refused with a 409 rather than applied unseen. The Storyteller edits sheets directly with the same editor, through `character.adjust`.
+
+### The reference library is the Storyteller's words, not the book's
+
+Each chronicle has a library of merits, flaws, Disciplines, Backgrounds and house rules, written up by the Storyteller and readable by the whole table. An entry is a name, a cost for merits and flaws, a summary, and an optional page reference like `V20 p. 481` for anyone who owns the book. When a player adds a merit or flaw while proposing changes, or at character creation, the editor offers the library's names, fills in the cost, and shows the summary under the field. The sheet shows it as a tooltip.
+
+It holds no rulebook text by design (see *Content and licensing* below): a page number points into a book the reader owns without copying it. Names are unique within a kind, since that's how a sheet finds its entry. Players can still type something the library doesn't list; the Storyteller decides whether to approve it.
 
 ## Dice
 
@@ -128,7 +135,7 @@ It is a static single-page app (`adapter-static`, `index.html` fallback). On App
 ## Tests
 
 ```sh
-npm test          # engine (76) + Functions (60), node:test, no network
+npm test          # engine (76) + Functions (63), node:test, no network
 npm run typecheck # engine, functions, scripts, web (svelte-check, warnings fail)
 ```
 

@@ -92,6 +92,7 @@ export class DemoTable extends TableState {
     seals: {} as Record<string, AnyRow>,
     sealed: {} as Record<string, number>,
     proposals: {} as Record<string, AnyRow>,
+    library: {} as Record<string, AnyRow>,
   };
 
   constructor() {
@@ -256,6 +257,11 @@ export class DemoTable extends TableState {
       'demo-s1': row('demo-s1', { chronicleId: DEMO_ID, subjectCharacterId: 'demo-ceren', knownCount: 0, ownerId: 'demo-p3' }, 30),
       'demo-s2': row('demo-s2', { chronicleId: DEMO_ID, subjectCharacterId: 'demo-isolde', knownCount: 1, ownerId: DEMO_PLAYER }, 20),
     };
+    // The Storyteller's own write-ups, as a table would enter them.
+    const entry = (id: string, data: Record<string, any>) => (w.library[id] = row(id, { chronicleId: DEMO_ID, page: '', ...data }, 90));
+    entry('demo-l1', { kind: 'merit', name: 'Eat Food', points: 1, summary: 'Can eat and taste food. It gives no nourishment and comes back up before dawn.' });
+    entry('demo-l2', { kind: 'flaw', name: 'Nightmares', points: 1, summary: 'Troubled day-sleep. At our table: roll Willpower on waking or start the night one die down.' });
+    entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }
 
@@ -269,6 +275,7 @@ export class DemoTable extends TableState {
     this.secrets = Object.fromEntries(Object.entries(w.secrets).filter(([, s]) => st || s.visibleTo.includes(this.me)));
     this.seals = Object.fromEntries(Object.entries(w.seals).filter(([, s]) => st || s.ownerId === this.me));
     this.proposals = Object.fromEntries(Object.entries(w.proposals).filter(([, p]) => st || p.ownerId === this.me));
+    this.library = { ...w.library };
   }
 
   /** The adjust and approve paths: traits set, derived limits kept true. */
@@ -429,6 +436,25 @@ export class DemoTable extends TableState {
           return {};
         }
         break;
+      case 'chronicle': {
+        if (b.action !== 'saveEntry' && b.action !== 'removeEntry') break;
+        if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller can do that.');
+        if (b.action === 'removeEntry') {
+          delete w.library[b.entryId];
+        } else {
+          const id = b.entryId ?? `demo-l${Date.now()}`;
+          const clash = Object.values(w.library).some(
+            (e) => e.$id !== id && e.kind === b.kind && String(e.name).toLowerCase() === String(b.name).trim().toLowerCase(),
+          );
+          if (clash) throw new Refusal(`There's already a ${b.kind} called ${b.name}.`);
+          w.library[id] = row(id, {
+            chronicleId: DEMO_ID, kind: b.kind, name: String(b.name).trim(),
+            points: b.kind === 'merit' || b.kind === 'flaw' ? b.points : null, summary: b.summary ?? '', page: b.page ?? '',
+          }, 0);
+        }
+        this.project();
+        return {};
+      }
       case 'character': {
         const c = w.characters[b.characterId];
         if (!c) break;

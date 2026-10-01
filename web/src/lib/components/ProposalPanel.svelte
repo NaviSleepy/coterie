@@ -76,7 +76,7 @@
   {/if}
 
   {#if editing && draft}
-    <SheetEditor bind:draft />
+    <SheetEditor bind:draft library={table.library} />
   {/if}
 </section>
 

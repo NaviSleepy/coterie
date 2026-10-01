@@ -5,9 +5,20 @@
    * player, an adjust for the Storyteller).
    */
   import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
+  import type { AnyRow } from '$lib/appwrite';
+  import { entriesOf, findEntry, gloss, type LibraryKind } from '$lib/library';
   import type { Draft } from '$lib/sheet-edit';
 
-  let { draft = $bindable() }: { draft: Draft } = $props();
+  let { draft = $bindable(), library = {} }: { draft: Draft; library?: Record<string, AnyRow> } = $props();
+
+  // Datalist ids are page-global; two editors on one page mustn't share them.
+  const uid = Math.random().toString(36).slice(2, 8);
+  const listId = (kind: LibraryKind) => `lib-${kind}-${uid}`;
+  /** Picking a merit or flaw from the library brings its cost with it. */
+  function priced(row: { name: string; points: number }, kind: 'merit' | 'flaw') {
+    const e = findEntry(library, kind, row.name);
+    if (e?.points) row.points = e.points;
+  }
 
   const eligible = $derived(
     [...Object.entries(draft.attributes), ...Object.entries(draft.abilities)].filter(([, v]) => v >= 4).map(([k]) => k),
@@ -16,6 +27,9 @@
 </script>
 
 <div class="editor">
+  {#each ['merit', 'flaw', 'discipline', 'background'] as const as kind (kind)}
+    <datalist id={listId(kind)}>{#each entriesOf(library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
+  {/each}
   <fieldset class="grid">
     <label>Clan <input bind:value={draft.clan} /></label>
     <label>Sect <input bind:value={draft.sect} /></label>
@@ -74,10 +88,11 @@
       <h3>Disciplines</h3>
       {#each draft.disciplines as d, i (i)}
         <div class="row">
-          <input bind:value={d.name} placeholder="Auspex" aria-label="Discipline" />
+          <input bind:value={d.name} placeholder="Auspex" aria-label="Discipline" list={listId('discipline')} />
           <input type="number" min="1" max="10" bind:value={d.level} aria-label="Dots" />
           <button type="button" class="btn quiet" onclick={() => draft.disciplines.splice(i, 1)}>Remove</button>
         </div>
+        {#if gloss(findEntry(library, 'discipline', d.name))}<p class="ref">{gloss(findEntry(library, 'discipline', d.name))}</p>{/if}
       {/each}
       <button type="button" class="btn quiet" onclick={() => draft.disciplines.push({ name: '', level: 1 })}>Add Discipline</button>
     </div>
@@ -85,10 +100,11 @@
       <h3>Backgrounds</h3>
       {#each draft.backgrounds as b, i (i)}
         <div class="row">
-          <input bind:value={b.name} placeholder="Resources" aria-label="Background" />
+          <input bind:value={b.name} placeholder="Resources" aria-label="Background" list={listId('background')} />
           <input type="number" min="1" max="5" bind:value={b.level} aria-label="Dots" />
           <button type="button" class="btn quiet" onclick={() => draft.backgrounds.splice(i, 1)}>Remove</button>
         </div>
+        {#if gloss(findEntry(library, 'background', b.name))}<p class="ref">{gloss(findEntry(library, 'background', b.name))}</p>{/if}
       {/each}
       <button type="button" class="btn quiet" onclick={() => draft.backgrounds.push({ name: '', level: 1 })}>Add Background</button>
     </div>
@@ -96,10 +112,11 @@
       <h3>Merits</h3>
       {#each draft.merits as m, i (i)}
         <div class="row">
-          <input bind:value={m.name} placeholder="Eidetic Memory" aria-label="Merit name" />
+          <input bind:value={m.name} placeholder="Eidetic Memory" aria-label="Merit name" list={listId('merit')} oninput={() => priced(m, 'merit')} />
           <input type="number" min="1" max="7" bind:value={m.points} aria-label="Merit points" />
           <button type="button" class="btn quiet" onclick={() => draft.merits.splice(i, 1)}>Remove</button>
         </div>
+        {#if gloss(findEntry(library, 'merit', m.name))}<p class="ref">{gloss(findEntry(library, 'merit', m.name))}</p>{/if}
       {/each}
       <button type="button" class="btn quiet" onclick={() => draft.merits.push({ name: '', points: 1 })}>Add merit</button>
     </div>
@@ -107,10 +124,11 @@
       <h3>Flaws</h3>
       {#each draft.flaws as f, i (i)}
         <div class="row">
-          <input bind:value={f.name} placeholder="Nightmares" aria-label="Flaw name" />
+          <input bind:value={f.name} placeholder="Nightmares" aria-label="Flaw name" list={listId('flaw')} oninput={() => priced(f, 'flaw')} />
           <input type="number" min="1" max="7" bind:value={f.points} aria-label="Flaw points" />
           <button type="button" class="btn quiet" onclick={() => draft.flaws.splice(i, 1)}>Remove</button>
         </div>
+        {#if gloss(findEntry(library, 'flaw', f.name))}<p class="ref">{gloss(findEntry(library, 'flaw', f.name))}</p>{/if}
       {/each}
       <button type="button" class="btn quiet" onclick={() => draft.flaws.push({ name: '', points: 1 })}>Add flaw</button>
     </div>
@@ -182,6 +200,12 @@
     gap: 8px;
     margin-bottom: 8px;
     flex-wrap: wrap;
+  }
+  .ref {
+    margin: -4px 0 8px;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+    font-style: italic;
   }
   .row input[type='number'] {
     width: 4em;

@@ -227,6 +227,48 @@ describe('proposals', () => {
   });
 });
 
+describe('library', () => {
+  const save = (w: any, who: string, entry: any) => chronicle(w.as(who), { action: 'saveEntry', chronicleId: CHRONICLE, ...entry });
+
+  it("lets the ST write entries the whole table can read, and nobody else write them", async () => {
+    const w = ashenCourt();
+    const { entryId }: any = await save(w, ST, {
+      kind: 'merit', name: 'Eat Food', points: 1, summary: 'Can eat and taste; must purge it before dawn.', page: 'V20 p. 481',
+    });
+    const row = w.tables.row('library', entryId)!;
+    assert.equal(row.points, 1);
+    assert.equal(row.page, 'V20 p. 481');
+    assert.deepEqual(row.$permissions, [`read("team:${TEAM}")`]);
+
+    await rejects(save(w, ISOLDE_PLAYER, { kind: 'merit', name: 'Mine', points: 1 }), 403);
+    await rejects(save(w, STRANGER, { kind: 'merit', name: 'Mine', points: 1 }), 403);
+    await rejects(chronicle(w.as(ISOLDE_PLAYER), { action: 'removeEntry', chronicleId: CHRONICLE, entryId }), 403);
+  });
+
+  it('costs merits and flaws 1–7, and gives other kinds no cost', async () => {
+    const w = ashenCourt();
+    await rejects(save(w, ST, { kind: 'flaw', name: 'Nightmares' }), 400);
+    await rejects(save(w, ST, { kind: 'flaw', name: 'Nightmares', points: 8 }), 400);
+    await rejects(save(w, ST, { kind: 'mystery', name: 'X' }), 400);
+    const { entryId }: any = await save(w, ST, { kind: 'discipline', name: 'Auspex', points: 3 });
+    assert.equal(w.tables.row('library', entryId)!.points, null);
+  });
+
+  it('keeps names unique within a kind, edits in place, and removes', async () => {
+    const w = ashenCourt();
+    const { entryId }: any = await save(w, ST, { kind: 'flaw', name: 'Nightmares', points: 1 });
+    await rejects(save(w, ST, { kind: 'flaw', name: 'nightmares', points: 2 }), 409, 'duplicate');
+    await save(w, ST, { kind: 'merit', name: 'Nightmares', points: 1 });
+
+    await save(w, ST, { entryId, kind: 'flaw', name: 'Nightmares', points: 2, summary: 'Our table: roll Willpower on waking.' });
+    assert.equal(w.tables.row('library', entryId)!.points, 2);
+    await rejects(save(w, ST, { entryId: 'nope', kind: 'flaw', name: 'Other', points: 1 }), 404);
+
+    await chronicle(w.as(ST), { action: 'removeEntry', chronicleId: CHRONICLE, entryId });
+    assert.equal(w.tables.row('library', entryId), undefined);
+  });
+});
+
 describe('secrets', () => {
   it('seals a secret about a character for that character\'s player', async () => {
     const w = ashenCourt();

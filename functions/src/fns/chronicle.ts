@@ -10,6 +10,10 @@
  *   join          Redeem an invite code for a player membership.
  *   rotateInvite  ST only. The old code stops working immediately.
  *   update        ST only. Name, botch rule, tenets.
+ *   saveEntry     ST only. Adds or edits a library entry: a merit, flaw,
+ *                 Discipline, Background or house rule in the ST's words,
+ *                 readable by the whole table.
+ *   removeEntry   ST only.
  *
  * Joining goes through a server key because a client can't add itself to a
  * team — which is exactly the property that makes the team a trustworthy
@@ -19,7 +23,7 @@
 import { ID, Query } from 'node-appwrite';
 
 import { decodeChronicle, loadChronicle, requireStoryteller } from '../shared/auth.ts';
-import { badRequest, entry, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
+import { badRequest, entry, HttpError, int, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
 import { tableReadable } from '../shared/perms.ts';
 import { isConflict } from '../shared/store.ts';
 
@@ -122,8 +126,56 @@ async function update(ctx: Ctx, body: any) {
   return decodeChronicle(await ctx.store.update('chronicles', chronicle.$id, data));
 }
 
+const KINDS = ['merit', 'flaw', 'discipline', 'background', 'rule'] as const;
+
+async function saveEntry(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  requireStoryteller(ctx, chronicle);
+  const kind = oneOf(body, 'kind', KINDS);
+  const data = {
+    chronicleId: chronicle.$id,
+    kind,
+    name: str(body, 'name', 60),
+    // Only merits and flaws have a cost; the rest carry none.
+    points: kind === 'merit' || kind === 'flaw' ? int(body, 'points', 1, 7) : null,
+    summary: optStr(body, 'summary', 2000) ?? '',
+    page: optStr(body, 'page', 60) ?? '',
+  };
+
+  // Names are how a sheet finds its entry, so they're unique within a kind.
+  const same = await ctx.store.list('library', [Query.equal('chronicleId', chronicle.$id), Query.equal('kind', kind), Query.limit(500)]);
+  const entryId = optStr(body, 'entryId', 36);
+  if (same.some((r) => r.$id !== entryId && String(r.name).toLowerCase() === data.name.toLowerCase())) {
+    throw new HttpError(409, 'duplicate', `There's already a ${kind} called ${data.name}.`);
+  }
+
+  if (entryId) {
+    const existing = await ctx.store.find('library', entryId);
+    if (!existing || existing.chronicleId !== chronicle.$id) throw notFound('Entry');
+    await ctx.store.update('library', entryId, data);
+    return { entryId };
+  }
+  const id = ID.unique();
+  await ctx.store.create('library', id, data, tableReadable(chronicle.teamId));
+  return { entryId: id };
+}
+
+async function removeEntry(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  requireStoryteller(ctx, chronicle);
+  const entryId = str(body, 'entryId', 36);
+  const existing = await ctx.store.find('library', entryId);
+  if (!existing || existing.chronicleId !== chronicle.$id) throw notFound('Entry');
+  await ctx.store.remove('library', entryId);
+  return { entryId };
+}
+
 export async function handler(ctx: Ctx, body: any) {
-  switch (oneOf(body, 'action', ['create', 'join', 'rotateInvite', 'update'] as const)) {
+  switch (oneOf(body, 'action', ['create', 'join', 'rotateInvite', 'update', 'saveEntry', 'removeEntry'] as const)) {
+    case 'saveEntry':
+      return saveEntry(ctx, body);
+    case 'removeEntry':
+      return removeEntry(ctx, body);
     case 'create':
       return create(ctx, body);
     case 'join':

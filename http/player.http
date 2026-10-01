@@ -260,6 +260,34 @@ Content-Type: application/json
   });
 %}
 
+### Library: a player cannot write the table's reference library directly
+POST {{endpoint}}/tablesdb/{{db}}/tables/library/rows
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "rowId": "unique()", "data": { "chronicleId": "{{chronicleId}}", "kind": "merit", "name": "Free Dots", "points": 1 } }
+
+> {%
+  client.test("player cannot write a library row", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
+### Library: nor add an entry through the Function
+POST {{endpoint}}/functions/chronicle/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"saveEntry\",\"chronicleId\":\"{{chronicleId}}\",\"kind\":\"merit\",\"name\":\"Free Dots\",\"points\":1}" }
+
+> {%
+  client.test("only the Storyteller writes the library", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
 ### sealDifficulty / revealRoll / revealSecret / scene: all Storyteller-only
 POST {{endpoint}}/functions/revealSecret/executions
 X-Appwrite-Project: {{project}}
