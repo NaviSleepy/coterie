@@ -194,5 +194,6 @@
   li p {
     margin: 2px 0 0;
     color: var(--ink-soft);
+    white-space: pre-line;
   }
 </style>

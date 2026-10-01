@@ -6,7 +6,7 @@
    */
   import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
   import type { AnyRow } from '$lib/appwrite';
-  import { entriesOf, findEntry, gloss, type LibraryKind } from '$lib/library';
+  import { dotMeaning, entriesOf, findEntry, gloss, type LibraryKind } from '$lib/library';
   import type { Draft } from '$lib/sheet-edit';
 
   let { draft = $bindable(), library = {} }: { draft: Draft; library?: Record<string, AnyRow> } = $props();
@@ -56,6 +56,7 @@
             <input type="number" min="1" max="5" value={draft.attributes[k]}
               oninput={(e) => (draft.attributes[k] = clamp(+e.currentTarget.value, 1, 5))} />
           </label>
+          {#if dotMeaning(library, k, draft.attributes[k])}<p class="dot">{dotMeaning(library, k, draft.attributes[k])}</p>{/if}
         {/each}
       </div>
     {/each}
@@ -71,6 +72,7 @@
             <input type="number" min="0" max="5" value={draft.abilities[k]}
               oninput={(e) => (draft.abilities[k] = clamp(+e.currentTarget.value, 0, 5))} />
           </label>
+          {#if dotMeaning(library, k, draft.abilities[k])}<p class="dot">{dotMeaning(library, k, draft.abilities[k])}</p>{/if}
         {/each}
       </div>
     {/each}
@@ -203,6 +205,12 @@
   }
   .trait input {
     width: 3.5em;
+  }
+  .dot {
+    margin: -2px 0 6px;
+    color: var(--ink-soft);
+    font-style: italic;
+    font-size: 0.85rem;
   }
   .row {
     display: flex;

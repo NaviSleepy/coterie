@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
   import type { TableState } from '$lib/table.svelte';
-  import { entriesOf, findEntry, gloss } from '$lib/library';
+  import { dotMeaning, entriesOf, findEntry, gloss } from '$lib/library';
 
   const table = getContext<TableState>('table');
 
@@ -100,6 +100,7 @@
             <label class="trait">{traitLabel(k)}
               <input type="number" min="1" max="5" value={attributes[k]} oninput={(e) => clampSet(attributes, k, +e.currentTarget.value, 1)} />
             </label>
+            {#if dotMeaning(table.library, k, attributes[k])}<p class="hint dot">{dotMeaning(table.library, k, attributes[k])}</p>{/if}
           {/each}
         </div>
       {/each}
@@ -114,6 +115,7 @@
             <label class="trait">{traitLabel(k)}
               <input type="number" min="0" max="5" value={abilities[k]} oninput={(e) => clampSet(abilities, k, +e.currentTarget.value, 0)} />
             </label>
+            {#if dotMeaning(table.library, k, abilities[k])}<p class="hint dot">{dotMeaning(table.library, k, abilities[k])}</p>{/if}
           {/each}
         </div>
       {/each}
@@ -247,6 +249,10 @@
     gap: 8px;
     margin-bottom: 8px;
     flex-wrap: wrap;
+  }
+  .dot {
+    margin: -2px 0 6px;
+    font-size: 0.85rem;
   }
   .ref {
     margin: -4px 0 8px;
