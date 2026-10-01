@@ -69,7 +69,10 @@ async function ensureTable(t: TableDef) {
   const { columns } = await db.listColumns({ ...base, queries: ALL });
   const have = new Set(columns.map((c: any) => c.key));
   for (const col of t.columns) {
-    if (have.has(col.key)) continue;
+    if (have.has(col.key)) {
+      await growEnum(t.id, col, columns.find((c: any) => c.key === col.key));
+      continue;
+    }
     await createColumn(t.id, col);
     console.log(`  + ${t.id}.${col.key} (${col.type})`);
   }
@@ -89,6 +92,25 @@ async function ensureTable(t: TableDef) {
     });
     console.log(`  + index ${t.id}.${idx.key}`);
   }
+}
+
+/**
+ * An enum that gained choices in the schema gets them added. Choices are never
+ * removed, in keeping with never deleting: rows may still hold them.
+ */
+async function growEnum(tableId: string, col: Column, existing: any) {
+  if (col.type !== 'enum' || !existing?.elements) return;
+  const missing = col.elements.filter((e) => !existing.elements.includes(e));
+  if (missing.length === 0) return;
+  await db.updateEnumColumn({
+    databaseId: DATABASE_ID,
+    tableId,
+    key: col.key,
+    elements: [...existing.elements, ...missing],
+    required: col.required ?? false,
+    xdefault: col.required ? undefined : (col.default ?? existing.default ?? undefined),
+  });
+  console.log(`  ~ ${tableId}.${col.key} + ${missing.join(', ')}`);
 }
 
 function createColumn(tableId: string, col: Column) {

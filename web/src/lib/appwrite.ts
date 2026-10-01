@@ -34,6 +34,17 @@ export async function listRows<T extends AnyRow = AnyRow>(table: TableId, querie
   return res.rows as unknown as T[];
 }
 
+/** Every matching row, a page at a time, for tables that can outgrow one page. */
+export async function listAll<T extends AnyRow = AnyRow>(table: TableId, queries: string[], page = 500): Promise<T[]> {
+  const out: T[] = [];
+  for (;;) {
+    const last = out[out.length - 1];
+    const rows = await listRows<T>(table, [...queries, Query.limit(page), ...(last ? [Query.cursorAfter(last.$id)] : [])]);
+    out.push(...rows);
+    if (rows.length < page) return out;
+  }
+}
+
 export async function getRow<T extends AnyRow = AnyRow>(table: TableId, rowId: string): Promise<T | null> {
   try {
     return (await tables.getRow({ databaseId: DATABASE_ID, tableId: table, rowId })) as unknown as T;

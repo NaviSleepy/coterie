@@ -10,8 +10,8 @@
  *   join          Redeem an invite code for a player membership.
  *   rotateInvite  ST only. The old code stops working immediately.
  *   update        ST only. Name, botch rule, tenets.
- *   saveEntry     ST only. Adds or edits a library entry: a merit, flaw,
- *                 Discipline, Background or house rule in the ST's words,
+ *   saveEntry     ST only. Adds or edits a library entry: a clan, merit, flaw,
+ *                 Discipline or power, Background or house rule in the ST's words,
  *                 readable by the whole table.
  *   removeEntry   ST only.
  *
@@ -126,7 +126,7 @@ async function update(ctx: Ctx, body: any) {
   return decodeChronicle(await ctx.store.update('chronicles', chronicle.$id, data));
 }
 
-const KINDS = ['merit', 'flaw', 'discipline', 'background', 'rule'] as const;
+const KINDS = ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power'] as const;
 
 async function saveEntry(ctx: Ctx, body: any) {
   const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));

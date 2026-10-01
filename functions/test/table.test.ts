@@ -252,6 +252,11 @@ describe('library', () => {
     await rejects(save(w, ST, { kind: 'mystery', name: 'X' }), 400);
     const { entryId }: any = await save(w, ST, { kind: 'discipline', name: 'Auspex', points: 3 });
     assert.equal(w.tables.row('library', entryId)!.points, null);
+    for (const kind of ['clan', 'power']) {
+      const { entryId: id }: any = await save(w, ST, { kind, name: `A ${kind}`, points: 2, page: 'V20 p. 1' });
+      assert.equal(w.tables.row('library', id)!.kind, kind);
+      assert.equal(w.tables.row('library', id)!.points, null);
+    }
   });
 
   it('keeps names unique within a kind, edits in place, and removes', async () => {
