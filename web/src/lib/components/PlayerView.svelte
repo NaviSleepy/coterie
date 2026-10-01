@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { TableState } from '$lib/table.svelte';
   import BloodPanel from './BloodPanel.svelte';
+  import DeleteCharacter from './DeleteCharacter.svelte';
   import HungerPrompt from './HungerPrompt.svelte';
   import LibraryPanel from './LibraryPanel.svelte';
   import ProposalPanel from './ProposalPanel.svelte';
@@ -9,11 +10,12 @@
   import Secrets from './Secrets.svelte';
   import Sheet from './Sheet.svelte';
 
-  let { table, base }: { table: TableState; base: string } = $props();
+  let { table, base, canCreate = true }: { table: TableState; base: string; canCreate?: boolean } = $props();
 
   let selected = $state<string | null>(null);
   const mine = $derived(table.mine);
-  const characterId = $derived(selected ?? mine[0]?.$id ?? null);
+  // Falls back to the first sheet when the selected one is deleted.
+  const characterId = $derived(mine.find((c) => c.$id === selected)?.$id ?? mine[0]?.$id ?? null);
   const character = $derived(characterId ? table.view(characterId) : null);
 
   // Blood changes the interface, not just a number.
@@ -33,22 +35,24 @@
 {#if !character}
   <main class="empty">
     <p>You have no one at this table yet.</p>
-    <a class="btn solid" href={`${base}/new`}>Bring a character</a>
+    {#if canCreate}<a class="btn solid" href={`${base}/new`}>Bring a character</a>{/if}
   </main>
 {:else}
   <main class="table">
     <div class="left">
-      {#if mine.length > 1}
-        <div class="switch">
+      <div class="switch">
+        {#if mine.length > 1}
           {#each mine as c (c.$id)}
             <button class="btn" class:quiet={c.$id !== characterId} onclick={() => (selected = c.$id)}>{table.nameOf(c.$id)}</button>
           {/each}
-        </div>
-      {/if}
+        {/if}
+        {#if canCreate}<a class="btn quiet" href={`${base}/new`}>Bring another character</a>{/if}
+      </div>
       <Sheet {table} {character} />
       {#key character.$id}<ProposalPanel {table} {character} />{/key}
       <LibraryPanel {table} />
       <Secrets {table} />
+      {#key character.$id}<DeleteCharacter {table} {character} ondeleted={() => (selected = null)} />{/key}
     </div>
     <div class="right">
       {#if character.bloodPool <= Math.max(1, Math.floor(character.bloodPoolMax * 0.1))}

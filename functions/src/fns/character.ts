@@ -15,6 +15,11 @@
  *            deletes it in the same transaction. Names the revision it was
  *            shown, so a draft edited in the meantime is refused, not applied.
  *   reject   Storyteller only. Marks the proposal declined, with a note.
+ *   delete   The owner or the Storyteller removes a character for good: the
+ *            sheet, profile, open proposal, sealed difficulty and the seals
+ *            on secrets about it, and its place in scenes. The rolls it made
+ *            and its ledger stay as history, with a last ledger line saying
+ *            who deleted it. Names the character, so a stray call can't.
  *
  * Body (create):   chronicleId, profile: {name, concept?, nature?, demeanor?}, sheet: {...}
  * Body (adjust):   characterId, sheet: {...partial}
@@ -22,16 +27,17 @@
  * Body (withdraw): characterId
  * Body (approve):  characterId, revision
  * Body (reject):   characterId, note?
+ * Body (delete):   characterId, name (the character's name, as a confirmation)
  */
 
-import { ID } from 'node-appwrite';
+import { ID, Query } from 'node-appwrite';
 
 import { bloodPoolMax } from '../../../engine/src/index.ts';
 import { loadCharacterFor, loadChronicle, requireMember, requireStoryteller } from '../shared/auth.ts';
 import { encodePatch, parseJson, type Character, type CharacterPatch } from '../shared/codec.ts';
 import { badRequest, entry, forbidden, HttpError, int, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
-import { mutateCharacter } from '../shared/mutate.ts';
-import { characterPerms, profilePerms } from '../shared/perms.ts';
+import { ledgerId, mutateCharacter } from '../shared/mutate.ts';
+import { characterPerms, profilePerms, storytellerOnly } from '../shared/perms.ts';
 import { checkSpecialties, PROPOSABLE, validateSheet } from '../shared/sheet.ts';
 import { isConflict } from '../shared/store.ts';
 
@@ -216,9 +222,66 @@ async function reject(ctx: Ctx, body: any) {
   return { characterId: id };
 }
 
+async function deleteCharacter(ctx: Ctx, body: any) {
+  const { character, chronicle } = await loadCharacterFor(ctx, str(body, 'characterId', 36));
+  const id = character.$id;
+  const profile = await ctx.store.find('profiles', id);
+  const name = String(profile?.name ?? '');
+  if (str(body, 'name', 120).trim().toLowerCase() !== name.trim().toLowerCase()) {
+    throw badRequest(`To delete this character, send its name: ${name}.`);
+  }
+
+  const byChronicle = [Query.equal('chronicleId', chronicle.$id), Query.limit(500)];
+  const seals = (await ctx.store.list('seals', byChronicle)).filter((s) => s.subjectCharacterId === id);
+  const scenes = (await ctx.store.list('scenes', byChronicle)).filter((sc) => {
+    const entries = parseJson<{ characterId?: string }[]>(sc.initiative, []);
+    return ((sc.participants as string[]) ?? []).includes(id) || entries.some((e) => e.characterId === id);
+  });
+  const proposal = await ctx.store.find('proposals', id);
+  const sealed = await ctx.store.find('sealedDifficulties', id);
+  const version = character.version + 1;
+
+  try {
+    await ctx.store.transaction(async (tx) => {
+      // The ledger line takes the next version, so a write racing this one collides here.
+      await tx.create(
+        'ledger',
+        ledgerId(id, version),
+        {
+          chronicleId: chronicle.$id,
+          characterId: id,
+          version,
+          fn: 'delete',
+          actorId: ctx.userId,
+          summary: `deleted ${name || 'the character'}`.slice(0, 500),
+          patch: '{}',
+        },
+        storytellerOnly(chronicle.teamId),
+      );
+      await tx.remove('characters', id);
+      if (profile) await tx.remove('profiles', id);
+      if (proposal) await tx.remove('proposals', id);
+      if (sealed) await tx.remove('sealedDifficulties', id);
+      for (const s of seals) await tx.remove('seals', s.$id);
+      for (const sc of scenes) {
+        const initiative = parseJson<{ characterId?: string }[]>(sc.initiative, []).filter((e) => e.characterId !== id);
+        await tx.update('scenes', sc.$id, {
+          participants: ((sc.participants as string[]) ?? []).filter((p) => p !== id),
+          initiative: JSON.stringify(initiative),
+        });
+      }
+    });
+  } catch (e) {
+    if (!isConflict(e)) throw e;
+    throw new HttpError(409, 'contended', 'Someone changed this sheet just now. Nothing was deleted — try again.');
+  }
+  ctx.log(`delete ${id} v${version}: ${name}`);
+  return { characterId: id, deleted: true };
+}
+
 export async function handler(ctx: Ctx, body: any) {
-  const action = oneOf(body, 'action', ['create', 'adjust', 'propose', 'withdraw', 'approve', 'reject'] as const);
-  return { create, adjust, propose, withdraw, approve, reject }[action](ctx, body);
+  const action = oneOf(body, 'action', ['create', 'adjust', 'propose', 'withdraw', 'approve', 'reject', 'delete'] as const);
+  return { create, adjust, propose, withdraw, approve, reject, delete: deleteCharacter }[action](ctx, body);
 }
 
 export default entry('character', handler);

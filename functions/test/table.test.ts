@@ -128,6 +128,63 @@ describe('characters', () => {
   });
 });
 
+describe('deleting a character', () => {
+  const del = (w: any, who: string, characterId: string, name: string) =>
+    character(w.as(who), { action: 'delete', characterId, name });
+
+  it('lets the owner delete their own, clearing everything that points at it', async () => {
+    const w = ashenCourt();
+    const { secretId } = await createSecret(w.as(ST), { chronicleId: CHRONICLE, body: 'x', subjectCharacterId: ISOLDE, visibleTo: [DMITRI_PLAYER] });
+    await character(w.as(ISOLDE_PLAYER), { action: 'propose', characterId: ISOLDE, sheet: { sire: 'Lucrezia' } });
+    assert.ok(w.tables.row('proposals', ISOLDE));
+    w.tables.seed('sealedDifficulties', ISOLDE, { chronicleId: CHRONICLE, difficulty: 8 });
+    w.tables.seed('scenes', SCENE, { ...w.tables.row('scenes', SCENE), initiative: JSON.stringify([{ label: 'Isolde', characterId: ISOLDE, value: 9 }, { label: 'Ghoul', value: 4 }]) });
+    const version = w.tables.row('characters', ISOLDE)!.version;
+
+    await del(w, ISOLDE_PLAYER, ISOLDE, '  isolde marchetti ');
+
+    for (const t of ['characters', 'profiles', 'proposals', 'sealedDifficulties'] as const) assert.equal(w.tables.row(t, ISOLDE), undefined, t);
+    assert.equal(w.tables.row('seals', secretId), undefined, 'the seal about her goes');
+    assert.ok(w.tables.row('secrets', secretId), "the Storyteller's secret stays");
+    const scene = w.tables.row('scenes', SCENE)!;
+    assert.deepEqual(scene.participants, [DMITRI]);
+    assert.deepEqual(JSON.parse(scene.initiative), [{ label: 'Ghoul', value: 4 }]);
+    const last = w.tables.row('ledger', `${ISOLDE}.v${version + 1}`)!;
+    assert.equal(last.fn, 'delete');
+    assert.equal(last.actorId, ISOLDE_PLAYER);
+    assert.equal(last.summary, 'deleted Isolde Marchetti');
+
+    // And she can bring someone new.
+    const { characterId }: any = await character(w.as(ISOLDE_PLAYER), { action: 'create', chronicleId: CHRONICLE, profile: { name: 'Ottilie' }, sheet: {} });
+    assert.equal(w.tables.row('characters', characterId)!.ownerId, ISOLDE_PLAYER);
+  });
+
+  it("lets the Storyteller delete anyone's, and no other player", async () => {
+    const w = ashenCourt();
+    await rejects(del(w, DMITRI_PLAYER, ISOLDE, 'Isolde Marchetti'), 403);
+    await rejects(del(w, STRANGER, ISOLDE, 'Isolde Marchetti'), 403);
+    assert.ok(w.tables.row('characters', ISOLDE));
+    await del(w, ST, ISOLDE, 'Isolde Marchetti');
+    assert.equal(w.tables.row('characters', ISOLDE), undefined);
+  });
+
+  it('needs the name, so a stray call deletes nothing', async () => {
+    const w = ashenCourt();
+    await rejects(del(w, ISOLDE_PLAYER, ISOLDE, 'Isolde'), 400);
+    await rejects(character(w.as(ISOLDE_PLAYER), { action: 'delete', characterId: ISOLDE }), 400);
+    assert.ok(w.tables.row('characters', ISOLDE));
+  });
+
+  it('refuses, and deletes nothing, when a write lands on the sheet at the same moment', async () => {
+    const w = ashenCourt();
+    const version = w.tables.row('characters', ISOLDE)!.version;
+    w.tables.beforeCommit = () => { w.tables.seed('ledger', `${ISOLDE}.v${version + 1}`, { characterId: ISOLDE }); };
+    await rejects(del(w, ISOLDE_PLAYER, ISOLDE, 'Isolde Marchetti'), 409, 'contended');
+    assert.ok(w.tables.row('characters', ISOLDE));
+    assert.ok(w.tables.row('profiles', ISOLDE));
+  });
+});
+
 describe('proposals', () => {
   const propose = (w: any, who: string, sheet: any) =>
     character(w.as(who), { action: 'propose', characterId: ISOLDE, sheet });
