@@ -7,7 +7,7 @@
   import { untrack } from 'svelte';
   import type { AnyRow } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
-  import { entriesOf, KIND_LABELS, type LibraryKind } from '$lib/library';
+  import { entriesOf, KIND_LABELS, kindLabel, type LibraryKind } from '$lib/library';
 
   let { table }: { table: TableState } = $props();
 
@@ -55,7 +55,7 @@
       <form class="entry-form" onsubmit={(e) => { e.preventDefault(); void save(); }}>
         <div class="row">
           <select bind:value={form.kind} aria-label="Kind">
-            {#each kinds as k (k)}<option value={k}>{KIND_LABELS[k].replace(/s$/, '')}</option>{/each}
+            {#each kinds as k (k)}<option value={k}>{kindLabel(k)}</option>{/each}
           </select>
           <input class="name" bind:value={form.name} placeholder="Name" aria-label="Name" required />
           {#if costed(form.kind)}

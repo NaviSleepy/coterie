@@ -14,7 +14,8 @@
   let generation = $state(13);
   let attributes = $state<Record<string, number>>(Object.fromEntries(Object.values(ATTRIBUTES).flat().map((k) => [k, 1])));
   let abilities = $state<Record<string, number>>(Object.fromEntries(Object.values(ABILITIES).flat().map((k) => [k, 0])));
-  let virtues = $state({ conscience: 1, selfControl: 1, courage: 1 });
+  let virtues = $state<Record<string, number>>({ conscience: 1, selfControl: 1, courage: 1 });
+  let path = $state('');
   let pathRating = $state(7);
   let willpowerPermanent = $state(1);
   let disciplines = $state<{ name: string; level: number }[]>([]);
@@ -45,7 +46,7 @@
       chronicleId: table.chronicleId,
       profile,
       sheet: {
-        clan, sect, sire, generation, attributes, abilities, virtues, pathRating, willpowerPermanent,
+        clan, sect, sire, generation, attributes, abilities, virtues, path: path.trim() || 'Humanity', pathRating, willpowerPermanent,
         disciplines: disciplines.filter((d) => d.name.trim()),
         merits: merits.filter((m) => m.name.trim()),
         flaws: flaws.filter((f) => f.name.trim()),
@@ -56,13 +57,19 @@
     if (out) await goto(`/c/${table.chronicleId}`);
   }
 
+  /** Paths of Enlightenment trade Conscience for Conviction and Self-Control for Instinct; the dots carry over. */
+  function swapVirtue(human: string, alt: string) {
+    const [from, to] = alt in virtues ? [alt, human] : [human, alt];
+    virtues = Object.fromEntries(Object.entries(virtues).map(([k, v]) => [k === from ? to : k, v]));
+  }
+
   function clampSet(map: Record<string, number>, key: string, v: number, min: number) {
     map[key] = Math.max(min, Math.min(5, v));
   }
 </script>
 
 <main class="panel">
-  {#each ['clan', 'merit', 'flaw', 'discipline'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'path'] as const as kind (kind)}
     <datalist id={`lib-${kind}`}>{#each entriesOf(table.library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   <h1>Bring a character to the table</h1>
@@ -165,11 +172,16 @@
 
     <h2>Virtues, Path, Willpower</h2>
     <div class="grid">
-      <label>Conscience <input type="number" min="1" max="5" bind:value={virtues.conscience} /></label>
-      <label>Self-Control <input type="number" min="1" max="5" bind:value={virtues.selfControl} /></label>
-      <label>Courage <input type="number" min="1" max="5" bind:value={virtues.courage} /></label>
-      <label>Humanity <input type="number" min="0" max="10" bind:value={pathRating} /></label>
+      {#each Object.keys(virtues) as k (k)}
+        <label>{traitLabel(k)} <input type="number" min="1" max="5" bind:value={virtues[k]} /></label>
+      {/each}
+      <label>Path <input bind:value={path} list="lib-path" placeholder="Humanity" />{#if gloss(findEntry(table.library, 'path', path))}<span class="hint">{gloss(findEntry(table.library, 'path', path))}</span>{/if}</label>
+      <label>{path.trim() || 'Humanity'} <input type="number" min="0" max="10" bind:value={pathRating} /></label>
       <label>Willpower <input type="number" min="1" max="10" bind:value={willpowerPermanent} /></label>
+    </div>
+    <div class="row swaps">
+      <button type="button" class="btn quiet" onclick={() => swapVirtue('conscience', 'conviction')}>{'conviction' in virtues ? 'Back to Conscience' : 'Conviction instead of Conscience'}</button>
+      <button type="button" class="btn quiet" onclick={() => swapVirtue('selfControl', 'instinct')}>{'instinct' in virtues ? 'Back to Self-Control' : 'Instinct instead of Self-Control'}</button>
     </div>
 
     <button class="btn solid submit" disabled={busy || !profile.name.trim()}>{busy ? 'Rolling starting blood…' : 'Take a seat'}</button>
@@ -238,6 +250,9 @@
   }
   .ref {
     margin: -4px 0 8px;
+  }
+  .swaps {
+    margin-top: 12px;
   }
   .submit {
     margin-top: 32px;

@@ -269,8 +269,9 @@ export const TABLES = {
   },
 
   /**
-   * The table's reference library: clans, merits, flaws, Disciplines and their
-   * individual powers, Backgrounds and house rules as the Storyteller writes them up. Summaries are the
+   * The table's reference library: clans and bloodlines, merits, flaws,
+   * Disciplines and their individual powers, Paths of Enlightenment, Backgrounds
+   * and house rules as the Storyteller writes them up. Summaries are the
    * Storyteller's own words; the app ships no rulebook text. `page` is a
    * pointer into a book the reader owns, never its contents.
    */
@@ -280,7 +281,7 @@ export const TABLES = {
     permissions: [],
     columns: [
       str('chronicleId', 36, { required: true }),
-      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power'], required: true },
+      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path'], required: true },
       str('name', 60, { required: true }),
       int('points', 1, 7),
       str('summary', 2000),

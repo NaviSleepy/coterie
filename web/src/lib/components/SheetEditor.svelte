@@ -23,11 +23,16 @@
   const eligible = $derived(
     [...Object.entries(draft.attributes), ...Object.entries(draft.abilities)].filter(([, v]) => v >= 4).map(([k]) => k),
   );
+  /** Paths of Enlightenment trade Conscience for Conviction and Self-Control for Instinct; the dots carry over. */
+  function swapVirtue(human: string, path: string) {
+    const [from, to] = path in draft.virtues ? [path, human] : [human, path];
+    draft.virtues = Object.fromEntries(Object.entries(draft.virtues).map(([k, v]) => [k === from ? to : k, v]));
+  }
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, Number.isFinite(v) ? v : min));
 </script>
 
 <div class="editor">
-  {#each ['clan', 'merit', 'flaw', 'discipline', 'background'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'background', 'path'] as const as kind (kind)}
     <datalist id={listId(kind)}>{#each entriesOf(library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   <fieldset class="grid">
@@ -139,9 +144,13 @@
     {#each Object.keys(draft.virtues) as k (k)}
       <label>{traitLabel(k)} <input type="number" min="1" max="5" bind:value={draft.virtues[k]} /></label>
     {/each}
-    <label>Path <input bind:value={draft.path} /></label>
+    <label>Path <input bind:value={draft.path} list={listId('path')} placeholder="Humanity" />{#if gloss(findEntry(library, 'path', draft.path))}<span class="ref">{gloss(findEntry(library, 'path', draft.path))}</span>{/if}</label>
     <label>{draft.path || 'Humanity'} <input type="number" min="0" max="10" bind:value={draft.pathRating} /></label>
     <label>Willpower <input type="number" min="1" max="10" bind:value={draft.willpowerPermanent} /></label>
+  </div>
+  <div class="row">
+    <button type="button" class="btn quiet" onclick={() => swapVirtue('conscience', 'conviction')}>{'conviction' in draft.virtues ? 'Back to Conscience' : 'Conviction instead of Conscience'}</button>
+    <button type="button" class="btn quiet" onclick={() => swapVirtue('selfControl', 'instinct')}>{'instinct' in draft.virtues ? 'Back to Self-Control' : 'Instinct instead of Self-Control'}</button>
   </div>
 </div>
 

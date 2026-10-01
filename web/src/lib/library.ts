@@ -5,7 +5,7 @@
 
 import type { AnyRow } from './appwrite';
 
-export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'background' | 'rule';
+export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'background' | 'rule';
 
 export const KIND_LABELS: Record<LibraryKind, string> = {
   clan: 'Clans',
@@ -13,9 +13,13 @@ export const KIND_LABELS: Record<LibraryKind, string> = {
   flaw: 'Flaws',
   discipline: 'Disciplines',
   power: 'Discipline powers',
+  path: 'Paths of Enlightenment',
   background: 'Backgrounds',
   rule: 'House rules',
 };
+
+/** One entry's kind, for a picker. */
+export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : KIND_LABELS[k].replace(/s$/, ''));
 
 export function entriesOf(library: Record<string, AnyRow>, kind: LibraryKind): AnyRow[] {
   return Object.values(library)

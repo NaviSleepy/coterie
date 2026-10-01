@@ -261,6 +261,7 @@ export class DemoTable extends TableState {
     const entry = (id: string, data: Record<string, any>) => (w.library[id] = row(id, { chronicleId: DEMO_ID, page: '', ...data }, 90));
     entry('demo-l1', { kind: 'merit', name: 'Eat Food', points: 1, summary: 'Can eat and taste food. It gives no nourishment and comes back up before dawn.' });
     entry('demo-l2', { kind: 'flaw', name: 'Nightmares', points: 1, summary: 'Troubled day-sleep. At our table: roll Willpower on waking or start the night one die down.' });
+    entry('demo-l4', { kind: 'path', name: 'Path of Night', summary: 'Conviction and Instinct. Vampires as agents of damnation: tempt, horrify, leave no one untouched.' });
     entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }
