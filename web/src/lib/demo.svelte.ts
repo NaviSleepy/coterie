@@ -93,6 +93,7 @@ export class DemoTable extends TableState {
     sealed: {} as Record<string, number>,
     proposals: {} as Record<string, AnyRow>,
     library: {} as Record<string, AnyRow>,
+    npcs: {} as Record<string, AnyRow>,
   };
 
   constructor() {
@@ -291,6 +292,14 @@ export class DemoTable extends TableState {
     entry('demo-l18', { kind: 'power', name: "Under the Skin", page: "Lore of the Clans p. 204", summary: "Auspex 3 + Presence 3: Read someone's personality like a text, find the weak points, and press on them." });
     entry('demo-l19', { kind: 'equipment', name: "Pistol, Lt.", page: "V20 p. 281", summary: "Ranged. 4 dice; range 20 yards (double at difficulty 8); rate 4; holds 15+1. Hides in a pocket. Against vampires, bashing unless aimed at the head." });
     entry('demo-l20', { kind: 'equipment', name: "Knife", page: "V20 p. 280", summary: "Melee. Damage Strength +1 lethal. Hides in a jacket." });
+    w.npcs['demo-npc1'] = row('demo-npc1', {
+      chronicleId: DEMO_ID, name: 'Sheriff Aldana', kind: 'vampire', clan: 'Brujah', generation: 9,
+      attributes: JSON.stringify({ strength: 4, dexterity: 3, stamina: 3, charisma: 2, manipulation: 3, appearance: 2, perception: 3, intelligence: 2, wits: 3 }),
+      abilities: JSON.stringify({ brawl: 4, intimidation: 3, alertness: 3, firearms: 2 }),
+      disciplines: JSON.stringify([{ name: 'Celerity', level: 2 }, { name: 'Potence', level: 3 }, { name: 'Presence', level: 1 }]),
+      willpower: 6, willpowerMax: 6, bloodPool: 10, bloodPoolMax: 14, healthBashing: 0, healthLethal: 0, healthAggravated: 0,
+      notes: 'Answers to the Prince. Hates being made to wait.',
+    }, 60);
     entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }
@@ -306,6 +315,7 @@ export class DemoTable extends TableState {
     this.seals = Object.fromEntries(Object.entries(w.seals).filter(([, s]) => st || s.ownerId === this.me));
     this.proposals = Object.fromEntries(Object.entries(w.proposals).filter(([, p]) => st || p.ownerId === this.me));
     this.library = { ...w.library };
+    this.npcs = st ? { ...w.npcs } : {};
   }
 
   /** The adjust and approve paths: traits set, derived limits kept true. */
@@ -389,11 +399,41 @@ export class DemoTable extends TableState {
     return { r, patch };
   }
 
+  /** The demo's version of rollPool's NPC branch. */
+  private npcRoll(b: Record<string, any>) {
+    if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller rolls for NPCs.');
+    const n = this.world.npcs[b.npcId];
+    if (!n) throw new Refusal('No such NPC.');
+    const sheet = { attributes: parseJson(n.attributes, {}), abilities: parseJson(n.abilities, {}), virtues: {}, specialties: [], willpowerPermanent: n.willpowerMax };
+    const built = buildPool(sheet as any, b.traits ?? []);
+    if (!built.ok) throw new Refusal(built.message);
+    const health = { bashing: n.healthBashing, lethal: n.healthLethal, aggravated: n.healthAggravated };
+    const r = rollPool(
+      { basePool: built.pool.basePool, difficulty: b.difficulty ?? 6, spendWillpower: !!b.spendWillpower && n.willpower > 0, label: built.pool.label, botchRule: this.chronicle!.botchRule },
+      { character: { health, willpowerTemporary: n.willpower }, die: cryptoDie },
+    );
+    const id = `demo-${Math.random().toString(36).slice(2, 10)}`;
+    const visibility = b.visibility === 'table' ? 'table' : 'storyteller';
+    const rollRow = row(id, {
+      chronicleId: DEMO_ID, characterId: null, characterName: n.name, kind: 'pool', label: r.label, basePool: r.basePool, woundPenalty: r.woundPenalty,
+      pool: r.pool, dice: JSON.stringify(r.dice), rawSuccesses: r.rawSuccesses, ones: r.ones, netSuccesses: r.netSuccesses,
+      willpowerSpent: r.willpowerSpent, outcome: r.outcome, visibility, refusal: r.refusal ?? null, note: null,
+    }, 0);
+    rollRow.$createdAt = new Date().toISOString();
+    this.world.rolls.unshift(rollRow);
+    this.world.rollSecrets[id] = row(id, { chronicleId: DEMO_ID, rollId: id, difficulty: b.difficulty ?? 6, revealed: false }, 0);
+    this.fresh[id] = true;
+    if (r.willpowerSpent) this.world.npcs[n.$id] = { ...n, willpower: n.willpower - 1 };
+    this.project();
+    return { ...r, visibility };
+  }
+
   private run(fn: string, b: Record<string, any>): unknown {
     const w = this.world;
     const c = b.characterId ? w.characters[b.characterId] : null;
     switch (fn) {
       case 'rollPool': {
+        if (b.npcId) return this.npcRoll(b);
         if (!c) break;
         if (b.basePool !== undefined) {
           const { patch } = this.roll(c, { label: b.label, basePool: b.basePool, difficulty: b.difficulty, visibility: b.visibility });
@@ -468,12 +508,31 @@ export class DemoTable extends TableState {
           const entries = Object.values(w.characters).map((x) => ({
             label: this.nameOf(x.$id).split(' ')[0], characterId: x.$id, value: (x.attributes.dexterity ?? 1) + (x.attributes.wits ?? 1) + cryptoDie(),
           }));
+          for (const id of b.npcIds ?? []) {
+            const n = w.npcs[id];
+            if (!n) continue;
+            const a = parseJson<Record<string, number>>(n.attributes, {});
+            entries.push({ label: n.name, value: (a.dexterity ?? 1) + (a.wits ?? 1) + cryptoDie() } as any);
+          }
           const all = [...entries, ...(b.entries ?? [])].sort((a, z) => z.value - a.value);
           this.scene = { ...this.scene, initiative: JSON.stringify(all) };
           return {};
         }
         break;
       case 'chronicle': {
+        if (b.action === 'saveNpc' || b.action === 'removeNpc') {
+          if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller can do that.');
+          if (b.action === 'removeNpc') delete w.npcs[b.npcId];
+          else {
+            const id = b.npcId ?? `demo-npc${Date.now()}`;
+            const json = (v: unknown) => (typeof v === 'string' ? v : JSON.stringify(v));
+            const data = Object.fromEntries(Object.entries(b.npc ?? {}).map(([k, v]) => [k, ['attributes', 'abilities', 'disciplines'].includes(k) ? json(v) : v]));
+            const base = w.npcs[id] ?? row(id, { chronicleId: DEMO_ID, kind: 'vampire', clan: '', generation: null, attributes: JSON.stringify(Object.fromEntries(['strength', 'dexterity', 'stamina', 'charisma', 'manipulation', 'appearance', 'perception', 'intelligence', 'wits'].map((k) => [k, 2]))), abilities: '{}', disciplines: '[]', willpower: 3, willpowerMax: 3, bloodPool: 0, bloodPoolMax: 10, healthBashing: 0, healthLethal: 0, healthAggravated: 0, notes: '' }, 0);
+            w.npcs[id] = { ...base, ...data };
+          }
+          this.project();
+          return { npcId: b.npcId ?? Object.keys(w.npcs).at(-1) };
+        }
         if (b.action !== 'saveEntry' && b.action !== 'removeEntry') break;
         if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller can do that.');
         if (b.action === 'removeEntry') {

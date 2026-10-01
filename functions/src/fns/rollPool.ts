@@ -22,23 +22,58 @@
  * client-side, which is theatre, but never sent.
  *
  * Body:
- *   characterId     required
+ *   characterId     required, unless the Storyteller rolls for an NPC with npcId
  *   traits          one or two trait keys; required unless the ST sends basePool
  *   specialty       a trait key from `traits` to claim its specialty (4+ dots, checked)
  *   spendWillpower  once per turn, checked against the scene
  *   — Storyteller only —
  *   basePool, label, modifier, difficulty, visibility: "table" | "storyteller"
+ *   npcId           roll for one of the Storyteller's NPCs instead; hidden by default
  */
 
 import { buildPool } from '../../../engine/src/index.ts';
-import { loadCharacterFor } from '../shared/auth.ts';
+import { loadCharacterFor, loadChronicle, requireStoryteller } from '../shared/auth.ts';
 import { sheetOf } from '../shared/codec.ts';
 import { badRequest, entry, forbidden, int, optInt, optStr, type Ctx } from '../shared/http.ts';
-import { executeRoll, type PublicRoll } from '../shared/roll.ts';
+import { decodeNpc, npcSheet } from '../shared/npc.ts';
+import { executeNpcRoll, executeRoll, type PublicRoll } from '../shared/roll.ts';
 
 const STORYTELLER_ONLY = ['basePool', 'label', 'modifier', 'difficulty', 'visibility'] as const;
 
+async function npcRoll(ctx: Ctx, body: any, npcId: string): Promise<PublicRoll> {
+  const row = await ctx.store.find('npcs', npcId);
+  if (!row) throw forbidden();
+  const chronicle = await loadChronicle(ctx, row.chronicleId as string);
+  requireStoryteller(ctx, chronicle);
+  const npc = decodeNpc(row);
+
+  let basePool: number;
+  let label: string;
+  if (Array.isArray(body.traits) && body.traits.length > 0) {
+    const built = buildPool(npcSheet(npc), body.traits.map(String));
+    if (!built.ok) throw badRequest(built.message);
+    ({ basePool, label } = built.pool);
+  } else if (body.basePool !== undefined) {
+    basePool = int(body, 'basePool', 0, 40);
+    label = `${basePool} dice`;
+  } else {
+    throw badRequest('Name the traits to roll.');
+  }
+
+  return executeNpcRoll(ctx, chronicle, npc, {
+    basePool,
+    label: optStr(body, 'label', 120) ?? label,
+    specialtyApplies: false,
+    modifier: optInt(body, 'modifier', -20, 20) ?? 0,
+    difficulty: optInt(body, 'difficulty', 2, 10),
+    spendWillpower: body.spendWillpower === true,
+    visibility: body.visibility === 'table' ? 'table' : 'storyteller',
+  });
+}
+
 export async function handler(ctx: Ctx, body: any): Promise<PublicRoll> {
+  const npcId = optStr(body, 'npcId', 36);
+  if (npcId) return npcRoll(ctx, body, npcId);
   const characterId = optStr(body, 'characterId', 36);
   if (!characterId) throw badRequest('characterId is required.');
 

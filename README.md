@@ -35,6 +35,7 @@ Every table has row security on. Rows carry their own read lists; almost no role
 | presence | team | own row only (table-level `create` for users) |
 | proposals | owner + `storyteller` role | Functions only |
 | library | team | Functions only (the Storyteller, through `chronicle.saveEntry`) |
+| npcs | `storyteller` role | Functions only (the Storyteller, through `chronicle.saveNpc`) |
 | ledger | `storyteller` role | Functions only |
 
 Clients write exactly two things directly: their own presence heartbeat and their own character's cosmetic profile. Everything else, the Storyteller's actions included, goes through a Function. That leaves one write path to audit, and every change to a sheet lands in the ledger.
@@ -59,6 +60,12 @@ Only traits are proposable (clan through Willpower, merits and flaws included). 
 ### Players can keep several characters, and delete them
 
 A player may bring as many characters as they like to a table and switch between them on their screen. `character.delete` removes one for good: its player or the Storyteller can call it, and it must name the character, so a stray call deletes nothing. In one transaction it removes the sheet, profile, open proposal, sealed difficulty and the seals on secrets about it, and takes it out of scenes and initiative. Its rolls and ledger stay as history, and the transaction writes a last ledger line saying who deleted it. That line takes the next version, so a write racing the delete collides with it and the delete is refused with a 409 rather than half-applied.
+
+### NPCs behind the screen
+
+The screen has an NPC roster. Each NPC has a stat block (kind, clan, Generation, Attributes, Abilities, Disciplines), a health track, blood, Willpower and notes. The `npcs` rows are readable only by the `storyteller` role and are written only through `chronicle.saveNpc` and `chronicle.removeNpc`. Players never receive them, not even as names.
+
+`rollPool` takes an `npcId` from the Storyteller. It builds the pool from the NPC's traits, applies its wound penalty and, if asked, spends its Willpower, all on the server. The roll goes in the feed under the NPC's name, hidden from the table unless the Storyteller chooses `visibility: "table"`. NPCs ticked "in the fight" join `scene.rollInitiative` through `npcIds` and roll Dexterity + Wits + a die like the coterie. The Disciplines an NPC knows show the library's powers up to its rating.
 
 ### Disciplines level by level, combinations, and gear
 

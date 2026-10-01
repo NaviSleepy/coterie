@@ -285,6 +285,32 @@ X-Appwrite-JWT: {{jwtPlayer}}
   });
 %}
 
+### NPCs: the Storyteller's cast is invisible to a player
+GET {{endpoint}}/tablesdb/{{db}}/tables/npcs/rows?queries[]={"method":"equal","attribute":"chronicleId","values":["{{chronicleId}}"]}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("no NPC rows reach a player", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    client.assert(response.body.total === 0, `expected 0 rows, got ${response.body.total}`);
+  });
+%}
+
+### NPCs: nor can a player make one through the Function
+POST {{endpoint}}/functions/chronicle/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"saveNpc\",\"chronicleId\":\"{{chronicleId}}\",\"npc\":{\"name\":\"My loyal army\"}}" }
+
+> {%
+  client.test("only the Storyteller writes NPCs", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
 ### Library: a player cannot write the table's reference library directly
 POST {{endpoint}}/tablesdb/{{db}}/tables/library/rows
 X-Appwrite-Project: {{project}}

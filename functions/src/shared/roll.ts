@@ -14,10 +14,11 @@ import {
   type RollResult,
   type Visibility,
 } from '../../../engine/src/index.ts';
-import { loadCurrentScene, type Access } from './auth.ts';
+import { loadCurrentScene, type Access, type Chronicle } from './auth.ts';
 import { healthOf, type CharacterPatch, type Character } from './codec.ts';
 import { refused, type Ctx } from './http.ts';
 import { mutateCharacter } from './mutate.ts';
+import { npcHealth, type Npc } from './npc.ts';
 import { storytellerOnly, tableReadable } from './perms.ts';
 
 /** V20's standard difficulty when the Storyteller hasn't sealed another. */
@@ -193,4 +194,88 @@ export async function executeRoll(ctx: Ctx, access: Access, input: RollInput): P
   });
 
   return result;
+}
+
+/**
+ * An NPC's roll: the Storyteller's, built from the NPC's stat block, wounds
+ * applied. It lands in the same two rows as anyone's, named for the NPC and
+ * behind the screen unless the Storyteller says otherwise. There is no ledger
+ * for NPCs, so spending Willpower is a plain write in the same transaction.
+ */
+export async function executeNpcRoll(
+  ctx: Ctx,
+  chronicle: Chronicle,
+  npc: Npc,
+  input: Omit<RollInput, 'kind' | 'after' | 'note'>,
+): Promise<PublicRoll & { difficulty: number }> {
+  const scene = await loadCurrentScene(ctx, chronicle);
+  const difficulty = input.difficulty ?? DEFAULT_DIFFICULTY;
+  if (isIncapacitated(npcHealth(npc))) throw refused('incapacitated', `${npc.name} is incapacitated and cannot act.`);
+  if (input.spendWillpower && npc.willpower < 1) throw refused('willpower', `${npc.name} has no Willpower left to spend.`);
+  const rolled = rollPool(
+    {
+      basePool: input.basePool,
+      difficulty,
+      modifier: input.modifier,
+      specialtyApplies: input.specialtyApplies,
+      spendWillpower: input.spendWillpower,
+      botchRule: chronicle.botchRule,
+      label: input.label,
+      visibility: input.visibility,
+    },
+    { character: { health: npcHealth(npc), willpowerTemporary: npc.willpower }, die: ctx.die },
+  );
+  const rollId = ID.unique();
+  const pub: PublicRoll = {
+    rollId,
+    label: rolled.label,
+    kind: 'pool',
+    basePool: rolled.basePool,
+    woundPenalty: rolled.woundPenalty,
+    modifier: rolled.modifier,
+    pool: rolled.pool,
+    dice: rolled.dice,
+    rawSuccesses: rolled.rawSuccesses,
+    ones: rolled.ones,
+    netSuccesses: rolled.netSuccesses,
+    willpowerSpent: rolled.willpowerSpent,
+    outcome: rolled.outcome,
+    visibility: input.visibility,
+    refusal: rolled.refusal ?? null,
+    note: null,
+  };
+  await ctx.store.transaction(async (tx) => {
+    await tx.create(
+      'rolls',
+      rollId,
+      {
+        chronicleId: chronicle.$id,
+        characterId: null,
+        characterName: npc.name,
+        rollerId: ctx.userId,
+        sceneId: scene?.$id ?? null,
+        turn: scene?.turn ?? 0,
+        kind: 'pool',
+        label: pub.label,
+        basePool: pub.basePool,
+        woundPenalty: pub.woundPenalty,
+        modifier: pub.modifier,
+        pool: pub.pool,
+        dice: JSON.stringify(pub.dice),
+        rawSuccesses: pub.rawSuccesses,
+        ones: pub.ones,
+        netSuccesses: pub.netSuccesses,
+        willpowerSpent: pub.willpowerSpent,
+        outcome: pub.outcome,
+        visibility: pub.visibility,
+        refusal: pub.refusal,
+        note: null,
+      },
+      input.visibility === 'table' ? tableReadable(chronicle.teamId) : storytellerOnly(chronicle.teamId),
+    );
+    await tx.create('rollSecrets', rollId, { rollId, chronicleId: chronicle.$id, difficulty, revealed: false }, storytellerOnly(chronicle.teamId));
+    if (rolled.willpowerSpent) await tx.update('npcs', npc.$id, { willpower: npc.willpower - 1 });
+  });
+  ctx.log(`npc roll ${npc.$id}: ${pub.label} ${pub.outcome}`);
+  return { ...pub, difficulty };
 }

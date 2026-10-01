@@ -14,6 +14,9 @@
  *                 Discipline or power, Background or house rule in the ST's words,
  *                 readable by the whole table.
  *   removeEntry   ST only.
+ *   saveNpc       ST only. Creates an NPC, or edits one (only the fields sent):
+ *                 stat block, health, blood, Willpower, notes. Behind the screen.
+ *   removeNpc     ST only.
  *
  * Joining goes through a server key because a client can't add itself to a
  * team — which is exactly the property that makes the team a trustworthy
@@ -24,7 +27,8 @@ import { ID, Query } from 'node-appwrite';
 
 import { decodeChronicle, loadChronicle, requireStoryteller } from '../shared/auth.ts';
 import { badRequest, entry, HttpError, int, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
-import { tableReadable } from '../shared/perms.ts';
+import { checkNpc, validateNpc } from '../shared/npc.ts';
+import { storytellerOnly, tableReadable } from '../shared/perms.ts';
 import { isConflict } from '../shared/store.ts';
 
 const BOTCH_RULES = ['zero-with-a-one-is-a-botch', 'only-negative-is-a-botch'] as const;
@@ -170,8 +174,45 @@ async function removeEntry(ctx: Ctx, body: any) {
   return { entryId };
 }
 
+async function saveNpc(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  requireStoryteller(ctx, chronicle);
+  const npcId = optStr(body, 'npcId', 36);
+  const fields = (body.npc ?? {}) as Record<string, unknown>;
+  if (typeof fields !== 'object' || Array.isArray(fields)) throw badRequest('npc must be an object.');
+
+  if (npcId) {
+    const existing = await ctx.store.find('npcs', npcId);
+    if (!existing || existing.chronicleId !== chronicle.$id) throw notFound('NPC');
+    const data = validateNpc(fields, true);
+    if (Object.keys(data).length === 0) throw badRequest('Nothing to change.');
+    checkNpc({ ...existing, ...data });
+    await ctx.store.update('npcs', npcId, data);
+    return { npcId };
+  }
+  const data = { chronicleId: chronicle.$id, ...validateNpc(fields, false) };
+  checkNpc(data);
+  const id = ID.unique();
+  await ctx.store.create('npcs', id, data, storytellerOnly(chronicle.teamId));
+  return { npcId: id };
+}
+
+async function removeNpc(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  requireStoryteller(ctx, chronicle);
+  const npcId = str(body, 'npcId', 36);
+  const existing = await ctx.store.find('npcs', npcId);
+  if (!existing || existing.chronicleId !== chronicle.$id) throw notFound('NPC');
+  await ctx.store.remove('npcs', npcId);
+  return { npcId };
+}
+
 export async function handler(ctx: Ctx, body: any) {
-  switch (oneOf(body, 'action', ['create', 'join', 'rotateInvite', 'update', 'saveEntry', 'removeEntry'] as const)) {
+  switch (oneOf(body, 'action', ['create', 'join', 'rotateInvite', 'update', 'saveEntry', 'removeEntry', 'saveNpc', 'removeNpc'] as const)) {
+    case 'saveNpc':
+      return saveNpc(ctx, body);
+    case 'removeNpc':
+      return removeNpc(ctx, body);
     case 'saveEntry':
       return saveEntry(ctx, body);
     case 'removeEntry':
