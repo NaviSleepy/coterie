@@ -6,7 +6,7 @@
 import { traitLabel } from '$engine/index.ts';
 import type { AnyRow } from './appwrite';
 
-export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'background' | 'rule';
+export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'background' | 'rule';
 
 export const KIND_LABELS: Record<LibraryKind, string> = {
   clan: 'Clans',
@@ -16,12 +16,13 @@ export const KIND_LABELS: Record<LibraryKind, string> = {
   power: 'Discipline powers',
   path: 'Paths of Enlightenment',
   trait: 'Attributes and Abilities',
+  archetype: 'Natures and Demeanors',
   background: 'Backgrounds',
   rule: 'House rules',
 };
 
 /** One entry's kind, for a picker. */
-export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : KIND_LABELS[k].replace(/s$/, ''));
+export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : KIND_LABELS[k].replace(/s$/, ''));
 
 export function entriesOf(library: Record<string, AnyRow>, kind: LibraryKind): AnyRow[] {
   return Object.values(library)
