@@ -36,6 +36,7 @@ import {
   CallError,
   channel,
   getRow,
+  listAll,
   listRows,
   presenceId,
   Query,
@@ -210,7 +211,7 @@ export class TableState {
       listRows('seals', by),
       listRows('presence', by),
       listRows('proposals', by),
-      listRows('library', [Query.equal('chronicleId', this.chronicleId), Query.limit(500)]),
+      listAll('library', [Query.equal('chronicleId', this.chronicleId)]),
       teams.listMemberships({ teamId: chronicle.teamId }),
     ]);
 

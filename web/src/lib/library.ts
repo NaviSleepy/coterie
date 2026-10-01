@@ -5,12 +5,14 @@
 
 import type { AnyRow } from './appwrite';
 
-export type LibraryKind = 'merit' | 'flaw' | 'discipline' | 'background' | 'rule';
+export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'background' | 'rule';
 
 export const KIND_LABELS: Record<LibraryKind, string> = {
+  clan: 'Clans',
   merit: 'Merits',
   flaw: 'Flaws',
   discipline: 'Disciplines',
+  power: 'Discipline powers',
   background: 'Backgrounds',
   rule: 'House rules',
 };

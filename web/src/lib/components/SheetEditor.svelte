@@ -27,11 +27,11 @@
 </script>
 
 <div class="editor">
-  {#each ['merit', 'flaw', 'discipline', 'background'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'background'] as const as kind (kind)}
     <datalist id={listId(kind)}>{#each entriesOf(library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   <fieldset class="grid">
-    <label>Clan <input bind:value={draft.clan} /></label>
+    <label>Clan <input bind:value={draft.clan} list={listId('clan')} />{#if gloss(findEntry(library, 'clan', draft.clan))}<span class="ref">{gloss(findEntry(library, 'clan', draft.clan))}</span>{/if}</label>
     <label>Sect <input bind:value={draft.sect} /></label>
     <label>Sire <input bind:value={draft.sire} /></label>
     <label>Generation

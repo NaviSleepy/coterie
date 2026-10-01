@@ -58,7 +58,7 @@ Only traits are proposable (clan through Willpower, merits and flaws included). 
 
 ### The reference library is the Storyteller's words, not the book's
 
-Each chronicle has a library of merits, flaws, Disciplines, Backgrounds and house rules, written up by the Storyteller and readable by the whole table. An entry is a name, a cost for merits and flaws, a summary, and an optional page reference like `V20 p. 481` for anyone who owns the book. When a player adds a merit or flaw while proposing changes, or at character creation, the editor offers the library's names, fills in the cost, and shows the summary under the field. The sheet shows it as a tooltip.
+Each chronicle has a library of clans, merits, flaws, Disciplines and their individual powers, Backgrounds and house rules, written up by the Storyteller and readable by the whole table. An entry is a name, a cost for merits and flaws, a summary, and an optional page reference like `V20 p. 481` for anyone who owns the book. When a player picks a clan, or adds a merit or flaw while proposing changes or at character creation, the editor offers the library's names, fills in the cost, and shows the summary under the field. The sheet shows it as a tooltip.
 
 It holds no rulebook text by design (see *Content and licensing* below): a page number points into a book the reader owns without copying it. Names are unique within a kind, since that's how a sheet finds its entry. Players can still type something the library doesn't list; the Storyteller decides whether to approve it.
 
