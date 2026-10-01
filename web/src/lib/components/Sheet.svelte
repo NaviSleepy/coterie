@@ -4,11 +4,14 @@
   import { healthOf, type Character } from '$shared/codec.ts';
   import { tables } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
-  import { findEntry, gloss } from '$lib/library';
+  import { dotLadder, dotMeaning, findEntry, gloss } from '$lib/library';
   import Dots from './Dots.svelte';
   import HealthTrack from './HealthTrack.svelte';
 
   let { table, character }: { table: TableState; character: Character } = $props();
+  /** The trait whose dot meaning is open, for screens with no hover. */
+  let opened = $state<string | null>(null);
+  const toggle = (key: string) => (opened = opened === key ? null : key);
 
   const profile = $derived(table.profiles[character.$id] ?? {});
   const penalty = $derived(woundPenalty(healthOf(character)));
@@ -98,7 +101,9 @@
         <div>
           <h3 class="label">{title}</h3>
           {#each keys as key (key)}
-            <div class="trait"><span>{traitLabel(key)}</span><Dots value={character.attributes[key] ?? 1} label={traitLabel(key)} /></div>
+            {@const meaning = dotMeaning(table.library, key, character.attributes[key] ?? 1)}
+            <button type="button" class="trait plain" disabled={!meaning} aria-expanded={opened === key} onclick={() => toggle(key)} title={dotLadder(table.library, key, character.attributes[key] ?? 1) || undefined}><span>{traitLabel(key)}</span><Dots value={character.attributes[key] ?? 1} label={traitLabel(key)} /></button>
+            {#if opened === key && meaning}<p class="meaning">{meaning}</p>{/if}
           {/each}
         </div>
       {/each}
@@ -113,10 +118,12 @@
         <div>
           <h3 class="label">{title}</h3>
           {#each trained as key (key)}
-            <div class="trait">
+            {@const meaning = dotMeaning(table.library, key, character.abilities[key])}
+            <button type="button" class="trait plain" disabled={!meaning} aria-expanded={opened === key} onclick={() => toggle(key)} title={dotLadder(table.library, key, character.abilities[key]) || undefined}>
               <span>{traitLabel(key)}{#if specialty(key)}<i class="spec"> · {specialty(key)}</i>{/if}</span>
               <Dots value={character.abilities[key]} label={traitLabel(key)} />
-            </div>
+            </button>
+            {#if opened === key && meaning}<p class="meaning">{meaning}</p>{/if}
           {:else}
             <p class="none">None trained</p>
           {/each}
@@ -263,6 +270,24 @@
     align-items: center;
     gap: 8px;
     padding: 2px 0;
+  }
+  button.plain {
+    width: 100%;
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  button.plain:disabled {
+    cursor: default;
+  }
+  .meaning {
+    margin: 0 0 6px;
+    color: var(--ink-soft);
+    font-style: italic;
+    font-size: 0.9rem;
   }
   .spec {
     color: var(--oxblood);
