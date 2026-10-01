@@ -108,7 +108,8 @@ async function growEnum(tableId: string, col: Column, existing: any) {
     key: col.key,
     elements: [...existing.elements, ...missing],
     required: col.required ?? false,
-    xdefault: col.required ? undefined : (col.default ?? existing.default ?? undefined),
+    // The SDK wants the key present; a required column's default must be null.
+    xdefault: (col.required ? null : (col.default ?? existing.default ?? null)) as string,
   });
   console.log(`  ~ ${tableId}.${col.key} + ${missing.join(', ')}`);
 }
