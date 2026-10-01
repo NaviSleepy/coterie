@@ -69,7 +69,7 @@
 </script>
 
 <main class="panel">
-  {#each ['clan', 'merit', 'flaw', 'discipline', 'path'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'path', 'archetype'] as const as kind (kind)}
     <datalist id={`lib-${kind}`}>{#each entriesOf(table.library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   <h1>Bring a character to the table</h1>
@@ -79,8 +79,8 @@
     <fieldset class="grid">
       <label>Name <input required bind:value={profile.name} /></label>
       <label>Concept <input bind:value={profile.concept} /></label>
-      <label>Nature <input bind:value={profile.nature} /></label>
-      <label>Demeanor <input bind:value={profile.demeanor} /></label>
+      <label>Nature <input bind:value={profile.nature} list="lib-archetype" />{#if gloss(findEntry(table.library, 'archetype', profile.nature))}<span class="hint">{gloss(findEntry(table.library, 'archetype', profile.nature))}</span>{/if}</label>
+      <label>Demeanor <input bind:value={profile.demeanor} list="lib-archetype" />{#if gloss(findEntry(table.library, 'archetype', profile.demeanor))}<span class="hint">{gloss(findEntry(table.library, 'archetype', profile.demeanor))}</span>{/if}</label>
       <label>Clan <input bind:value={clan} list="lib-clan" />{#if gloss(findEntry(table.library, 'clan', clan))}<span class="hint">{gloss(findEntry(table.library, 'clan', clan))}</span>{/if}</label>
       <label>Sect <input bind:value={sect} /></label>
       <label>Sire <input bind:value={sire} /></label>

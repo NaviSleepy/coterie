@@ -4,7 +4,7 @@
   import { healthOf, type Character } from '$shared/codec.ts';
   import { tables } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
-  import { dotLadder, dotMeaning, findEntry, gloss } from '$lib/library';
+  import { dotLadder, dotMeaning, entriesOf, findEntry, gloss } from '$lib/library';
   import Dots from './Dots.svelte';
   import HealthTrack from './HealthTrack.svelte';
 
@@ -71,12 +71,13 @@
     </div>
     <dl class="meta">
       {#if editing}
-        <label><span>Nature</span><input bind:value={draft.nature} /></label>
-        <label><span>Demeanor</span><input bind:value={draft.demeanor} /></label>
+        <datalist id="lib-archetype">{#each entriesOf(table.library, 'archetype') as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
+        <label title={gloss(findEntry(table.library, 'archetype', draft.nature)) || undefined}><span>Nature</span><input bind:value={draft.nature} list="lib-archetype" /></label>
+        <label title={gloss(findEntry(table.library, 'archetype', draft.demeanor)) || undefined}><span>Demeanor</span><input bind:value={draft.demeanor} list="lib-archetype" /></label>
         <label class="wide"><span>Concept</span><input bind:value={draft.concept} /></label>
       {:else}
-        <div><dt>Nature</dt><dd>{profile.nature || '—'}</dd></div>
-        <div><dt>Demeanor</dt><dd>{profile.demeanor || '—'}</dd></div>
+        <div title={gloss(findEntry(table.library, 'archetype', profile.nature ?? '')) || undefined}><dt>Nature</dt><dd>{profile.nature || '—'}</dd></div>
+        <div title={gloss(findEntry(table.library, 'archetype', profile.demeanor ?? '')) || undefined}><dt>Demeanor</dt><dd>{profile.demeanor || '—'}</dd></div>
         <div><dt>Sire</dt><dd>{character.sire || '—'}</dd></div>
         <div><dt>Concept</dt><dd>{profile.concept || '—'}</dd></div>
       {/if}

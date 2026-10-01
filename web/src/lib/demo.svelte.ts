@@ -264,6 +264,8 @@ export class DemoTable extends TableState {
     entry('demo-l4', { kind: 'path', name: 'Path of Night', summary: 'Conviction and Instinct. Vampires as agents of damnation: tempt, horrify, leave no one untouched.' });
     entry('demo-l5', { kind: 'trait', name: 'Firearms', summary: "Using and caring for guns.\n• Novice: Had an air rifle as a kid.\n•• Practiced: Regular at the range.\n••• Competent: Has come through real gunfights.\n•••• Expert: Could shoot for a living.\n••••• Master: Decades of practice, maybe centuries." });
     entry('demo-l6', { kind: 'trait', name: 'Subterfuge', summary: "Lying well and seeing through others' lies.\n• Novice: White lies, now and then.\n•• Practiced: About what every vampire picks up.\n••• Competent: Courtroom-lawyer smooth.\n•••• Expert: Deep-cover operative.\n••••• Master: The last person anyone would suspect." });
+    entry('demo-l7', { kind: 'archetype', name: 'Visionary', summary: "Sees past the mundane to what could be, and pushes society to get there. Willpower: regain it for persuading others to believe in your vision and act on it." });
+    entry('demo-l8', { kind: 'archetype', name: 'Bon Vivant', summary: "Unlife is meaningless, so enjoy it. Not reckless, just set on a good time. Willpower: regain it for truly enjoying yourself and letting it show." });
     entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }
