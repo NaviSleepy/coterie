@@ -19,14 +19,14 @@ import { badRequest } from './http.ts';
 
 type Rec = Record<string, unknown>;
 
-function dots(value: unknown, min: number, max: number, what: string): number {
+export function dots(value: unknown, min: number, max: number, what: string): number {
   if (!Number.isInteger(value) || (value as number) < min || (value as number) > max) {
     throw badRequest(`${what} must be ${min}–${max}.`);
   }
   return value as number;
 }
 
-function traitMap(input: unknown, keys: readonly string[], min: number, dflt: number, what: string) {
+export function traitMap(input: unknown, keys: readonly string[], min: number, dflt: number, what: string) {
   const src = (input ?? {}) as Rec;
   if (typeof src !== 'object' || Array.isArray(src)) throw badRequest(`${what} must be an object.`);
   const unknown = Object.keys(src).find((k) => !keys.includes(k));
@@ -38,7 +38,7 @@ function traitMap(input: unknown, keys: readonly string[], min: number, dflt: nu
 
 // Merits and flaws are both written as positive points (1–7): a merit's cost,
 // a flaw's refund. The sign lives in which list an entry is in.
-function named(input: unknown, what: string, levelKey: 'level' | 'points', max: number) {
+export function named(input: unknown, what: string, levelKey: 'level' | 'points', max: number) {
   if (input === undefined) return [];
   if (!Array.isArray(input) || input.length > 40) throw badRequest(`${what} must be a list.`);
   return input.map((item: any) => {
@@ -50,7 +50,7 @@ function named(input: unknown, what: string, levelKey: 'level' | 'points', max: 
   });
 }
 
-function text(input: unknown, max: number): string | undefined {
+export function text(input: unknown, max: number): string | undefined {
   return typeof input === 'string' ? input.trim().slice(0, max) : undefined;
 }
 

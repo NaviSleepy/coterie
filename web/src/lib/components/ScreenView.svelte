@@ -3,6 +3,7 @@
   import BehindScreen from './BehindScreen.svelte';
   import CoterieCard from './CoterieCard.svelte';
   import LibraryPanel from './LibraryPanel.svelte';
+  import NpcPanel from './NpcPanel.svelte';
   import ProposalsReview from './ProposalsReview.svelte';
   import StControls from './StControls.svelte';
 
@@ -15,6 +16,8 @@
   let npcLabel = $state('');
   let npcValue = $state(7);
   let npcs = $state<{ label: string; value: number }[]>([]);
+  /** NPCs from the roster ticked "in the fight"; the server rolls their initiative. */
+  let fighting = $state<string[]>([]);
 
   const botchCopy = $derived(
     table.chronicle?.botchRule === 'only-negative-is-a-botch' ? 'only below zero is a botch' : 'zero with a 1 is a botch',
@@ -48,16 +51,16 @@
           </ol>
           <div class="scene-actions">
             <button class="btn solid" onclick={() => table.act('scene', { action: 'advance', chronicleId: table.chronicleId })}>Advance turn</button>
-            <button class="btn" onclick={() => table.act('scene', { action: 'rollInitiative', chronicleId: table.chronicleId, entries: npcs })}>Roll initiative</button>
+            <button class="btn" onclick={() => table.act('scene', { action: 'rollInitiative', chronicleId: table.chronicleId, entries: npcs, npcIds: fighting })}>Roll initiative</button>
             <button class="btn quiet" onclick={() => table.act('scene', { action: 'end', chronicleId: table.chronicleId })}>End scene</button>
           </div>
           <form class="npc" onsubmit={(e) => { e.preventDefault(); if (npcLabel.trim()) { npcs = [...npcs, { label: npcLabel.trim(), value: npcValue }]; npcLabel = ''; } }}>
-            <span class="label">NPCs in the order</span>
+            <span class="label">Extras in the order</span>
             {#each npcs as n, i (i)}
               <button type="button" class="chip" onclick={() => (npcs = npcs.filter((_, j) => j !== i))} title="Remove">{n.value} · {n.label} ×</button>
             {/each}
-            <input bind:value={npcLabel} placeholder="Sheriff Aldana" aria-label="NPC name" />
-            <input type="number" min="0" max="40" bind:value={npcValue} aria-label="NPC initiative" />
+            <input bind:value={npcLabel} placeholder="Two thugs" aria-label="Extra name" />
+            <input type="number" min="0" max="40" bind:value={npcValue} aria-label="Extra initiative" />
             <button class="btn quiet" type="submit">Add</button>
           </form>
         {:else}
@@ -69,6 +72,7 @@
         {/if}
       </section>
 
+      <NpcPanel {table} bind:fighting />
       <ProposalsReview {table} />
       <LibraryPanel {table} />
 

@@ -293,6 +293,35 @@ export const TABLES = {
     indexes: [byChronicle],
   },
 
+  /**
+   * The Storyteller's NPCs and their stat blocks. Behind the screen: only the
+   * Storyteller reads them, and only the chronicle Function writes them.
+   */
+  npcs: {
+    id: 'npcs',
+    name: 'NPCs',
+    permissions: [],
+    columns: [
+      str('chronicleId', 36, { required: true }),
+      str('name', 120, { required: true }),
+      { key: 'kind', type: 'enum', elements: ['vampire', 'ghoul', 'mortal', 'other'], default: 'vampire' },
+      str('clan', 60),
+      int('generation', 3, 15),
+      json('attributes'),
+      json('abilities'),
+      json('disciplines'),
+      int('willpower', 0, 10, { default: 3 }),
+      int('willpowerMax', 1, 10, { default: 3 }),
+      int('bloodPool', 0, 50, { default: 0 }),
+      int('bloodPoolMax', 0, 50, { default: 10 }),
+      int('healthBashing', 0, 7, { default: 0 }),
+      int('healthLethal', 0, 7, { default: 0 }),
+      int('healthAggravated', 0, 7, { default: 0 }),
+      { key: 'notes', type: 'text' },
+    ],
+    indexes: [byChronicle],
+  },
+
   /** Clients create and heartbeat their own row. Table-level create for users. */
   presence: {
     id: 'presence',

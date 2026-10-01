@@ -129,6 +129,62 @@ describe('characters', () => {
   });
 });
 
+describe('NPCs', () => {
+  const save = (w: any, who: string, npc: any, npcId?: string) =>
+    chronicle(w.as(who), { action: 'saveNpc', chronicleId: CHRONICLE, npc, ...(npcId ? { npcId } : {}) });
+
+  it('keeps NPCs behind the screen: the Storyteller alone creates, edits, reads and removes them', async () => {
+    const w = ashenCourt();
+    const { npcId }: any = await save(w, ST, { name: 'Sheriff Aldana', clan: 'Brujah', generation: 9, attributes: { strength: 4, dexterity: 3 }, abilities: { brawl: 4 }, willpowerMax: 6 });
+    const row = w.tables.row('npcs', npcId)!;
+    assert.deepEqual(row.$permissions, [`read("team:${TEAM}/storyteller")`]);
+    assert.equal(JSON.parse(row.attributes).strength, 4);
+    assert.equal(JSON.parse(row.attributes).wits, 2, 'unspecified Attributes default to 2');
+    assert.equal(row.willpower, 6);
+
+    await rejects(save(w, ISOLDE_PLAYER, { name: 'Free Ghoul' }), 403);
+    await rejects(save(w, ISOLDE_PLAYER, { healthLethal: 7 }, npcId), 403);
+    await rejects(chronicle(w.as(ISOLDE_PLAYER), { action: 'removeNpc', chronicleId: CHRONICLE, npcId }), 403);
+
+    await save(w, ST, { healthLethal: 2, notes: 'Owes Dmitri.' }, npcId);
+    assert.equal(w.tables.row('npcs', npcId)!.healthLethal, 2);
+    assert.equal(JSON.parse(w.tables.row('npcs', npcId)!.attributes).strength, 4, 'an edit leaves other fields alone');
+    await rejects(save(w, ST, { healthBashing: 6 }, npcId), 400);
+    await rejects(save(w, ST, { willpower: 9 }, npcId), 400);
+    await rejects(save(w, ST, { name: '' }), 400);
+
+    await chronicle(w.as(ST), { action: 'removeNpc', chronicleId: CHRONICLE, npcId });
+    assert.equal(w.tables.row('npcs', npcId), undefined);
+  });
+
+  it('rolls an NPC from its stat block, hidden by default, with its wounds and Willpower', async () => {
+    const w = ashenCourt();
+    const { npcId }: any = await save(w, ST, { name: 'Sheriff Aldana', attributes: { strength: 4 }, abilities: { brawl: 3 }, healthBashing: 2, willpowerMax: 2 });
+    const roll: any = await rollPool(w.as(ST, [8, 8, 8, 2, 2, 2, 2]), { npcId, traits: ['strength', 'brawl'], difficulty: 6, spendWillpower: true });
+    assert.equal(roll.basePool, 7);
+    assert.equal(roll.woundPenalty, 1, 'Hurt: −1');
+    assert.equal(roll.pool, 6);
+    assert.equal(roll.visibility, 'storyteller');
+    const row = w.tables.row('rolls', roll.rollId)!;
+    assert.equal(row.characterName, 'Sheriff Aldana');
+    assert.equal(row.characterId, null);
+    assert.deepEqual(row.$permissions, [`read("team:${TEAM}/storyteller")`]);
+    assert.equal(w.tables.row('npcs', npcId)!.willpower, 1);
+
+    const shown: any = await rollPool(w.as(ST, [9]), { npcId, basePool: 2, visibility: 'table' });
+    assert.deepEqual(w.tables.row('rolls', shown.rollId)!.$permissions, [`read("team:${TEAM}")`]);
+    await rejects(rollPool(w.as(ISOLDE_PLAYER), { npcId, traits: ['strength'] }), 403);
+  });
+
+  it('rolls NPCs into initiative alongside the coterie', async () => {
+    const w = ashenCourt();
+    const { npcId }: any = await save(w, ST, { name: 'Sheriff Aldana', attributes: { dexterity: 4, wits: 3 } });
+    await scene(w.as(ST, [5]), { action: 'rollInitiative', chronicleId: CHRONICLE, npcIds: [npcId, 'nope'] });
+    const order = JSON.parse(w.tables.row('scenes', SCENE)!.initiative);
+    assert.ok(order.some((e: any) => e.label === 'Sheriff Aldana' && e.value === 12 && !e.characterId));
+  });
+});
+
 describe('DMPCs', () => {
   it('lets the Storyteller create a character they own, and roll it from its traits', async () => {
     const w = ashenCourt();

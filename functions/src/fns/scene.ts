@@ -12,7 +12,7 @@
  *   advance         Next turn. Resets every cap at once without touching a sheet.
  *   setInitiative   ST-supplied order, NPCs included: [{label, characterId?, value}].
  *   rollInitiative  Server rolls Dexterity + Wits + 1d10 for each PC participant
- *                   and merges any NPC entries passed in.
+ *                   and for each NPC in npcIds, and merges any manual entries passed in.
  *   end             No current scene; caps apply per action until the next one.
  *
  * Body: action, chronicleId, ...
@@ -24,6 +24,7 @@ import { loadChronicle, requireStoryteller, type Chronicle } from '../shared/aut
 import { decodeCharacter } from '../shared/codec.ts';
 import { badRequest, entry, oneOf, refused, str, type Ctx } from '../shared/http.ts';
 import { tableReadable } from '../shared/perms.ts';
+import { decodeNpc } from '../shared/npc.ts';
 import type { Row } from '../shared/store.ts';
 
 export interface InitiativeEntry {
@@ -112,6 +113,14 @@ async function rollInitiative(ctx: Ctx, chronicle: Chronicle, body: any) {
       characterId: id,
       value: (c.attributes.dexterity ?? 1) + (c.attributes.wits ?? 1) + ctx.die(),
     });
+  }
+  // The Storyteller's own NPCs roll like the coterie: Dexterity + Wits + a die, on the server.
+  const npcIds: unknown[] = Array.isArray(body.npcIds) ? body.npcIds.slice(0, 30) : [];
+  for (const id of npcIds) {
+    const row = typeof id === 'string' ? await ctx.store.find('npcs', id) : null;
+    if (!row || row.chronicleId !== chronicle.$id) continue;
+    const n = decodeNpc(row);
+    npcs.push({ label: n.name.slice(0, 60), value: (n.attributes.dexterity ?? 1) + (n.attributes.wits ?? 1) + ctx.die() });
   }
   const initiative = sortInitiative([...pcs, ...npcs]);
   await ctx.store.update('scenes', scene.$id, { initiative: JSON.stringify(initiative) });
