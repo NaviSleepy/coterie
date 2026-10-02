@@ -18,6 +18,8 @@ export interface Npc {
   name: string;
   kind: (typeof NPC_KINDS)[number];
   clan: string;
+  sect: string;
+  title: string;
   generation: number | null;
   attributes: Record<string, number>;
   abilities: Record<string, number>;
@@ -35,6 +37,8 @@ export interface Npc {
 export function decodeNpc(row: Row): Npc {
   return {
     ...(row as any),
+    sect: row.sect ?? '',
+    title: row.title ?? '',
     attributes: parseJson(row.attributes, {}),
     abilities: parseJson(row.abilities, {}),
     disciplines: parseJson(row.disciplines, []),
@@ -71,6 +75,8 @@ export function validateNpc(input: Rec, partial: boolean): Record<string, unknow
     out.kind = kind;
   }
   if (has('clan')) out.clan = text(input.clan, 60) ?? '';
+  if (has('sect')) out.sect = text(input.sect, 60) ?? '';
+  if (has('title')) out.title = text(input.title, 80) ?? '';
   if (has('generation')) {
     out.generation = input.generation === null || input.generation === undefined ? null : dots(input.generation, 3, 15, 'generation');
   }

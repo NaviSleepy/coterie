@@ -18,6 +18,8 @@ export interface Draft {
   bloodPoolMax: number;
   clan: string;
   sect: string;
+  /** Sect office. Only the Storyteller's editor shows it; players can't propose one. */
+  title: string;
   sire: string;
   path: string;
   generation: number;
@@ -36,7 +38,7 @@ export interface Draft {
 
 export type DraftKey = keyof Draft;
 export const DRAFT_KEYS: DraftKey[] = [
-  'template', 'dhampirConcept', 'bloodPoolMax', 'clan', 'sect', 'sire', 'path', 'generation', 'attributes', 'abilities', 'specialties',
+  'template', 'dhampirConcept', 'bloodPoolMax', 'clan', 'sect', 'title', 'sire', 'path', 'generation', 'attributes', 'abilities', 'specialties',
   'disciplines', 'backgrounds', 'virtues', 'merits', 'rituals', 'flaws', 'pathRating', 'willpowerPermanent',
 ];
 
@@ -52,6 +54,7 @@ export function draftOf(c: Character, over: Partial<Draft> = {}): Draft {
     bloodPoolMax: c.bloodPoolMax,
     clan: c.clan,
     sect: c.sect,
+    title: c.title ?? '',
     sire: c.sire,
     path: c.path,
     generation: c.generation,
@@ -94,6 +97,7 @@ function tidy(d: Draft, now: Draft): Draft {
     virtues: Object.fromEntries(Object.entries(d.virtues).map(([k, v]) => [k, num(v, now.virtues[k] ?? 1)])),
     clan: d.clan.trim(),
     sect: d.sect.trim(),
+    title: d.title.trim(),
     sire: d.sire.trim(),
     path: d.path.trim() || 'Humanity',
     disciplines: levels(d.disciplines),
@@ -157,6 +161,7 @@ export function describe(c: Character, changes: Partial<Draft>): string[] {
   if (changes.bloodPoolMax !== undefined) lines.push(`Blood pool ${now.bloodPoolMax} → ${changes.bloodPoolMax}`);
   if (changes.clan !== undefined) text('Clan', now.clan, changes.clan);
   if (changes.sect !== undefined) text('Sect', now.sect, changes.sect);
+  if (changes.title !== undefined) text('Title', now.title, changes.title);
   if (changes.sire !== undefined) text('Sire', now.sire, changes.sire);
   if (changes.generation !== undefined) lines.push(`Generation ${ordinal(now.generation)} → ${ordinal(changes.generation)}`);
   if (changes.attributes) dots('attributes');

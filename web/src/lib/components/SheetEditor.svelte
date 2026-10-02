@@ -43,7 +43,7 @@
 </script>
 
 <div class="editor">
-  {#each ['clan', 'merit', 'flaw', 'discipline', 'background', 'path', 'concept', 'ritual'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'background', 'path', 'concept', 'ritual', 'title'] as const as kind (kind)}
     <datalist id={listId(kind)}>{#each entriesOf(library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   <fieldset class="grid">
@@ -56,7 +56,11 @@
       <label>Dhampir concept <input bind:value={draft.dhampirConcept} list={listId('concept')} />{#if gloss(findEntry(library, 'concept', draft.dhampirConcept))}<span class="ref">{gloss(findEntry(library, 'concept', draft.dhampirConcept))}</span>{/if}</label>
     {/if}
     <label>{dhampir ? "Antecedent's clan" : 'Clan'} <input bind:value={draft.clan} list={listId('clan')} />{#if gloss(findEntry(library, 'clan', draft.clan))}<span class="ref">{gloss(findEntry(library, 'clan', draft.clan))}</span>{/if}</label>
-    <label>Sect <input bind:value={draft.sect} /></label>
+    <label>Sect <input bind:value={draft.sect} list={`sects-${uid}`} /></label>
+    <datalist id={`sects-${uid}`}><option value="Camarilla"></option><option value="Sabbat"></option><option value="Anarch"></option><option value="Independent"></option></datalist>
+    {#if storyteller}
+      <label>Title <input bind:value={draft.title} list={listId('title')} placeholder="Sheriff, Bishop, Ductus…" />{#if gloss(findEntry(library, 'title', draft.title))}<span class="ref">{gloss(findEntry(library, 'title', draft.title))}</span>{/if}</label>
+    {/if}
     <label>Sire <input bind:value={draft.sire} /></label>
     {#if dhampir}
       {#if storyteller}<label>Blood pool <input type="number" min="1" max="50" bind:value={draft.bloodPoolMax} /></label>{/if}

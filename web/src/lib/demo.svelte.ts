@@ -52,6 +52,7 @@ function character(id: string, ownerId: string, c: Partial<Character>): Characte
     dhampirConcept: '',
     clan: '',
     sect: 'Camarilla',
+    title: '',
     sire: '',
     generation,
     attributes: {},
@@ -170,6 +171,7 @@ export class DemoTable extends TableState {
     const w = this.world;
     w.characters = {
       'demo-isolde': character('demo-isolde', DEMO_PLAYER, {
+        title: 'Harpy',
         clan: 'Toreador',
         sire: '',
         generation: 10,
@@ -301,7 +303,7 @@ export class DemoTable extends TableState {
     entry('demo-l19', { kind: 'equipment', name: "Pistol, Lt.", page: "V20 p. 281", summary: "Ranged. 4 dice; range 20 yards (double at difficulty 8); rate 4; holds 15+1. Hides in a pocket. Against vampires, bashing unless aimed at the head." });
     entry('demo-l20', { kind: 'equipment', name: "Knife", page: "V20 p. 280", summary: "Melee. Damage Strength +1 lethal. Hides in a jacket." });
     w.npcs['demo-npc1'] = row('demo-npc1', {
-      chronicleId: DEMO_ID, name: 'Sheriff Aldana', kind: 'vampire', clan: 'Brujah', generation: 9,
+      chronicleId: DEMO_ID, name: 'Sheriff Aldana', kind: 'vampire', clan: 'Brujah', sect: 'Camarilla', title: 'Sheriff', generation: 9,
       attributes: JSON.stringify({ strength: 4, dexterity: 3, stamina: 3, charisma: 2, manipulation: 3, appearance: 2, perception: 3, intelligence: 2, wits: 3 }),
       abilities: JSON.stringify({ brawl: 4, intimidation: 3, alertness: 3, firearms: 2 }),
       disciplines: JSON.stringify([{ name: 'Celerity', level: 2 }, { name: 'Potence', level: 3 }, { name: 'Presence', level: 1 }]),
@@ -315,6 +317,8 @@ export class DemoTable extends TableState {
     entry('demo-l34', { kind: 'power', name: "Pillars of Dagon", page: "Accursed Heirs p. 106", summary: "Abjurence 3: Resist the Kiss with Self-Control (8), and spend permanent Willpower to try to shatter a blood bond." });
     entry('demo-l40', { kind: 'ritual', name: "Blood Rush", page: "V20 p. 230", summary: "Thaumaturgy ritual 1: One turn with a predator's fang: feel like you've fed and hold off hunger frenzy for an hour." });
     entry('demo-l41', { kind: 'ritual', name: "Sun Dance", page: "V20 p. 511", summary: "Sabbat ignoblis rite: A full-moon dance from dusk to dawn, then a test of who braves the open longest." });
+    entry('demo-l42', { kind: 'title', name: 'Harpy', page: 'Guide to the Camarilla', summary: "Camarilla title: Elysium's arbiter of social standing; a Harpy's mockery can cost a Kindred their Status." });
+    entry('demo-l43', { kind: 'title', name: 'Sheriff', page: 'Guide to the Camarilla', summary: "Camarilla title: The Prince's enforcer, who hunts down Masquerade breaches and anyone who defies the Prince's law." });
     entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }

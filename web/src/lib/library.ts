@@ -6,7 +6,7 @@
 import { traitLabel } from '$engine/index.ts';
 import type { AnyRow } from './appwrite';
 
-export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'equipment' | 'concept' | 'ritual' | 'background' | 'rule';
+export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'equipment' | 'concept' | 'ritual' | 'title' | 'background' | 'rule';
 
 export const KIND_LABELS: Record<LibraryKind, string> = {
   clan: 'Clans',
@@ -20,12 +20,13 @@ export const KIND_LABELS: Record<LibraryKind, string> = {
   equipment: 'Weapons and armor',
   concept: 'Dhampir concepts',
   ritual: 'Rituals and rites',
+  title: 'Sect titles',
   background: 'Backgrounds',
   rule: 'House rules',
 };
 
 /** One entry's kind, for a picker. */
-export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : k === 'equipment' ? 'Weapon or armor' : k === 'concept' ? 'Dhampir concept' : k === 'ritual' ? 'Ritual or rite' : KIND_LABELS[k].replace(/s$/, ''));
+export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : k === 'equipment' ? 'Weapon or armor' : k === 'concept' ? 'Dhampir concept' : k === 'ritual' ? 'Ritual or rite' : k === 'title' ? 'Sect title' : KIND_LABELS[k].replace(/s$/, ''));
 
 export function entriesOf(library: Record<string, AnyRow>, kind: LibraryKind): AnyRow[] {
   return Object.values(library)
