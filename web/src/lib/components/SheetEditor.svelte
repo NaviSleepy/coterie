@@ -6,7 +6,7 @@
    */
   import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
   import type { AnyRow } from '$lib/appwrite';
-  import { dotMeaning, entriesOf, findEntry, gloss, type LibraryKind } from '$lib/library';
+  import { dotMeaning, entriesOf, findEntry, gloss, parseRitual, type LibraryKind } from '$lib/library';
   import type { Draft } from '$lib/sheet-edit';
 
   let {
@@ -33,11 +33,17 @@
     const [from, to] = path in draft.virtues ? [path, human] : [human, path];
     draft.virtues = Object.fromEntries(Object.entries(draft.virtues).map(([k, v]) => [k === from ? to : k, v]));
   }
+  /** Picking a ritual from the library brings its level with it. */
+  function leveled(row: { name: string; level: number }) {
+    const e = findEntry(library, 'ritual', row.name);
+    const r = e ? parseRitual(e) : null;
+    if (e) row.level = r?.level ?? 0;
+  }
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, Number.isFinite(v) ? v : min));
 </script>
 
 <div class="editor">
-  {#each ['clan', 'merit', 'flaw', 'discipline', 'background', 'path', 'concept'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'background', 'path', 'concept', 'ritual'] as const as kind (kind)}
     <datalist id={listId(kind)}>{#each entriesOf(library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   <fieldset class="grid">
@@ -157,6 +163,17 @@
       <button type="button" class="btn quiet" onclick={() => draft.flaws.push({ name: '', points: 1 })}>Add flaw</button>
     </div>
   </div>
+
+  <h3>Rituals and rites <span class="hint">— level 0 for rites without one</span></h3>
+  {#each draft.rituals as r, i (i)}
+    <div class="row">
+      <input bind:value={r.name} placeholder="Blood Rush" aria-label="Ritual name" list={listId('ritual')} oninput={() => leveled(r)} />
+      <input type="number" min="0" max="10" bind:value={r.level} aria-label="Ritual level" />
+      <button type="button" class="btn quiet" onclick={() => draft.rituals.splice(i, 1)}>Remove</button>
+    </div>
+    {#if gloss(findEntry(library, 'ritual', r.name))}<p class="ref">{gloss(findEntry(library, 'ritual', r.name))}</p>{/if}
+  {/each}
+  <button type="button" class="btn quiet" onclick={() => draft.rituals.push({ name: '', level: 1 })}>Add ritual</button>
 
   <h3>Virtues, Path, Willpower</h3>
   <div class="grid">

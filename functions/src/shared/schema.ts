@@ -92,6 +92,8 @@ export const TABLES = {
       json('backgrounds'),
       json('virtues'),
       json('merits'),
+      // Rituals and rites the character has learned: [{ name, level }], level 0 for unlevelled rites.
+      json('rituals'),
       json('flaws'),
       str('path', 80, { default: 'Humanity' }),
       int('pathRating', 0, 10, { default: 7 }),

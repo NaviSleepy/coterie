@@ -13,6 +13,7 @@
   const levels = $derived(disciplineLevels(table.library, character.disciplines ?? []));
   const combos = $derived(combosFor(table.library, character.disciplines ?? []));
   const rituals = $derived(ritualsWithinReach(table.library, character.disciplines ?? []));
+  const known = $derived(new Set((character.rituals ?? []).map((r) => r.name.trim().toLowerCase())));
   const dots = (n: number) => '•'.repeat(Math.min(n, 5)) + (n > 5 ? ` ${'•'.repeat(n - 5)}` : '');
 </script>
 
@@ -54,11 +55,11 @@
 
     {#each rituals as g (g.tradition)}
       <details class="rituals">
-        <summary><span>{g.tradition} rituals within reach</span> <span class="count">{g.rituals.length}</span></summary>
+        <summary><span>{g.tradition} rituals within reach</span> <span class="count">{g.rituals.filter((r) => known.has(String(r.entry.name).toLowerCase())).length} known of {g.rituals.length}</span></summary>
         <ul class="combos">
           {#each g.rituals as r (r.entry.$id)}
             <li title={r.entry.page || undefined}>
-              <b>{r.entry.name}</b> <span class="needs">Level {r.level}</span>
+              <b>{r.entry.name}</b> <span class="needs">Level {r.level}{known.has(String(r.entry.name).toLowerCase()) ? ' · known' : ''}</span>
               <span class="text">{r.text}</span>
             </li>
           {/each}

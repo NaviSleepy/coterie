@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
   import type { TableState } from '$lib/table.svelte';
-  import { dotMeaning, entriesOf, findEntry, gloss } from '$lib/library';
+  import { dotMeaning, entriesOf, findEntry, gloss, parseRitual } from '$lib/library';
 
   const table = getContext<TableState>('table');
 
@@ -23,6 +23,7 @@
   let disciplines = $state<{ name: string; level: number }[]>([]);
   let specialties = $state<{ trait: string; text: string }[]>([]);
   let merits = $state<{ name: string; points: number }[]>([]);
+  let rituals = $state<{ name: string; level: number }[]>([]);
   let flaws = $state<{ name: string; points: number }[]>([]);
   let busy = $state(false);
 
@@ -51,6 +52,7 @@
         template, ...(template === 'dhampir' ? { dhampirConcept } : {}), clan, sect, sire, generation, attributes, abilities, virtues, path: path.trim() || 'Humanity', pathRating, willpowerPermanent,
         disciplines: disciplines.filter((d) => d.name.trim()),
         merits: merits.filter((m) => m.name.trim()),
+        rituals: rituals.filter((r) => r.name.trim()),
         flaws: flaws.filter((f) => f.name.trim()),
         specialties: specialties.filter((s) => eligible.includes(s.trait)),
       },
@@ -71,7 +73,7 @@
 </script>
 
 <main class="panel">
-  {#each ['clan', 'merit', 'flaw', 'discipline', 'path', 'archetype', 'concept'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'path', 'archetype', 'concept', 'ritual'] as const as kind (kind)}
     <datalist id={`lib-${kind}`}>{#each entriesOf(table.library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   {#if table.isStoryteller}
@@ -156,6 +158,18 @@
       </div>
     {/each}
     <button type="button" class="btn quiet" onclick={() => (disciplines = [...disciplines, { name: '', level: 1 }])}>Add Discipline</button>
+
+    <h2>Rituals <span class="hint">— thaumaturges and necromancers usually start with one</span></h2>
+    {#each rituals as r, i (i)}
+      <div class="row">
+        <input bind:value={r.name} placeholder="Blood Rush" aria-label="Ritual name" list="lib-ritual"
+          oninput={() => { const e = findEntry(table.library, 'ritual', r.name); if (e) r.level = parseRitual(e)?.level ?? 0; }} />
+        <input type="number" min="0" max="10" bind:value={r.level} aria-label="Ritual level" />
+        <button type="button" class="btn quiet" onclick={() => (rituals = rituals.filter((_, j) => j !== i))}>Remove</button>
+      </div>
+      {#if gloss(findEntry(table.library, 'ritual', r.name))}<p class="hint ref">{gloss(findEntry(table.library, 'ritual', r.name))}</p>{/if}
+    {/each}
+    <button type="button" class="btn quiet" onclick={() => (rituals = [...rituals, { name: '', level: 1 }])}>Add ritual</button>
 
     <h2>Merits and Flaws <span class="hint">— merits cost 1–7 freebie points, flaws give back 1–7</span></h2>
     <div class="cols two">

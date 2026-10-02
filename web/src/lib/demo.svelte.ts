@@ -61,6 +61,7 @@ function character(id: string, ownerId: string, c: Partial<Character>): Characte
     backgrounds: [],
     virtues: { conscience: 3, selfControl: 3, courage: 3 },
     merits: [],
+    rituals: [],
     flaws: [],
     path: 'Humanity',
     pathRating: 7,
@@ -312,6 +313,8 @@ export class DemoTable extends TableState {
     entry('demo-l32', { kind: 'power', name: "Fledgling Insolence", page: "Accursed Heirs p. 106", summary: "Abjurence 1: Always on: vampires' Disciplines aimed at you are harder, more so if the vampire is weak-blooded." });
     entry('demo-l33', { kind: 'power', name: "Denial of the Blood", page: "Accursed Heirs p. 106", summary: "Abjurence 2: Spend blood to cancel a Discipline being used in your presence, if you know it's happening." });
     entry('demo-l34', { kind: 'power', name: "Pillars of Dagon", page: "Accursed Heirs p. 106", summary: "Abjurence 3: Resist the Kiss with Self-Control (8), and spend permanent Willpower to try to shatter a blood bond." });
+    entry('demo-l40', { kind: 'ritual', name: "Blood Rush", page: "V20 p. 230", summary: "Thaumaturgy ritual 1: One turn with a predator's fang: feel like you've fed and hold off hunger frenzy for an hour." });
+    entry('demo-l41', { kind: 'ritual', name: "Sun Dance", page: "V20 p. 511", summary: "Sabbat ignoblis rite: A full-moon dance from dusk to dawn, then a test of who braves the open longest." });
     entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }

@@ -137,6 +137,7 @@ export function validateSheet(
   if (has('disciplines')) patch.disciplines = named(input.disciplines, 'Discipline', 'level', 10);
   if (has('backgrounds')) patch.backgrounds = named(input.backgrounds, 'Background', 'level', 5);
   if (has('merits')) patch.merits = named(input.merits, 'Merit', 'points', 7);
+  if (has('rituals')) patch.rituals = named(input.rituals, 'Ritual', 'level', 10);
   if (has('flaws')) patch.flaws = named(input.flaws, 'Flaw', 'points', 7);
 
   if (has('specialties')) {
@@ -172,6 +173,7 @@ export const PROPOSABLE = [
   'backgrounds',
   'virtues',
   'merits',
+  'rituals',
   'flaws',
   'pathRating',
   'willpowerPermanent',

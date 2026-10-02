@@ -185,6 +185,19 @@ describe('NPCs', () => {
   });
 });
 
+describe('rituals on the sheet', () => {
+  it('lets a player propose rituals and the Storyteller approve or set them', async () => {
+    const w = ashenCourt();
+    const { revision }: any = await character(w.as(ISOLDE_PLAYER), { action: 'propose', characterId: ISOLDE, sheet: { rituals: [{ name: 'Blood Rush', level: 1 }, { name: 'Sun Dance', level: 0 }] } });
+    await character(w.as(ST), { action: 'approve', characterId: ISOLDE, revision });
+    assert.deepEqual(JSON.parse(w.tables.row('characters', ISOLDE)!.rituals), [{ name: 'Blood Rush', level: 1 }, { name: 'Sun Dance', level: 0 }]);
+    await character(w.as(ST), { action: 'adjust', characterId: ISOLDE, sheet: { rituals: [{ name: 'Ward versus Kindred', level: 4 }] } });
+    assert.equal(JSON.parse(w.tables.row('characters', ISOLDE)!.rituals)[0].name, 'Ward versus Kindred');
+    await rejects(character(w.as(ST), { action: 'adjust', characterId: ISOLDE, sheet: { rituals: [{ name: '' }] } }), 400);
+    await rejects(character(w.as(ST), { action: 'adjust', characterId: ISOLDE, sheet: { rituals: [{ name: 'X', level: 11 }] } }), 400);
+  });
+});
+
 describe('dhampirs', () => {
   const create = (w: any, sheet: any, dice = [3]) =>
     character(w.as(DMITRI_PLAYER, dice), { action: 'create', chronicleId: CHRONICLE, profile: { name: 'Mara Kell' }, sheet });

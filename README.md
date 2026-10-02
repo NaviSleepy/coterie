@@ -69,7 +69,7 @@ The creation form and the Storyteller's sheet editor offer the template. For a d
 
 ### Rituals and rites
 
-Library entries of kind `ritual` are written `Thaumaturgy ritual 3: …`, `Koldunic Sorcery rite 2: …` or `Sabbat auctoritas rite: …`. The Disciplines panel lists, for each ritual tradition the character can cast, the rituals at or below their rating, collapsed by default: Thaumaturgy, Necromancy, Abyss Mysticism (by Obtenebration), Assamite Sorcery, Koldunic Sorcery and Dririmancy. Gargoyle rituals and Sabbat rites aren't tied to a Discipline, so they appear only in the library.
+Library entries of kind `ritual` are written `Thaumaturgy ritual 3: …`, `Koldunic Sorcery rite 2: …` or `Sabbat auctoritas rite: …`. The Disciplines panel lists, for each ritual tradition the character can cast, the rituals at or below their rating, collapsed by default: Thaumaturgy, Necromancy, Abyss Mysticism (by Obtenebration), Assamite Sorcery, Koldunic Sorcery and Dririmancy. Gargoyle rituals and Sabbat rites aren't tied to a Discipline, so they appear only in the library. A character's learned rituals are a list on the sheet (`characters.rituals`, `[{ name, level }]`, with level 0 for unlevelled rites). Players propose additions like any other trait and the Storyteller approves them. The panel marks which rituals within reach are already known.
 
 ### NPCs behind the screen
 
