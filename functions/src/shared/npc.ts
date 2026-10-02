@@ -10,7 +10,7 @@ import type { Row } from './store.ts';
 import { badRequest } from './http.ts';
 import { dots, named, text, traitMap } from './sheet.ts';
 
-export const NPC_KINDS = ['vampire', 'ghoul', 'mortal', 'other'] as const;
+export const NPC_KINDS = ['vampire', 'dhampir', 'ghoul', 'mortal', 'other'] as const;
 
 export interface Npc {
   $id: string;

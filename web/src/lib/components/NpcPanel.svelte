@@ -14,7 +14,7 @@
 
   let { table, fighting = $bindable([]) }: { table: TableState; fighting?: string[] } = $props();
 
-  const KINDS = ['vampire', 'ghoul', 'mortal', 'other'] as const;
+  const KINDS = ['vampire', 'dhampir', 'ghoul', 'mortal', 'other'] as const;
   const ATTR_KEYS = Object.values(ATTRIBUTES).flat() as string[];
   const ABIL_KEYS = Object.values(ABILITIES).flat() as string[];
 
@@ -48,7 +48,7 @@
     if (!newName.trim()) return;
     const out = await table.act<{ npcId: string }>('chronicle', {
       action: 'saveNpc', chronicleId: table.chronicleId,
-      npc: { name: newName.trim(), kind: newKind, ...(newKind === 'vampire' ? { generation: 12, bloodPoolMax: 11, bloodPool: 8 } : { bloodPoolMax: newKind === 'ghoul' ? 3 : 0 }) },
+      npc: { name: newName.trim(), kind: newKind, ...(newKind === 'vampire' ? { generation: 12, bloodPoolMax: 11, bloodPool: 8 } : newKind === 'dhampir' ? { bloodPoolMax: 10, bloodPool: 10 } : { bloodPoolMax: newKind === 'ghoul' ? 3 : 0 }) },
     });
     if (out) {
       newName = '';

@@ -6,7 +6,7 @@
 import { traitLabel } from '$engine/index.ts';
 import type { AnyRow } from './appwrite';
 
-export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'equipment' | 'background' | 'rule';
+export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'equipment' | 'concept' | 'background' | 'rule';
 
 export const KIND_LABELS: Record<LibraryKind, string> = {
   clan: 'Clans',
@@ -18,12 +18,13 @@ export const KIND_LABELS: Record<LibraryKind, string> = {
   trait: 'Attributes and Abilities',
   archetype: 'Natures and Demeanors',
   equipment: 'Weapons and armor',
+  concept: 'Dhampir concepts',
   background: 'Backgrounds',
   rule: 'House rules',
 };
 
 /** One entry's kind, for a picker. */
-export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : k === 'equipment' ? 'Weapon or armor' : KIND_LABELS[k].replace(/s$/, ''));
+export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : k === 'equipment' ? 'Weapon or armor' : k === 'concept' ? 'Dhampir concept' : KIND_LABELS[k].replace(/s$/, ''));
 
 export function entriesOf(library: Record<string, AnyRow>, kind: LibraryKind): AnyRow[] {
   return Object.values(library)

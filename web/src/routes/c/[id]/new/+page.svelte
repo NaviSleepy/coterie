@@ -8,6 +8,8 @@
   const table = getContext<TableState>('table');
 
   let profile = $state({ name: '', concept: '', nature: '', demeanor: '' });
+  let template = $state<'vampire' | 'dhampir'>('vampire');
+  let dhampirConcept = $state('');
   let clan = $state('');
   let sect = $state('Camarilla');
   let sire = $state('');
@@ -46,7 +48,7 @@
       chronicleId: table.chronicleId,
       profile,
       sheet: {
-        clan, sect, sire, generation, attributes, abilities, virtues, path: path.trim() || 'Humanity', pathRating, willpowerPermanent,
+        template, ...(template === 'dhampir' ? { dhampirConcept } : {}), clan, sect, sire, generation, attributes, abilities, virtues, path: path.trim() || 'Humanity', pathRating, willpowerPermanent,
         disciplines: disciplines.filter((d) => d.name.trim()),
         merits: merits.filter((m) => m.name.trim()),
         flaws: flaws.filter((f) => f.name.trim()),
@@ -69,7 +71,7 @@
 </script>
 
 <main class="panel">
-  {#each ['clan', 'merit', 'flaw', 'discipline', 'path', 'archetype'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'path', 'archetype', 'concept'] as const as kind (kind)}
     <datalist id={`lib-${kind}`}>{#each entriesOf(table.library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   {#if table.isStoryteller}
@@ -86,14 +88,23 @@
       <label>Concept <input bind:value={profile.concept} /></label>
       <label>Nature <input bind:value={profile.nature} list="lib-archetype" />{#if gloss(findEntry(table.library, 'archetype', profile.nature))}<span class="hint">{gloss(findEntry(table.library, 'archetype', profile.nature))}</span>{/if}</label>
       <label>Demeanor <input bind:value={profile.demeanor} list="lib-archetype" />{#if gloss(findEntry(table.library, 'archetype', profile.demeanor))}<span class="hint">{gloss(findEntry(table.library, 'archetype', profile.demeanor))}</span>{/if}</label>
-      <label>Clan <input bind:value={clan} list="lib-clan" />{#if gloss(findEntry(table.library, 'clan', clan))}<span class="hint">{gloss(findEntry(table.library, 'clan', clan))}</span>{/if}</label>
+      <label>Template
+        <select bind:value={template}><option value="vampire">Vampire</option><option value="dhampir">Dhampir</option></select>
+        {#if template === 'dhampir'}<span class="hint">Half-vampire: blood pool 10, one blood a turn, starts full. Disciplines stop at one dot; Bloodrights go up to three.</span>{/if}
+      </label>
+      {#if template === 'dhampir'}
+        <label>Dhampir concept <input bind:value={dhampirConcept} list="lib-concept" placeholder="Renegade" />{#if gloss(findEntry(table.library, 'concept', dhampirConcept))}<span class="hint">{gloss(findEntry(table.library, 'concept', dhampirConcept))}</span>{/if}</label>
+      {/if}
+      <label>{template === 'dhampir' ? "Antecedent's clan" : 'Clan'} <input bind:value={clan} list="lib-clan" />{#if gloss(findEntry(table.library, 'clan', clan))}<span class="hint">{gloss(findEntry(table.library, 'clan', clan))}</span>{/if}</label>
       <label>Sect <input bind:value={sect} /></label>
       <label>Sire <input bind:value={sire} /></label>
-      <label>Generation
-        <select bind:value={generation}>
-          {#each [13, 12, 11, 10, 9, 8, 7, 6, 5, 4] as g (g)}<option value={g}>{g}th — pool {bloodPoolMax(g)}, {bloodPerTurn(g)}/turn</option>{/each}
-        </select>
-      </label>
+      {#if template === 'vampire'}
+        <label>Generation
+          <select bind:value={generation}>
+            {#each [13, 12, 11, 10, 9, 8, 7, 6, 5, 4] as g (g)}<option value={g}>{g}th — pool {bloodPoolMax(g)}, {bloodPerTurn(g)}/turn</option>{/each}
+          </select>
+        </label>
+      {/if}
     </fieldset>
 
     <h2>Attributes</h2>
@@ -191,7 +202,7 @@
       <button type="button" class="btn quiet" onclick={() => swapVirtue('selfControl', 'instinct')}>{'instinct' in virtues ? 'Back to Self-Control' : 'Instinct instead of Self-Control'}</button>
     </div>
 
-    <button class="btn solid submit" disabled={busy || !profile.name.trim()}>{busy ? 'Rolling starting blood…' : table.isStoryteller ? 'Create DMPC' : 'Take a seat'}</button>
+    <button class="btn solid submit" disabled={busy || !profile.name.trim()}>{busy ? (template === 'dhampir' ? 'Taking a seat…' : 'Rolling starting blood…') : table.isStoryteller ? 'Create DMPC' : 'Take a seat'}</button>
   </form>
 </main>
 

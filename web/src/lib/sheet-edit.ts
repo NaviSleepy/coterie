@@ -12,6 +12,10 @@ type Named = { name: string; level: number };
 type Pointed = { name: string; points: number };
 
 export interface Draft {
+  template: 'vampire' | 'dhampir';
+  dhampirConcept: string;
+  /** The Storyteller sets this by hand for dhampirs (Antiquity); for vampires it follows Generation. */
+  bloodPoolMax: number;
   clan: string;
   sect: string;
   sire: string;
@@ -31,7 +35,7 @@ export interface Draft {
 
 export type DraftKey = keyof Draft;
 export const DRAFT_KEYS: DraftKey[] = [
-  'clan', 'sect', 'sire', 'path', 'generation', 'attributes', 'abilities', 'specialties',
+  'template', 'dhampirConcept', 'bloodPoolMax', 'clan', 'sect', 'sire', 'path', 'generation', 'attributes', 'abilities', 'specialties',
   'disciplines', 'backgrounds', 'virtues', 'merits', 'flaws', 'pathRating', 'willpowerPermanent',
 ];
 
@@ -42,6 +46,9 @@ const fill = (keys: readonly string[], src: Record<string, number>, dflt: number
 /** The sheet's current traits, with any proposed changes laid over them. */
 export function draftOf(c: Character, over: Partial<Draft> = {}): Draft {
   const base: Draft = {
+    template: c.template === 'dhampir' ? 'dhampir' : 'vampire',
+    dhampirConcept: c.dhampirConcept ?? '',
+    bloodPoolMax: c.bloodPoolMax,
     clan: c.clan,
     sect: c.sect,
     sire: c.sire,
@@ -78,6 +85,8 @@ function tidy(d: Draft, now: Draft): Draft {
   return {
     ...d,
     generation: num(d.generation, now.generation),
+    bloodPoolMax: num(d.bloodPoolMax, now.bloodPoolMax),
+    dhampirConcept: d.dhampirConcept.trim(),
     pathRating: num(d.pathRating, now.pathRating),
     willpowerPermanent: num(d.willpowerPermanent, now.willpowerPermanent),
     virtues: Object.fromEntries(Object.entries(d.virtues).map(([k, v]) => [k, num(v, now.virtues[k] ?? 1)])),
@@ -140,6 +149,9 @@ export function describe(c: Character, changes: Partial<Draft>): string[] {
     }
   };
 
+  if (changes.template !== undefined) text('Template', now.template, changes.template);
+  if (changes.dhampirConcept !== undefined) text('Dhampir concept', now.dhampirConcept, changes.dhampirConcept);
+  if (changes.bloodPoolMax !== undefined) lines.push(`Blood pool ${now.bloodPoolMax} → ${changes.bloodPoolMax}`);
   if (changes.clan !== undefined) text('Clan', now.clan, changes.clan);
   if (changes.sect !== undefined) text('Sect', now.sect, changes.sect);
   if (changes.sire !== undefined) text('Sire', now.sire, changes.sire);

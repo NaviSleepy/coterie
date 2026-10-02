@@ -22,6 +22,9 @@ export interface Character {
   $id: string;
   chronicleId: string;
   ownerId: string;
+  /** Unset on rows from before templates existed: read as 'vampire'. */
+  template: 'vampire' | 'dhampir';
+  dhampirConcept: string;
   clan: string;
   sect: string;
   sire: string;
@@ -69,6 +72,8 @@ export function decodeCharacter(row: Row): Character {
     $id: row.$id,
     chronicleId: row.chronicleId,
     ownerId: row.ownerId,
+    template: row.template === 'dhampir' ? 'dhampir' : 'vampire',
+    dhampirConcept: row.dhampirConcept ?? '',
     clan: row.clan ?? '',
     sect: row.sect ?? '',
     sire: row.sire ?? '',

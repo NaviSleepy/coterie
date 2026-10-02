@@ -185,6 +185,51 @@ describe('NPCs', () => {
   });
 });
 
+describe('dhampirs', () => {
+  const create = (w: any, sheet: any, dice = [3]) =>
+    character(w.as(DMITRI_PLAYER, dice), { action: 'create', chronicleId: CHRONICLE, profile: { name: 'Mara Kell' }, sheet });
+
+  it('gives a dhampir a full pool of 10 and one blood a turn, whatever the Generation', async () => {
+    const w = ashenCourt();
+    const { characterId, bloodPool }: any = await create(w, { template: 'dhampir', dhampirConcept: 'Renegade', clan: 'Brujah', generation: 8, disciplines: [{ name: 'Potence', level: 1 }] });
+    const row = w.tables.row('characters', characterId)!;
+    assert.equal(row.template, 'dhampir');
+    assert.equal(row.dhampirConcept, 'Renegade');
+    assert.equal(row.bloodPoolMax, 10);
+    assert.equal(row.bloodPerTurn, 1);
+    assert.equal(bloodPool, 10, 'no die roll: they start full');
+  });
+
+  it('keeps a dhampir pool off the Generation table, lets the Storyteller raise it, and resets it on a template change', async () => {
+    const w = ashenCourt();
+    const { characterId }: any = await create(w, { template: 'dhampir' });
+    await character(w.as(ST), { action: 'adjust', characterId, sheet: { generation: 6 } });
+    assert.equal(w.tables.row('characters', characterId)!.bloodPoolMax, 10);
+    await character(w.as(ST), { action: 'adjust', characterId, sheet: { bloodPoolMax: 12 } });
+    assert.equal(w.tables.row('characters', characterId)!.bloodPoolMax, 12, 'Antiquity');
+    await character(w.as(ST), { action: 'adjust', characterId, sheet: { template: 'vampire' } });
+    assert.equal(w.tables.row('characters', characterId)!.bloodPoolMax, 30, 'a 6th Generation vampire now');
+    await rejects(character(w.as(ST), { action: 'adjust', characterId, sheet: { template: 'ghoul' } }), 400);
+  });
+
+  it("lets a player propose their dhampir concept, but never their template or pool", async () => {
+    const w = ashenCourt();
+    const { characterId }: any = await create(w, { template: 'dhampir' });
+    await character(w.as(DMITRI_PLAYER), { action: 'propose', characterId, sheet: { dhampirConcept: 'Savant' } });
+    await rejects(character(w.as(DMITRI_PLAYER), { action: 'propose', characterId, sheet: { template: 'vampire' } }), 403);
+    await rejects(character(w.as(DMITRI_PLAYER), { action: 'propose', characterId, sheet: { bloodPoolMax: 15 } }), 403);
+  });
+
+  it('reads characters from before templates as vampires, and allows dhampir NPCs', async () => {
+    const w = ashenCourt();
+    assert.equal(w.tables.row('characters', ISOLDE)!.template, undefined);
+    await character(w.as(ST), { action: 'adjust', characterId: ISOLDE, sheet: { generation: 9 } });
+    assert.equal(w.tables.row('characters', ISOLDE)!.bloodPoolMax, 14);
+    const { npcId }: any = await chronicle(w.as(ST), { action: 'saveNpc', chronicleId: CHRONICLE, npc: { name: 'Teodor', kind: 'dhampir' } });
+    assert.equal(w.tables.row('npcs', npcId)!.kind, 'dhampir');
+  });
+});
+
 describe('DMPCs', () => {
   it('lets the Storyteller create a character they own, and roll it from its traits', async () => {
     const w = ashenCourt();
@@ -383,7 +428,7 @@ describe('library', () => {
     await rejects(save(w, ST, { kind: 'mystery', name: 'X' }), 400);
     const { entryId }: any = await save(w, ST, { kind: 'discipline', name: 'Auspex', points: 3 });
     assert.equal(w.tables.row('library', entryId)!.points, null);
-    for (const kind of ['clan', 'power', 'path', 'trait', 'archetype', 'equipment']) {
+    for (const kind of ['clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept']) {
       const { entryId: id }: any = await save(w, ST, { kind, name: `A ${kind}`, points: 2, page: 'V20 p. 1' });
       assert.equal(w.tables.row('library', id)!.kind, kind);
       assert.equal(w.tables.row('library', id)!.points, null);

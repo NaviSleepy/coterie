@@ -61,6 +61,12 @@ Only traits are proposable (clan through Willpower, merits and flaws included). 
 
 A player may bring as many characters as they like to a table and switch between them on their screen. `character.delete` removes one for good: its player or the Storyteller can call it, and it must name the character, so a stray call deletes nothing. In one transaction it removes the sheet, profile, open proposal, sealed difficulty and the seals on secrets about it, and takes it out of scenes and initiative. Its rolls and ledger stay as history, and the transaction writes a last ledger line saying who deleted it. That line takes the next version, so a write racing the delete collides with it and the delete is refused with a 409 rather than half-applied.
 
+### Dhampirs
+
+A character's `template` is `vampire` (the default, and what rows from before templates read as) or `dhampir`. Following Accursed Heirs, a dhampir's blood doesn't follow Generation. Their pool is 10 and they spend one point a turn. They start with a full pool rather than rolling for it, since their living body makes the blood. The Storyteller can raise the pool for Antiquity through `character.adjust` (`bloodPoolMax`), and changing the template resets the pool to the new template's rule. `dhampirConcept` (Aspirant, Renegade and the rest) is on the sheet, and players can propose it. They can't propose the template or the pool.
+
+The creation form and the Storyteller's sheet editor offer the template. For a dhampir they hide Generation, label the clan as the Antecedent's, and suggest concepts from the library. Bloodrights are library Disciplines with powers at levels 1–3, so a dhampir lists them with their Disciplines and the Disciplines panel shows what each level does. NPCs can be dhampirs too.
+
 ### NPCs behind the screen
 
 The screen has an NPC roster. Each NPC has a stat block (kind, clan, Generation, Attributes, Abilities, Disciplines), a health track, blood, Willpower and notes. The `npcs` rows are readable only by the `storyteller` role and are written only through `chronicle.saveNpc` and `chronicle.removeNpc`. Players never receive them, not even as names.

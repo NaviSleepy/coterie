@@ -62,8 +62,9 @@ async function create(ctx: Ctx, body: any) {
   checkSpecialties(sheet as any);
 
   const characterId = ID.unique();
-  // V20 starts a character's pool on a die roll. The server rolls it.
-  const bloodPool = Math.min(ctx.die(), bloodPoolMax(sheet.generation));
+  // V20 starts a vampire's pool on a die roll; the server rolls it. A dhampir's
+  // blood is made by their own living body, so they start full.
+  const bloodPool = sheet.template === 'dhampir' ? (sheet.bloodPoolMax as number) : Math.min(ctx.die(), bloodPoolMax(sheet.generation));
 
   const row = {
     chronicleId: chronicle.$id,
@@ -109,7 +110,7 @@ function settle(c: Character, patch: CharacterPatch): CharacterPatch {
 async function adjust(ctx: Ctx, body: any) {
   const access = await loadCharacterFor(ctx, str(body, 'characterId', 36));
   requireStoryteller(ctx, access.chronicle);
-  const patch = validateSheet(body.sheet ?? {}, true);
+  const patch = validateSheet(body.sheet ?? {}, true, access.character);
   if (Object.keys(patch).length === 0) throw badRequest('Nothing to adjust.');
 
   const { character } = await mutateCharacter(ctx, access.character.$id, 'adjust', access.chronicle.teamId, (c) => ({
@@ -144,7 +145,7 @@ async function propose(ctx: Ctx, body: any) {
   if (character.ownerId !== ctx.userId) throw forbidden("Only a character's player proposes changes to it.");
 
   const input = proposableOnly(body.sheet);
-  const patch = changedFrom(character, validateSheet(input, true));
+  const patch = changedFrom(character, validateSheet(input, true, character));
   // Checked now so the player hears about it while editing, and again on approval.
   checkSpecialties({ ...character, ...patch } as any);
 
@@ -201,7 +202,7 @@ async function approve(ctx: Ctx, body: any) {
   const input = Object.fromEntries(Object.entries(stored).filter(([k]) => (PROPOSABLE as readonly string[]).includes(k)));
 
   const { character } = await mutateCharacter(ctx, id, 'approve', access.chronicle.teamId, (c) => {
-    const patch = changedFrom(c, validateSheet(input, true));
+    const patch = changedFrom(c, validateSheet(input, true, c));
     return {
       patch: settle(c, patch),
       summary: `approved the player's changes to ${Object.keys(patch).join(', ') || 'nothing (already applied)'}`,
