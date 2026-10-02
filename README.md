@@ -67,6 +67,10 @@ A character's `template` is `vampire` (the default, and what rows from before te
 
 The creation form and the Storyteller's sheet editor offer the template. For a dhampir they hide Generation, label the clan as the Antecedent's, and suggest concepts from the library. Bloodrights are library Disciplines with powers at levels 1–3, so a dhampir lists them with their Disciplines and the Disciplines panel shows what each level does. NPCs can be dhampirs too.
 
+### Rituals and rites
+
+Library entries of kind `ritual` are written `Thaumaturgy ritual 3: …`, `Koldunic Sorcery rite 2: …` or `Sabbat auctoritas rite: …`. The Disciplines panel lists, for each ritual tradition the character can cast, the rituals at or below their rating, collapsed by default: Thaumaturgy, Necromancy, Abyss Mysticism (by Obtenebration), Assamite Sorcery, Koldunic Sorcery and Dririmancy. Gargoyle rituals and Sabbat rites aren't tied to a Discipline, so they appear only in the library.
+
 ### NPCs behind the screen
 
 The screen has an NPC roster. Each NPC has a stat block (kind, clan, Generation, Attributes, Abilities, Disciplines), a health track, blood, Willpower and notes. The `npcs` rows are readable only by the `storyteller` role and are written only through `chronicle.saveNpc` and `chronicle.removeNpc`. Players never receive them, not even as names.
