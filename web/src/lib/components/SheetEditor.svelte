@@ -9,7 +9,12 @@
   import { dotMeaning, entriesOf, findEntry, gloss, type LibraryKind } from '$lib/library';
   import type { Draft } from '$lib/sheet-edit';
 
-  let { draft = $bindable(), library = {} }: { draft: Draft; library?: Record<string, AnyRow> } = $props();
+  let {
+    draft = $bindable(),
+    library = {},
+    storyteller = false,
+  }: { draft: Draft; library?: Record<string, AnyRow>; storyteller?: boolean } = $props();
+  const dhampir = $derived(draft.template === 'dhampir');
 
   // Datalist ids are page-global; two editors on one page mustn't share them.
   const uid = Math.random().toString(36).slice(2, 8);
@@ -32,18 +37,30 @@
 </script>
 
 <div class="editor">
-  {#each ['clan', 'merit', 'flaw', 'discipline', 'background', 'path'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'background', 'path', 'concept'] as const as kind (kind)}
     <datalist id={listId(kind)}>{#each entriesOf(library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   <fieldset class="grid">
-    <label>Clan <input bind:value={draft.clan} list={listId('clan')} />{#if gloss(findEntry(library, 'clan', draft.clan))}<span class="ref">{gloss(findEntry(library, 'clan', draft.clan))}</span>{/if}</label>
+    {#if storyteller}
+      <label>Template
+        <select bind:value={draft.template}><option value="vampire">Vampire</option><option value="dhampir">Dhampir</option></select>
+      </label>
+    {/if}
+    {#if dhampir}
+      <label>Dhampir concept <input bind:value={draft.dhampirConcept} list={listId('concept')} />{#if gloss(findEntry(library, 'concept', draft.dhampirConcept))}<span class="ref">{gloss(findEntry(library, 'concept', draft.dhampirConcept))}</span>{/if}</label>
+    {/if}
+    <label>{dhampir ? "Antecedent's clan" : 'Clan'} <input bind:value={draft.clan} list={listId('clan')} />{#if gloss(findEntry(library, 'clan', draft.clan))}<span class="ref">{gloss(findEntry(library, 'clan', draft.clan))}</span>{/if}</label>
     <label>Sect <input bind:value={draft.sect} /></label>
     <label>Sire <input bind:value={draft.sire} /></label>
-    <label>Generation
-      <select bind:value={draft.generation}>
-        {#each [13, 12, 11, 10, 9, 8, 7, 6, 5, 4] as g (g)}<option value={g}>{g}th — pool {bloodPoolMax(g)}, {bloodPerTurn(g)}/turn</option>{/each}
-      </select>
-    </label>
+    {#if dhampir}
+      {#if storyteller}<label>Blood pool <input type="number" min="1" max="50" bind:value={draft.bloodPoolMax} /></label>{/if}
+    {:else}
+      <label>Generation
+        <select bind:value={draft.generation}>
+          {#each [13, 12, 11, 10, 9, 8, 7, 6, 5, 4] as g (g)}<option value={g}>{g}th — pool {bloodPoolMax(g)}, {bloodPerTurn(g)}/turn</option>{/each}
+        </select>
+      </label>
+    {/if}
   </fieldset>
 
   <h3>Attributes</h3>

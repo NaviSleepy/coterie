@@ -48,6 +48,8 @@ function character(id: string, ownerId: string, c: Partial<Character>): Characte
     $id: id,
     chronicleId: DEMO_ID,
     ownerId,
+    template: 'vampire',
+    dhampirConcept: '',
     clan: '',
     sect: 'Camarilla',
     sire: '',
@@ -189,9 +191,14 @@ export class DemoTable extends TableState {
         healthBashing: 1,
         difficultySealed: true,
       }),
+      // A dhampir: Brujah Antecedent, a pool of 10 and one blood a turn.
       'demo-dmitri': character('demo-dmitri', 'demo-p2', {
+        template: 'dhampir',
+        dhampirConcept: 'Renegade',
         clan: 'Brujah',
-        generation: 11,
+        generation: 13,
+        bloodPoolMax: 10,
+        bloodPerTurn: 1,
         attributes: { strength: 4, dexterity: 3, wits: 2 },
         abilities: { brawl: 4 },
         pathRating: 5,
@@ -300,6 +307,11 @@ export class DemoTable extends TableState {
       willpower: 6, willpowerMax: 6, bloodPool: 10, bloodPoolMax: 14, healthBashing: 0, healthLethal: 0, healthAggravated: 0,
       notes: 'Answers to the Prince. Hates being made to wait.',
     }, 60);
+    entry('demo-l30', { kind: 'concept', name: "Renegade", page: "Accursed Heirs p. 53", summary: "Half-bloods who turn their vampiric powers on the Kindred and hunt them." });
+    entry('demo-l31', { kind: 'discipline', name: "Abjurence", page: "Accursed Heirs p. 105", summary: "Dhampir Bloodright, up to 3 dots. Resist and shut down vampires' powers over you." });
+    entry('demo-l32', { kind: 'power', name: "Fledgling Insolence", page: "Accursed Heirs p. 106", summary: "Abjurence 1: Always on: vampires' Disciplines aimed at you are harder, more so if the vampire is weak-blooded." });
+    entry('demo-l33', { kind: 'power', name: "Denial of the Blood", page: "Accursed Heirs p. 106", summary: "Abjurence 2: Spend blood to cancel a Discipline being used in your presence, if you know it's happening." });
+    entry('demo-l34', { kind: 'power', name: "Pillars of Dagon", page: "Accursed Heirs p. 106", summary: "Abjurence 3: Resist the Kiss with Self-Control (8), and spend permanent Willpower to try to shatter a blood bond." });
     entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }

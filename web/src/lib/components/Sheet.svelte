@@ -60,7 +60,9 @@
         <h1>{profile.name ?? 'Unnamed'}</h1>
       {/if}
       <p class="lineage caps">
-        {[character.clan, `${ordinal(character.generation)} Generation`, character.sect].filter(Boolean).join(' · ')}
+        {character.template === 'dhampir'
+          ? ['Dhampir', character.dhampirConcept, character.clan ? `${character.clan} Antecedent` : '', character.sect].filter(Boolean).join(' · ')
+          : [character.clan, `${ordinal(character.generation)} Generation`, character.sect].filter(Boolean).join(' · ')}
       </p>
     </div>
     <dl class="meta">

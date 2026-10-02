@@ -58,9 +58,30 @@ export function text(input: unknown, max: number): string | undefined {
  * `partial` is the Storyteller's adjust: only the fields present are
  * validated and returned. Creation validates everything and fills defaults.
  */
-export function validateSheet(input: Rec, partial: boolean): CharacterPatch {
+export const TEMPLATES = ['vampire', 'dhampir'] as const;
+export type Template = (typeof TEMPLATES)[number];
+
+/**
+ * A dhampir's blood doesn't follow Generation: a pool of 10 (Antiquity raises
+ * it, through the Storyteller's adjust) and one point a turn.
+ */
+export const DHAMPIR_POOL = 10;
+
+export function validateSheet(
+  input: Rec,
+  partial: boolean,
+  current?: { template?: string | null; generation?: number },
+): CharacterPatch {
   const patch: CharacterPatch = {};
   const has = (k: string) => !partial || input[k] !== undefined;
+
+  if (has('template')) {
+    const t = input.template ?? 'vampire';
+    if (!(TEMPLATES as readonly unknown[]).includes(t)) throw badRequest(`template must be one of ${TEMPLATES.join(', ')}.`);
+    patch.template = t as Template;
+  }
+  const template: Template = patch.template ?? (current?.template === 'dhampir' ? 'dhampir' : 'vampire');
+  if (has('dhampirConcept')) patch.dhampirConcept = text(input.dhampirConcept, 60) ?? '';
 
   if (has('clan')) patch.clan = text(input.clan, 60) ?? '';
   if (has('sect')) patch.sect = text(input.sect, 60) ?? '';
@@ -71,9 +92,21 @@ export function validateSheet(input: Rec, partial: boolean): CharacterPatch {
     const g = input.generation ?? 13;
     if (!isValidGeneration(g as number)) throw badRequest('generation must be 4–13.');
     patch.generation = g as number;
-    patch.bloodPoolMax = bloodPoolMax(g as number);
-    patch.bloodPerTurn = bloodPerTurn(g as number);
+    if (template === 'vampire') {
+      patch.bloodPoolMax = bloodPoolMax(g as number);
+      patch.bloodPerTurn = bloodPerTurn(g as number);
+    }
   }
+  // Switching template resets the pool to that template's rule.
+  if (patch.template === 'dhampir' && (!partial || current?.template !== 'dhampir')) {
+    patch.bloodPoolMax = DHAMPIR_POOL;
+    patch.bloodPerTurn = 1;
+  } else if (patch.template === 'vampire' && partial && current?.template === 'dhampir') {
+    const g = patch.generation ?? current.generation ?? 13;
+    patch.bloodPoolMax = bloodPoolMax(g);
+    patch.bloodPerTurn = bloodPerTurn(g);
+  }
+  if (partial && input.bloodPoolMax !== undefined) patch.bloodPoolMax = dots(input.bloodPoolMax, 1, 50, 'bloodPoolMax');
   if (has('attributes')) patch.attributes = traitMap(input.attributes, ATTRIBUTE_KEYS, 1, 1, 'Attributes');
   if (has('abilities')) patch.abilities = traitMap(input.abilities, ABILITY_KEYS, 0, 0, 'Abilities');
 
@@ -126,6 +159,7 @@ export function validateSheet(input: Rec, partial: boolean): CharacterPatch {
  * Functions that model them.
  */
 export const PROPOSABLE = [
+  'dhampirConcept',
   'clan',
   'sect',
   'sire',
