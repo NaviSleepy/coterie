@@ -64,6 +64,9 @@
           ? ['Dhampir', character.dhampirConcept, character.clan ? `${character.clan} Antecedent` : '', character.sect].filter(Boolean).join(' · ')
           : [character.clan, `${ordinal(character.generation)} Generation`, character.sect].filter(Boolean).join(' · ')}
       </p>
+      {#if character.title}
+        <p class="title" title={gloss(findEntry(table.library, 'title', character.title)) || undefined}>{character.title}</p>
+      {/if}
     </div>
     <dl class="meta">
       {#if editing}
@@ -208,6 +211,11 @@
     color: var(--oxblood);
     margin: 4px 0 0;
     font-size: 0.95rem;
+  }
+  .title {
+    margin: 2px 0 0;
+    font-style: italic;
+    color: var(--ink-soft);
   }
   .meta {
     display: grid;

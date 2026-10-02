@@ -232,6 +232,20 @@ Content-Type: application/json
   });
 %}
 
+### Proposals: nor award themselves a sect title
+POST {{endpoint}}/functions/character/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"propose\",\"characterId\":\"{{playerCharacterId}}\",\"sheet\":{\"title\":\"Prince\"}}" }
+
+> {%
+  client.test("a title is the Storyteller's to give", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
 ### Proposals: nor approve their own
 POST {{endpoint}}/functions/character/executions
 X-Appwrite-Project: {{project}}

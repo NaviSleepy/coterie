@@ -27,6 +27,8 @@ export interface Character {
   dhampirConcept: string;
   clan: string;
   sect: string;
+  /** Sect office (Prince, Bishop…), set only by the Storyteller. */
+  title: string;
   sire: string;
   generation: number;
   attributes: Record<string, number>;
@@ -78,6 +80,7 @@ export function decodeCharacter(row: Row): Character {
     dhampirConcept: row.dhampirConcept ?? '',
     clan: row.clan ?? '',
     sect: row.sect ?? '',
+    title: row.title ?? '',
     sire: row.sire ?? '',
     generation: row.generation,
     attributes: parseJson(row.attributes, {}),

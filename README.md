@@ -71,6 +71,10 @@ The creation form and the Storyteller's sheet editor offer the template. For a d
 
 Library entries of kind `ritual` are written `Thaumaturgy ritual 3: …`, `Koldunic Sorcery rite 2: …` or `Sabbat auctoritas rite: …`. The Disciplines panel lists, for each ritual tradition the character can cast, the rituals at or below their rating, collapsed by default: Thaumaturgy, Necromancy, Abyss Mysticism (by Obtenebration), Assamite Sorcery, Koldunic Sorcery and Dririmancy. Gargoyle rituals and Sabbat rites aren't tied to a Discipline, so they appear only in the library. A character's learned rituals are a list on the sheet (`characters.rituals`, `[{ name, level }]`, with level 0 for unlevelled rites). Players propose additions like any other trait and the Storyteller approves them. The panel marks which rituals within reach are already known.
 
+### Sect titles
+
+A character can hold an office in their sect: Prince, Sheriff or Harpy in the Camarilla, Bishop, Ductus or Templar in the Sabbat. `characters.title` holds it, and only the Storyteller's `character.adjust` sets it. A player can't propose a title, and creation ignores one, because offices are awarded, never chosen. The title shows under the lineage line on the sheet and on the coterie card. NPCs have `sect` and `title` too, so the Sheriff can be filed as one. Library entries of kind `title` are written `Camarilla title: …`, `Sabbat title: …` or `Anarch title: …`, and the editors suggest them.
+
 ### NPCs behind the screen
 
 The screen has an NPC roster. Each NPC has a stat block (kind, clan, Generation, Attributes, Abilities, Disciplines), a health track, blood, Willpower and notes. The `npcs` rows are readable only by the `storyteller` role and are written only through `chronicle.saveNpc` and `chronicle.removeNpc`. Players never receive them, not even as names.

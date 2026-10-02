@@ -20,6 +20,7 @@
     <h3>{table.nameOf(character.$id)}{#if table.isDmpc(character)} <span class="dmpc caps" title="Played by the Storyteller">DMPC</span>{/if}</h3>
     <span class="caps">{character.template === 'dhampir' ? `Dhampir${character.clan ? ` · ${character.clan}` : ''}` : `${character.clan || 'Caitiff'} · ${ordinal(character.generation)}`}</span>
   </div>
+  {#if character.title}<p class="office">{character.title}</p>{/if}
   <div class="line">
     <span class="label">Blood</span>
     <span><b>{character.bloodPool}</b> / {character.bloodPoolMax} · {spent} of {character.bloodPerTurn} this turn</span>
@@ -43,6 +44,12 @@
 </button>
 
 <style>
+  .office {
+    margin: -4px 0 0;
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 0.9rem;
+  }
   .card {
     text-align: left;
     background: var(--paper);

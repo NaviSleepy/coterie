@@ -83,6 +83,8 @@ export const TABLES = {
       str('dhampirConcept', 60),
       str('clan', 60),
       str('sect', 60),
+      // The office the character holds in their sect: Prince, Sheriff, Bishop, Ductus. Storyteller-set.
+      str('title', 80),
       str('sire', 120),
       int('generation', 4, 13, { required: true }),
       json('attributes'),
@@ -288,7 +290,7 @@ export const TABLES = {
     permissions: [],
     columns: [
       str('chronicleId', 36, { required: true }),
-      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept', 'ritual'], required: true },
+      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept', 'ritual', 'title'], required: true },
       str('name', 60, { required: true }),
       int('points', 1, 7),
       str('summary', 2000),
@@ -310,6 +312,8 @@ export const TABLES = {
       str('name', 120, { required: true }),
       { key: 'kind', type: 'enum', elements: ['vampire', 'ghoul', 'mortal', 'other', 'dhampir'], default: 'vampire' },
       str('clan', 60),
+      str('sect', 60),
+      str('title', 80),
       int('generation', 3, 15),
       json('attributes'),
       json('abilities'),

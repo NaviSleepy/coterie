@@ -130,7 +130,7 @@ async function update(ctx: Ctx, body: any) {
   return decodeChronicle(await ctx.store.update('chronicles', chronicle.$id, data));
 }
 
-const KINDS = ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept', 'ritual'] as const;
+const KINDS = ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept', 'ritual', 'title'] as const;
 
 async function saveEntry(ctx: Ctx, body: any) {
   const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));

@@ -85,6 +85,8 @@ export function validateSheet(
 
   if (has('clan')) patch.clan = text(input.clan, 60) ?? '';
   if (has('sect')) patch.sect = text(input.sect, 60) ?? '';
+  // A sect office is awarded, not chosen: only the Storyteller's adjust sets it.
+  if (partial && input.title !== undefined) patch.title = text(input.title, 80) ?? '';
   if (has('sire')) patch.sire = text(input.sire, 120) ?? '';
   if (has('path')) patch.path = text(input.path, 80) || 'Humanity';
 

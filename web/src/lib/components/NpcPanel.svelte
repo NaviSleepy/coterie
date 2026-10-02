@@ -9,7 +9,7 @@
   import { parseJson } from '$shared/codec.ts';
   import type { AnyRow } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
-  import { disciplineLevels } from '$lib/library';
+  import { disciplineLevels, entriesOf, findEntry, gloss } from '$lib/library';
   import HealthTrack from './HealthTrack.svelte';
 
   let { table, fighting = $bindable([]) }: { table: TableState; fighting?: string[] } = $props();
@@ -19,7 +19,7 @@
   const ABIL_KEYS = Object.values(ABILITIES).flat() as string[];
 
   type Npc = {
-    $id: string; name: string; kind: string; clan: string; generation: number | null;
+    $id: string; name: string; kind: string; clan: string; sect: string; title: string; generation: number | null;
     attributes: Record<string, number>; abilities: Record<string, number>; disciplines: { name: string; level: number }[];
     willpower: number; willpowerMax: number; bloodPool: number; bloodPoolMax: number;
     healthBashing: number; healthLethal: number; healthAggravated: number; notes: string;
@@ -31,6 +31,8 @@
     disciplines: parseJson(r.disciplines, []),
     notes: r.notes ?? '',
     clan: r.clan ?? '',
+    sect: r.sect ?? '',
+    title: r.title ?? '',
   });
   const npcs = $derived(Object.values(table.npcs).map(decode).sort((a, b) => a.name.localeCompare(b.name)));
   const track = (n: Npc) => ({ bashing: n.healthBashing, lethal: n.healthLethal, aggravated: n.healthAggravated });
@@ -81,7 +83,7 @@
     if (!draft) return;
     const d = draft;
     const ok = await patch(d, {
-      name: d.name, kind: d.kind, clan: d.clan, generation: d.kind === 'vampire' ? d.generation : null,
+      name: d.name, kind: d.kind, clan: d.clan, sect: d.sect, title: d.title, generation: d.kind === 'vampire' ? d.generation : null,
       attributes: d.attributes, abilities: d.abilities,
       disciplines: d.disciplines.filter((x) => x.name.trim()),
       willpowerMax: d.willpowerMax, willpower: Math.min(d.willpower, d.willpowerMax),
@@ -139,7 +141,7 @@
       <div class="top">
         <button class="name plain" onclick={() => expand(n.$id)} aria-expanded={open === n.$id}>
           <b>{n.name}</b>
-          <span class="caps meta">{[n.kind, n.clan, n.generation ? `${n.generation}th gen` : ''].filter(Boolean).join(' · ')}</span>
+          <span class="caps meta">{[n.title, n.kind, n.clan, n.generation ? `${n.generation}th gen` : '', n.sect].filter(Boolean).join(' · ')}</span>
         </button>
         <label class="fight"><input type="checkbox" checked={fighting.includes(n.$id)} onchange={() => toggleFight(n.$id)} /> in the fight</label>
       </div>
@@ -182,6 +184,10 @@
             <label>Name <input bind:value={draft.name} maxlength="120" /></label>
             <label>Kind <select bind:value={draft.kind}>{#each KINDS as k (k)}<option value={k}>{k}</option>{/each}</select></label>
             <label>Clan <input bind:value={draft.clan} maxlength="60" /></label>
+            <label>Sect <input bind:value={draft.sect} maxlength="60" list="npc-sects" /></label>
+            <label title={gloss(findEntry(table.library, 'title', draft.title)) || undefined}>Title <input bind:value={draft.title} maxlength="80" list="lib-title-npc" /></label>
+            <datalist id="npc-sects"><option value="Camarilla"></option><option value="Sabbat"></option><option value="Anarch"></option><option value="Independent"></option></datalist>
+            <datalist id="lib-title-npc">{#each entriesOf(table.library, 'title') as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
             {#if draft.kind === 'vampire'}<label>Generation <input type="number" min="3" max="15" bind:value={draft.generation} /></label>{/if}
             <label>Willpower max <input type="number" min="1" max="10" bind:value={draft.willpowerMax} /></label>
             <label>Blood max <input type="number" min="0" max="50" bind:value={draft.bloodPoolMax} /></label>

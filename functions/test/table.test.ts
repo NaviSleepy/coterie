@@ -198,6 +198,28 @@ describe('rituals on the sheet', () => {
   });
 });
 
+describe('sect titles', () => {
+  it('lets only the Storyteller award a title, never a player at creation or by proposal', async () => {
+    const w = ashenCourt();
+    await character(w.as(ST), { action: 'adjust', characterId: ISOLDE, sheet: { title: 'Keeper of Elysium' } });
+    assert.equal(w.tables.row('characters', ISOLDE)!.title, 'Keeper of Elysium');
+    await rejects(character(w.as(ISOLDE_PLAYER), { action: 'propose', characterId: ISOLDE, sheet: { title: 'Prince' } }), 403);
+    const { characterId }: any = await character(w.as(DMITRI_PLAYER, [3]), { action: 'create', chronicleId: CHRONICLE, profile: { name: 'Upstart' }, sheet: { title: 'Prince' } });
+    assert.ok(!w.tables.row('characters', characterId)!.title, 'creation ignores a self-awarded title');
+    await character(w.as(ST), { action: 'adjust', characterId: ISOLDE, sheet: { title: '' } });
+    assert.equal(w.tables.row('characters', ISOLDE)!.title, '');
+  });
+
+  it('gives NPCs a sect and a title', async () => {
+    const w = ashenCourt();
+    const { npcId }: any = await chronicle(w.as(ST), { action: 'saveNpc', chronicleId: CHRONICLE, npc: { name: 'Aldana', sect: 'Camarilla', title: 'Sheriff' } });
+    assert.equal(w.tables.row('npcs', npcId)!.title, 'Sheriff');
+    await chronicle(w.as(ST), { action: 'saveNpc', chronicleId: CHRONICLE, npcId, npc: { title: 'Scourge' } });
+    assert.equal(w.tables.row('npcs', npcId)!.title, 'Scourge');
+    assert.equal(w.tables.row('npcs', npcId)!.sect, 'Camarilla');
+  });
+});
+
 describe('dhampirs', () => {
   const create = (w: any, sheet: any, dice = [3]) =>
     character(w.as(DMITRI_PLAYER, dice), { action: 'create', chronicleId: CHRONICLE, profile: { name: 'Mara Kell' }, sheet });
@@ -441,7 +463,7 @@ describe('library', () => {
     await rejects(save(w, ST, { kind: 'mystery', name: 'X' }), 400);
     const { entryId }: any = await save(w, ST, { kind: 'discipline', name: 'Auspex', points: 3 });
     assert.equal(w.tables.row('library', entryId)!.points, null);
-    for (const kind of ['clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept', 'ritual']) {
+    for (const kind of ['clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept', 'ritual', 'title']) {
       const { entryId: id }: any = await save(w, ST, { kind, name: `A ${kind}`, points: 2, page: 'V20 p. 1' });
       assert.equal(w.tables.row('library', id)!.kind, kind);
       assert.equal(w.tables.row('library', id)!.points, null);
