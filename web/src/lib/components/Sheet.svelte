@@ -146,6 +146,12 @@
           <div class="trait" title={gloss(findEntry(table.library, 'flaw', f.name)) || undefined}><span>{f.name}</span><span class="pts">{f.points} pt flaw</span></div>
         {/each}
       {/if}
+      {#if character.rituals?.length}
+        <h2 class="spaced">Rituals</h2>
+        {#each character.rituals as r, i (i)}
+          <div class="trait" title={gloss(findEntry(table.library, 'ritual', r.name)) || undefined}><span>{r.name}</span><span class="pts">{r.level ? `level ${r.level}` : 'rite'}</span></div>
+        {/each}
+      {/if}
       <h2 class="spaced">Virtues</h2>
       {#each virtueKeys as key (key)}
         <div class="trait"><span>{traitLabel(key)}</span><Dots value={character.virtues[key as keyof typeof character.virtues] ?? 1} label={traitLabel(key)} /></div>

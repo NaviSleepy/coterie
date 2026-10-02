@@ -36,6 +36,7 @@ export interface Character {
   backgrounds: { name: string; level: number }[];
   virtues: TraitSheet['virtues'];
   merits: { name: string; points: number }[];
+  rituals: { name: string; level: number }[];
   flaws: { name: string; points: number }[];
   path: string;
   pathRating: number;
@@ -64,6 +65,7 @@ const JSON_FIELDS = [
   'backgrounds',
   'virtues',
   'merits',
+  'rituals',
   'flaws',
 ] as const;
 
@@ -85,6 +87,7 @@ export function decodeCharacter(row: Row): Character {
     backgrounds: parseJson(row.backgrounds, []),
     virtues: parseJson(row.virtues, {}),
     merits: parseJson(row.merits, []),
+    rituals: parseJson(row.rituals, []),
     flaws: parseJson(row.flaws, []),
     path: row.path ?? 'Humanity',
     pathRating: row.pathRating ?? 7,

@@ -28,6 +28,7 @@ export interface Draft {
   backgrounds: Named[];
   virtues: Record<string, number>;
   merits: Pointed[];
+  rituals: Named[];
   flaws: Pointed[];
   pathRating: number;
   willpowerPermanent: number;
@@ -36,7 +37,7 @@ export interface Draft {
 export type DraftKey = keyof Draft;
 export const DRAFT_KEYS: DraftKey[] = [
   'template', 'dhampirConcept', 'bloodPoolMax', 'clan', 'sect', 'sire', 'path', 'generation', 'attributes', 'abilities', 'specialties',
-  'disciplines', 'backgrounds', 'virtues', 'merits', 'flaws', 'pathRating', 'willpowerPermanent',
+  'disciplines', 'backgrounds', 'virtues', 'merits', 'rituals', 'flaws', 'pathRating', 'willpowerPermanent',
 ];
 
 const clone = <T>(v: T): T => JSON.parse(JSON.stringify(v));
@@ -61,6 +62,7 @@ export function draftOf(c: Character, over: Partial<Draft> = {}): Draft {
     backgrounds: c.backgrounds.map((b) => ({ name: b.name, level: b.level })),
     virtues: { ...c.virtues } as Record<string, number>,
     merits: c.merits.map((m) => ({ name: m.name, points: m.points })),
+    rituals: (c.rituals ?? []).map((r) => ({ name: r.name, level: r.level })),
     flaws: c.flaws.map((f) => ({ name: f.name, points: f.points })),
     pathRating: c.pathRating,
     willpowerPermanent: c.willpowerPermanent,
@@ -97,6 +99,7 @@ function tidy(d: Draft, now: Draft): Draft {
     disciplines: levels(d.disciplines),
     backgrounds: levels(d.backgrounds),
     merits: points(d.merits),
+    rituals: named(d.rituals).map((x) => ({ ...x, level: num(x.level, 0) })),
     flaws: points(d.flaws),
     specialties: d.specialties.filter((s) => s.trait),
   };
@@ -167,6 +170,7 @@ export function describe(c: Character, changes: Partial<Draft>): string[] {
   }
   if (changes.disciplines) lines.push(...namedLines(now.disciplines, changes.disciplines, (d) => d.level, (n) => `${n} dots`));
   if (changes.backgrounds) lines.push(...namedLines(now.backgrounds, changes.backgrounds, (b) => b.level, (n) => `${n} dots`));
+  if (changes.rituals) lines.push(...namedLines(now.rituals, changes.rituals, (r) => r.level, (n) => (n ? `level ${n} ritual` : 'rite')));
   if (changes.merits) lines.push(...namedLines(now.merits, changes.merits, (m) => m.points, (n) => `${n} pt merit`));
   if (changes.flaws) lines.push(...namedLines(now.flaws, changes.flaws, (f) => f.points, (n) => `${n} pt flaw`));
   if (changes.virtues) dots('virtues');
