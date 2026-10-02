@@ -6,7 +6,7 @@
 import { traitLabel } from '$engine/index.ts';
 import type { AnyRow } from './appwrite';
 
-export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'equipment' | 'concept' | 'background' | 'rule';
+export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'equipment' | 'concept' | 'ritual' | 'background' | 'rule';
 
 export const KIND_LABELS: Record<LibraryKind, string> = {
   clan: 'Clans',
@@ -19,12 +19,13 @@ export const KIND_LABELS: Record<LibraryKind, string> = {
   archetype: 'Natures and Demeanors',
   equipment: 'Weapons and armor',
   concept: 'Dhampir concepts',
+  ritual: 'Rituals and rites',
   background: 'Backgrounds',
   rule: 'House rules',
 };
 
 /** One entry's kind, for a picker. */
-export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : k === 'equipment' ? 'Weapon or armor' : k === 'concept' ? 'Dhampir concept' : KIND_LABELS[k].replace(/s$/, ''));
+export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : k === 'equipment' ? 'Weapon or armor' : k === 'concept' ? 'Dhampir concept' : k === 'ritual' ? 'Ritual or rite' : KIND_LABELS[k].replace(/s$/, ''));
 
 export function entriesOf(library: Record<string, AnyRow>, kind: LibraryKind): AnyRow[] {
   return Object.values(library)
@@ -168,4 +169,54 @@ export function combosFor(library: Record<string, AnyRow>, disciplines: { name: 
 /** "Auspex 2 + Presence 3", for showing what a combination needs. */
 export function needsLabel(p: PowerEntry): string {
   return p.needs.map((alts) => alts.map((r) => `${r.discipline}${r.path ? ` (${r.path})` : ''} ${r.level}`).join(' or ')).join(' + ');
+}
+
+/**
+ * Rituals are written "Thaumaturgy ritual 3: …" or "Koldunic Sorcery rite 2: …".
+ * Each tradition is cast through a Discipline, and a caster can learn rituals
+ * up to their rating in it.
+ */
+const RITUAL_DISCIPLINE: Record<string, string> = {
+  thaumaturgy: 'thaumaturgy',
+  necromancy: 'necromancy',
+  'abyss mysticism': 'obtenebration',
+  'assamite sorcery': 'assamite sorcery',
+  'koldunic sorcery': 'koldunic sorcery',
+  dririmancy: 'dririmancy',
+};
+
+export interface RitualEntry {
+  entry: AnyRow;
+  tradition: string;
+  level: number;
+  text: string;
+}
+
+export function parseRitual(entry: AnyRow): RitualEntry | null {
+  const m = /^(.+?)\s+(?:ritual|rite)\s+(\d{1,2}):\s*(.*)$/s.exec(String(entry.summary ?? ''));
+  return m ? { entry, tradition: m[1], level: Number(m[2]), text: m[3] } : null;
+}
+
+/** Rituals the character's Disciplines are high enough to learn, by tradition, lowest first. */
+export function ritualsWithinReach(
+  library: Record<string, AnyRow>,
+  disciplines: { name: string; level: number }[],
+): { tradition: string; rating: number; rituals: RitualEntry[] }[] {
+  const rating = new Map<string, number>();
+  for (const d of disciplines) {
+    const { base } = splitDiscipline(d.name);
+    rating.set(base, Math.max(rating.get(base) ?? 0, d.level));
+  }
+  const groups = new Map<string, { tradition: string; rating: number; rituals: RitualEntry[] }>();
+  for (const r of entriesOf(library, 'ritual').map(parseRitual)) {
+    if (!r) continue;
+    const via = RITUAL_DISCIPLINE[norm(r.tradition)];
+    const have = via ? (rating.get(via) ?? 0) : 0;
+    if (!have || r.level > have) continue;
+    const g = groups.get(r.tradition) ?? { tradition: r.tradition, rating: have, rituals: [] };
+    g.rituals.push(r);
+    groups.set(r.tradition, g);
+  }
+  for (const g of groups.values()) g.rituals.sort((a, b) => a.level - b.level || String(a.entry.name).localeCompare(String(b.entry.name)));
+  return [...groups.values()];
 }

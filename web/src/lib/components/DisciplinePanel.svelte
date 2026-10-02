@@ -6,12 +6,13 @@
    */
   import type { Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
-  import { combosFor, disciplineLevels, needsLabel } from '$lib/library';
+  import { combosFor, disciplineLevels, needsLabel, ritualsWithinReach } from '$lib/library';
 
   let { table, character }: { table: TableState; character: Character } = $props();
 
   const levels = $derived(disciplineLevels(table.library, character.disciplines ?? []));
   const combos = $derived(combosFor(table.library, character.disciplines ?? []));
+  const rituals = $derived(ritualsWithinReach(table.library, character.disciplines ?? []));
   const dots = (n: number) => '•'.repeat(Math.min(n, 5)) + (n > 5 ? ` ${'•'.repeat(n - 5)}` : '');
 </script>
 
@@ -50,6 +51,21 @@
       </ul>
       <p class="hint">Each combination is learned separately, with the Storyteller's leave.</p>
     {/if}
+
+    {#each rituals as g (g.tradition)}
+      <details class="rituals">
+        <summary><span>{g.tradition} rituals within reach</span> <span class="count">{g.rituals.length}</span></summary>
+        <ul class="combos">
+          {#each g.rituals as r (r.entry.$id)}
+            <li title={r.entry.page || undefined}>
+              <b>{r.entry.name}</b> <span class="needs">Level {r.level}</span>
+              <span class="text">{r.text}</span>
+            </li>
+          {/each}
+        </ul>
+        <p class="hint">Rituals are learned one at a time, up to your {g.tradition} rating.</p>
+      </details>
+    {/each}
   </section>
 {/if}
 
@@ -109,6 +125,10 @@
   .hint {
     font-style: italic;
     margin: 4px 0 0;
+  }
+  .count {
+    color: var(--ink-faint);
+    font-size: 0.9rem;
   }
   .needs {
     font-family: var(--caps);
