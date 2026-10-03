@@ -78,6 +78,7 @@ const WATCHED: TableId[] = [
   'npcs',
   'reckonings',
   'reckoningSeals',
+  'coterieNotes',
 ];
 
 const HEARTBEAT_MS = 30_000;
@@ -111,6 +112,8 @@ export class TableState {
   /** Sins laid before characters, keyed by character id; the seals (difficulties) only reach the Storyteller. */
   reckonings = $state<Record<string, AnyRow>>({});
   reckoningSeals = $state<Record<string, AnyRow>>({});
+  /** The coterie's shared notes, once someone has opened them. */
+  coterieNote = $state<AnyRow | null>(null);
   /** The Storyteller's reference entries, readable by the whole table. */
   library = $state<Record<string, AnyRow>>({});
   /** The Storyteller's NPCs. Players' reads come back empty: the rows are behind the screen. */
@@ -229,6 +232,7 @@ export class TableState {
     if (!chronicle) throw new Error('This chronicle does not exist, or you are not at its table.');
     const by = [Query.equal('chronicleId', this.chronicleId), Query.limit(100)];
 
+    const coterieNote = getRow('coterieNotes', this.chronicleId).catch(() => null);
     const [scene, characters, profiles, rolls, rollSecrets, secrets, seals, presence, proposals, creationRequests, library, npcs, reckonings, reckoningSeals, memberships] = await Promise.all([
       chronicle.currentSceneId ? getRow('scenes', chronicle.currentSceneId) : Promise.resolve(null),
       listRows('characters', by),
@@ -262,6 +266,7 @@ export class TableState {
     this.npcs = byId(npcs);
     this.reckonings = byId(reckonings);
     this.reckoningSeals = byId(reckoningSeals);
+    this.coterieNote = await coterieNote;
     this.members = memberships.memberships.map((m) => ({ userId: m.userId, name: m.userName || 'Someone', roles: m.roles }));
     this.settlePending();
   }
@@ -340,6 +345,9 @@ export class TableState {
         }
         break;
       }
+      case 'coterieNotes':
+        if (!deleted) this.coterieNote = row;
+        break;
       case 'rollSecrets':
       case 'secrets':
       case 'seals':
@@ -467,6 +475,36 @@ export class TableState {
     } catch (e) {
       this.error = (e as Error).message;
       return false;
+    }
+  }
+
+  /** Makes sure the shared notes row exists; only the chronicle Function can create it. */
+  async openCoterieNotes(): Promise<void> {
+    if (this.coterieNote) return;
+    const row = await this.act<AnyRow>('chronicle', { action: 'openNotes', chronicleId: this.chronicleId });
+    if (row) this.coterieNote = row;
+  }
+
+  /**
+   * Saves the shared notes, unless someone else saved since `base` (the
+   * $updatedAt the editor last loaded): then it hands back their version
+   * instead, so nobody's words vanish without them knowing.
+   */
+  async saveCoterieNote(body: string, base: string): Promise<{ row: AnyRow } | { conflict: AnyRow } | null> {
+    try {
+      const current = await getRow('coterieNotes', this.chronicleId);
+      if (current && current.$updatedAt !== base) return { conflict: current };
+      const row = await tables.updateRow({
+        databaseId: DATABASE_ID,
+        tableId: 'coterieNotes',
+        rowId: this.chronicleId,
+        data: { body: body.slice(0, NOTE_MAX), editedBy: this.myName.slice(0, 120) },
+      });
+      this.coterieNote = row as unknown as AnyRow;
+      return { row: this.coterieNote };
+    } catch (e) {
+      this.error = (e as Error).message;
+      return null;
     }
   }
 

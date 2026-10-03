@@ -17,6 +17,8 @@
  *   saveNpc       ST only. Creates an NPC, or edits one (only the fields sent):
  *                 stat block, health, blood, Willpower, notes. Behind the screen.
  *   removeNpc     ST only.
+ *   openNotes     Anyone at the table. Makes the coterie's shared notes row if
+ *                 it doesn't exist yet; clients edit it directly from then on.
  *   redCard       Anyone at the table. Raises the red card: the current thread
  *                 stops, no explanation owed. Who raised it is never stored.
  *   clearRedCard  ST only, once the scene has changed course.
@@ -33,7 +35,7 @@ import { cleanCreationOverrides } from '../../../engine/src/index.ts';
 import { decodeChronicle, loadChronicle, requireMember, requireStoryteller } from '../shared/auth.ts';
 import { badRequest, entry, HttpError, int, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
 import { checkNpc, validateNpc } from '../shared/npc.ts';
-import { storytellerOnly, tableReadable } from '../shared/perms.ts';
+import { storytellerOnly, tableEditable, tableReadable } from '../shared/perms.ts';
 import { isConflict } from '../shared/store.ts';
 
 const BOTCH_RULES = ['zero-with-a-one-is-a-botch', 'only-negative-is-a-botch'] as const;
@@ -256,6 +258,22 @@ async function removeNpc(ctx: Ctx, body: any) {
  * Function never logs the caller, and raising it twice changes nothing, so the
  * timestamp can't be used to tell who pressed it second.
  */
+async function openNotes(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  await requireMember(ctx, chronicle);
+  const existing = await ctx.store.find('coterieNotes', chronicle.$id);
+  if (existing) return existing;
+  try {
+    await ctx.store.transaction(async (tx) => {
+      await tx.create('coterieNotes', chronicle.$id, { chronicleId: chronicle.$id, body: '', editedBy: null }, tableEditable(chronicle.teamId));
+    });
+  } catch (e) {
+    // Two people opened the tab at once; the other one made it.
+    if (!isConflict(e)) throw e;
+  }
+  return ctx.store.find('coterieNotes', chronicle.$id);
+}
+
 async function redCard(ctx: Ctx, body: any) {
   const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
   await requireMember(ctx, chronicle);
@@ -272,7 +290,9 @@ async function clearRedCard(ctx: Ctx, body: any) {
 }
 
 export async function handler(ctx: Ctx, body: any) {
-  switch (oneOf(body, 'action', ['create', 'join', 'rotateInvite', 'update', 'saveEntry', 'removeEntry', 'saveNpc', 'removeNpc', 'redCard', 'clearRedCard'] as const)) {
+  switch (oneOf(body, 'action', ['create', 'join', 'rotateInvite', 'update', 'saveEntry', 'removeEntry', 'saveNpc', 'removeNpc', 'redCard', 'clearRedCard', 'openNotes'] as const)) {
+    case 'openNotes':
+      return openNotes(ctx, body);
     case 'redCard':
       return redCard(ctx, body);
     case 'clearRedCard':

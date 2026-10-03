@@ -6,10 +6,14 @@
    */
   import { onDestroy, onMount } from 'svelte';
   import { NOTE_MAX, type TableState } from '$lib/table.svelte';
+  import CoterieNotes from './CoterieNotes.svelte';
 
   let { table }: { table: TableState } = $props();
 
   const DEBOUNCE_MS = 800;
+  let tab = $state<'mine' | 'coterie'>('mine');
+  // The shared page opens the first time its tab is shown, then stays mounted so nothing unsaved is lost.
+  let sharedOpened = $state(false);
   let body = $state('');
   let saved = '';
   let status = $state<'loading' | 'saved' | 'dirty' | 'saving' | 'failed'>('loading');
@@ -66,19 +70,30 @@
 <section class="notepad panel" aria-label="Notepad">
   <header>
     <h2>Notepad</h2>
-    <span class="status" class:failed={status === 'failed'} aria-live="polite">{label}</span>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected={tab === 'mine'} class:on={tab === 'mine'} onclick={() => (tab = 'mine')}>Mine</button>
+      <button role="tab" aria-selected={tab === 'coterie'} class:on={tab === 'coterie'} onclick={() => { tab = 'coterie'; sharedOpened = true; }}>Coterie</button>
+    </div>
   </header>
-  <p class="hint">Only you can read this, not even {table.isStoryteller ? 'your players' : 'the Storyteller'}.</p>
-  <textarea
-    bind:value={body}
-    oninput={input}
-    onblur={flush}
-    maxlength={NOTE_MAX}
-    disabled={status === 'loading'}
-    placeholder="Names, debts, who lied to whom…"
-    aria-label="Your notes"
-  ></textarea>
-  {#if body.length > NOTE_MAX * 0.9}<p class="hint">{body.length} / {NOTE_MAX} characters</p>{/if}
+  <div class="pane" hidden={tab !== 'mine'}>
+    <p class="hint">
+      Only you can read this, not even {table.isStoryteller ? 'your players' : 'the Storyteller'}.
+      <span class="status" class:failed={status === 'failed'} aria-live="polite">{label}</span>
+    </p>
+    <textarea
+      bind:value={body}
+      oninput={input}
+      onblur={flush}
+      maxlength={NOTE_MAX}
+      disabled={status === 'loading'}
+      placeholder="Names, debts, who lied to whom…"
+      aria-label="Your notes"
+    ></textarea>
+    {#if body.length > NOTE_MAX * 0.9}<p class="hint">{body.length} / {NOTE_MAX} characters</p>{/if}
+  </div>
+  {#if sharedOpened}
+    <div class="pane" hidden={tab !== 'coterie'}><CoterieNotes {table} /></div>
+  {/if}
 </section>
 
 <style>
@@ -97,8 +112,34 @@
     font-weight: 500;
   }
   .status {
+    font-style: normal;
     font-size: 0.85rem;
     color: var(--ink-faint);
+    margin-left: 0.4em;
+  }
+  .tabs {
+    display: flex;
+    gap: 4px;
+  }
+  .tabs button {
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    padding: 2px 8px;
+    font-family: var(--caps);
+    letter-spacing: 0.04em;
+    color: var(--ink-soft);
+  }
+  .tabs button.on {
+    color: var(--ink);
+    border-bottom-color: var(--oxblood);
+  }
+  .pane {
+    display: grid;
+    gap: 8px;
+  }
+  .pane[hidden] {
+    display: none;
   }
   .status.failed {
     color: var(--oxblood);

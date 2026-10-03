@@ -89,6 +89,17 @@ describe('chronicles and invites', () => {
     assert.equal(w.tables.rows('chronicles').find((r: any) => r.$id === CHRONICLE)!.redCardAt, null);
   });
 
+  it('opens the coterie notes once, for the table to edit and nobody else', async () => {
+    const w = ashenCourt();
+    await rejects(chronicle(w.as(STRANGER), { action: 'openNotes', chronicleId: CHRONICLE }), 403);
+    const first: any = await chronicle(w.as(ISOLDE_PLAYER), { action: 'openNotes', chronicleId: CHRONICLE });
+    assert.equal(first.$id, CHRONICLE);
+    assert.deepEqual(first.$permissions, [`read("team:${TEAM}")`, `update("team:${TEAM}")`]);
+    await w.tables.updateRow({ tableId: 'coterieNotes', rowId: CHRONICLE, data: { body: 'The Prince sleeps under the Water Tower.' } });
+    const again: any = await chronicle(w.as(DMITRI_PLAYER), { action: 'openNotes', chronicleId: CHRONICLE });
+    assert.equal(again.body, 'The Prince sleeps under the Water Tower.', 'opening it again keeps what is written');
+  });
+
   it('mints codes without the characters people misread', () => {
     for (let i = 0; i < 200; i++) assert.match(inviteCode(), /^[A-HJKMNP-Z2-9]{8}$/);
   });

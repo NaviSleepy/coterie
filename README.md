@@ -132,6 +132,8 @@ The player screen's right column shows two more panels, built from the library.
 
 Every seat at the table has a notepad: on the player's screen next to the feed, and behind the Storyteller's screen. Use it for names, debts, and who lied to whom. It saves itself a moment after you stop typing, and again when you leave the page. Notes carry no stakes, so the client writes them directly, like presence. Each person has one row per chronicle, and its permissions name only its author. Other players can't read it, and neither can the Storyteller. A player's notes are just as private from the Storyteller as the Storyteller's are from the players.
 
+The notepad's **Coterie** tab is one shared page per chronicle that everyone at the table can read and edit, the Storyteller included. Edits arrive live. Before a save, the client checks that nobody else saved since its copy was loaded. If someone did, or their edit arrives while you're typing, nothing is overwritten silently: you see their version and choose "Keep mine" or "Take theirs". Only the `chronicle` Function's `openNotes` action can create the row. There's no table-level create, so nobody outside the team can claim the id first. The row's permissions are read and update for the chronicle's team.
+
 ### The red card
 
 Every screen at the table carries a red card in the corner. Anyone seated, players and Storyteller alike, can raise it with one tap. A banner then goes up for the whole table: the current thread stops, and nobody has to explain why. The Storyteller rewinds, skips past it or takes the scene somewhere else, then clears the card. Only the Storyteller can clear it.
