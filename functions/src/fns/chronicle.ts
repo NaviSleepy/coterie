@@ -78,12 +78,44 @@ async function create(ctx: Ctx, body: any) {
         },
         tableReadable(teamId),
       );
-      return decodeChronicle(row);
+      const chronicle = decodeChronicle(row);
+      return { ...chronicle, libraryCopied: await copyStarterLibrary(ctx, chronicle) };
     } catch (e) {
       if (!isConflict(e)) throw e; // invite code collision: roll another
     }
   }
   throw new Error('could not mint a unique invite code');
+}
+
+/**
+ * A new chronicle starts with the starter chronicle's library, so its
+ * Storyteller isn't facing an empty reference. A failed copy never fails the
+ * creation: the chronicle exists either way, and the ST can add entries.
+ */
+async function copyStarterLibrary(ctx: Ctx, chronicle: { $id: string; teamId: string }): Promise<number> {
+  const source = ctx.starterChronicleId;
+  if (!source || source === chronicle.$id) return 0;
+  try {
+    const entries = await ctx.store.listAll('library', [Query.equal('chronicleId', source)]);
+    const permissions = tableReadable(chronicle.teamId);
+    await ctx.store.createMany(
+      'library',
+      entries.map((e) => ({
+        $id: ID.unique(),
+        $permissions: permissions,
+        chronicleId: chronicle.$id,
+        kind: e.kind,
+        name: e.name,
+        points: e.points ?? null,
+        summary: e.summary ?? '',
+        page: e.page ?? '',
+      })),
+    );
+    return entries.length;
+  } catch (e) {
+    ctx.log(`starter library copy into ${chronicle.$id} failed: ${(e as Error)?.message ?? e}`);
+    return 0;
+  }
 }
 
 async function join(ctx: Ctx, body: any) {

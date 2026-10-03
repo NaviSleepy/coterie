@@ -69,6 +69,7 @@ export class FakeTables implements TablesLike {
     for (const q of queries.map((s: string) => JSON.parse(s))) {
       if (q.method === 'equal') rows = rows.filter((r) => q.values.includes(r[q.attribute]));
       if (q.method === 'limit') limit = q.values[0];
+      if (q.method === 'cursorAfter') rows = rows.slice(rows.findIndex((r) => r.$id === q.values[0]) + 1);
     }
     rows = rows.slice(0, limit);
     return { total: rows.length, rows: rows.map((r) => structuredClone(r)) };
@@ -100,6 +101,11 @@ export class FakeTables implements TablesLike {
 
   async createRow({ tableId, rowId, data, permissions = [], transactionId }: any) {
     return this.stageOrApply(transactionId, { kind: 'create', table: tableId, rowId, data, permissions });
+  }
+
+  async createRows({ tableId, rows }: any) {
+    for (const { $id, $permissions = [], ...data } of rows) this.apply({ kind: 'create', table: tableId, rowId: $id, data, permissions: $permissions });
+    return { total: rows.length, rows: [] };
   }
 
   async updateRow({ tableId, rowId, data = {}, permissions, transactionId }: any) {

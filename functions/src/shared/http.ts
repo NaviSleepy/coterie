@@ -18,6 +18,8 @@ export interface Ctx {
   die: DieSource;
   now: () => Date;
   log: (msg: string) => void;
+  /** The chronicle whose library every new chronicle starts with (STARTER_CHRONICLE_ID). */
+  starterChronicleId?: string;
 }
 
 export class HttpError extends Error {
@@ -74,6 +76,7 @@ export function entry(name: string, handler: Handler) {
       die: cryptoDie,
       now: () => new Date(),
       log,
+      starterChronicleId: process.env.STARTER_CHRONICLE_ID || undefined,
     };
 
     try {

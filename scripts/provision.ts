@@ -17,7 +17,7 @@
  * one-time step in the console; see the README.
  */
 
-import { Client, Functions, OrderBy, Query, Runtime, TablesDB, TablesDBIndexType } from 'node-appwrite';
+import { Client, Functions, ID, OrderBy, Query, Runtime, TablesDB, TablesDBIndexType } from 'node-appwrite';
 
 import { DATABASE_ID, FUNCTIONS, TABLES, type Column, type TableDef } from '../functions/src/shared/schema.ts';
 
@@ -180,7 +180,24 @@ async function ensureFunction(id: string) {
   console.log(`+ function ${id}`);
 }
 
+/**
+ * STARTER_CHRONICLE_ID, when set, is the chronicle whose library every new
+ * chronicle copies. It reaches the chronicle Function as an env variable,
+ * which takes effect on that Function's next deployment.
+ */
+async function ensureStarterVariable() {
+  const value = process.env.STARTER_CHRONICLE_ID;
+  if (!value) return;
+  const { variables } = await fns.listVariables({ functionId: 'chronicle' });
+  const existing = variables.find((v: any) => v.key === 'STARTER_CHRONICLE_ID');
+  if (existing?.value === value) return;
+  if (existing) await fns.updateVariable({ functionId: 'chronicle', variableId: existing.$id, key: 'STARTER_CHRONICLE_ID', value });
+  else await fns.createVariable({ functionId: 'chronicle', variableId: ID.unique(), key: 'STARTER_CHRONICLE_ID', value });
+  console.log(`~ chronicle STARTER_CHRONICLE_ID = ${value} (redeploy the Function to apply)`);
+}
+
 await ensureDatabase();
 for (const table of Object.values(TABLES)) await ensureTable(table);
 for (const id of FUNCTIONS) await ensureFunction(id);
+await ensureStarterVariable();
 console.log(`\n${project} is provisioned: ${Object.keys(TABLES).length} tables, ${FUNCTIONS.length} functions.`);

@@ -6,6 +6,8 @@
  * built on.
  */
 
+import { Query } from 'node-appwrite';
+
 import { DATABASE_ID, type TableId } from './schema.ts';
 
 export interface Row {
@@ -31,6 +33,7 @@ export interface TablesLike {
     p: Base & { rowId: string; data?: Record<string, any>; permissions?: string[]; transactionId?: string },
   ): Promise<Row>;
   deleteRow(p: Base & { rowId: string; transactionId?: string }): Promise<unknown>;
+  createRows(p: Base & { rows: Record<string, any>[] }): Promise<unknown>;
   createTransaction(p?: { ttl?: number }): Promise<{ $id: string }>;
   updateTransaction(p: { transactionId: string; commit?: boolean; rollback?: boolean }): Promise<unknown>;
 }
@@ -90,6 +93,24 @@ export class Store {
 
   update(table: TableId, rowId: string, data: Record<string, any>, permissions?: string[]): Promise<Row> {
     return this.tables.updateRow({ databaseId: DATABASE_ID, tableId: table, rowId, data, permissions });
+  }
+
+  /** Bulk create, in batches. Each row carries its own `$id` and `$permissions`. */
+  async createMany(table: TableId, rows: Record<string, any>[], batch = 100): Promise<void> {
+    for (let i = 0; i < rows.length; i += batch) {
+      await this.tables.createRows({ databaseId: DATABASE_ID, tableId: table, rows: rows.slice(i, i + batch) });
+    }
+  }
+
+  /** Every row matching `queries`, a page at a time. */
+  async listAll(table: TableId, queries: string[], page = 500): Promise<Row[]> {
+    const out: Row[] = [];
+    for (;;) {
+      const q = [...queries, Query.limit(page), ...(out.length ? [Query.cursorAfter(out[out.length - 1].$id)] : [])];
+      const rows = await this.list(table, q);
+      out.push(...rows);
+      if (rows.length < page) return out;
+    }
   }
 
   async remove(table: TableId, rowId: string): Promise<void> {
