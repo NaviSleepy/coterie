@@ -146,6 +146,10 @@ Each skin is a set of CSS tokens under `[data-theme]` in `app.css`: colours, fon
 
 The choice is stored in the browser only, in `localStorage`, and never reaches the server. A small script in `app.html` applies it before first paint, so the page doesn't flash the default. Each skin's fonts load only when someone picks it.
 
+### The Malkavian skin
+
+There's a seventh skin that isn't in the picker. Type the Konami code (↑ ↑ ↓ ↓ ← → ← → B A) anywhere except a text field and *The Cobweb has noticed you.* Panels sit slightly crooked, headings see double in a typewriter face, and pips and dice are a little misshapen. The blood pool becomes the Blood Pond, the roll button says "Ask nicely", the feed is "Things that happened, allegedly", and a failed degeneration check lands with the wrong number first. Type the code again, or reload, and the voices quiet down. It lasts for the visit only and is never saved over your chosen theme.
+
 ### The dawn warning
 
 In the half hour before the player's local sunrise, warm light creeps in from the edges of the page and a strip under the masthead counts down: *The sky is lightening. Find your haven. Dawn in 12 minutes.* It disappears when the sun is up, and it can be dismissed for the morning.
