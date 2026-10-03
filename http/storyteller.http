@@ -45,7 +45,7 @@ X-Appwrite-Project: {{project}}
 X-Appwrite-JWT: {{jwtStoryteller}}
 Content-Type: application/json
 
-{ "data": { "outcome": "botch" } }
+{ "data": { "label": "Tampered after the fact" } }
 
 > {%
   client.test("the roll log is append-only for every role", () => {

@@ -106,7 +106,7 @@ X-Appwrite-JWT: {{jwtPlayer}}
 %}
 
 ### A roll behind the screen is not in the player's feed at all
-GET {{endpoint}}/tablesdb/{{db}}/tables/rolls/rows?queries[]={"method":"equal","attribute":"chronicleId","values":["{{chronicleId}}"]}
+GET {{endpoint}}/tablesdb/{{db}}/tables/rolls/rows?queries[]={"method":"equal","attribute":"chronicleId","values":["{{chronicleId}}"]}&queries[]={"method":"limit","values":[5000]}
 X-Appwrite-Project: {{project}}
 X-Appwrite-JWT: {{jwtPlayer}}
 
