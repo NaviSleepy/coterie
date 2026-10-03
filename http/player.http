@@ -527,3 +527,65 @@ Content-Type: application/json
     client.assert(response.status === 401, `expected 401, got ${response.status}`);
   });
 %}
+
+### Notepad: a player writes their own private note
+POST {{endpoint}}/tablesdb/{{db}}/tables/notes/rows
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "rowId": "unique()", "data": { "chronicleId": "{{chronicleId}}", "userId": "sec-player", "body": "Fixture note: for my eyes only." }, "permissions": ["read(\"user:sec-player\")", "update(\"user:sec-player\")", "delete(\"user:sec-player\")"] }
+
+> {%
+  client.test("a player can keep a notepad", () => {
+    client.assert(response.status === 201, `expected 201, got ${response.status}`);
+  });
+  client.global.set("playerNoteId", response.body.$id);
+%}
+
+### Notepad: another player cannot read it
+GET {{endpoint}}/tablesdb/{{db}}/tables/notes/rows/{{playerNoteId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtOther}}
+
+> {%
+  client.test("notes are private from other players", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### Notepad: nor can the Storyteller
+GET {{endpoint}}/tablesdb/{{db}}/tables/notes/rows/{{playerNoteId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+
+> {%
+  client.test("notes are private from the Storyteller too", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### Notepad: nor can another player overwrite it
+PATCH {{endpoint}}/tablesdb/{{db}}/tables/notes/rows/{{playerNoteId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtOther}}
+Content-Type: application/json
+
+{ "data": { "body": "Scribbled over" } }
+
+> {%
+  client.test("only the author writes their note", () => {
+    client.assert(response.status === 404 || response.status === 401, `expected 404 or 401, got ${response.status}`);
+  });
+%}
+
+### Notepad: the author deletes it (keeps the fixture clean)
+DELETE {{endpoint}}/tablesdb/{{db}}/tables/notes/rows/{{playerNoteId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("the author can delete their own note", () => {
+    client.assert(response.status === 204, `expected 204, got ${response.status}`);
+  });
+%}

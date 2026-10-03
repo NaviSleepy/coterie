@@ -39,6 +39,7 @@ import {
   getRow,
   listAll,
   listRows,
+  noteId,
   presenceId,
   Query,
   realtime,
@@ -57,6 +58,9 @@ export interface Member {
 type Pending =
   | { id: string; characterId: string; kind: 'damage'; amount: number; type: DamageType; until?: number }
   | { id: string; characterId: string; kind: 'blood'; amount: number; until?: number };
+
+/** Longest notepad the app saves, in characters. */
+export const NOTE_MAX = 20000;
 
 const WATCHED: TableId[] = [
   'chronicles',
@@ -435,6 +439,37 @@ export class TableState {
    * The cosmetic profile — name, concept, Nature, Demeanor, gear — is the one
    * row a player writes directly; the row's permissions are the check.
    */
+  /** The caller's own notepad for this chronicle, or '' when they haven't written one. */
+  async loadNote(): Promise<string> {
+    const row = await getRow('notes', noteId(this.chronicleId, this.me));
+    return (row?.body as string) ?? '';
+  }
+
+  /** Saves the notepad; the row is created on first save, readable and writable by its author alone. */
+  async saveNote(body: string): Promise<boolean> {
+    const rowId = noteId(this.chronicleId, this.me);
+    const data = { chronicleId: this.chronicleId, userId: this.me, body: body.slice(0, NOTE_MAX) };
+    try {
+      try {
+        await tables.updateRow({ databaseId: DATABASE_ID, tableId: 'notes', rowId, data });
+      } catch (e) {
+        if ((e as { code?: number }).code !== 404) throw e;
+        const me = Role.user(this.me);
+        await tables.createRow({
+          databaseId: DATABASE_ID,
+          tableId: 'notes',
+          rowId,
+          data,
+          permissions: [Permission.read(me), Permission.update(me), Permission.delete(me)],
+        });
+      }
+      return true;
+    } catch (e) {
+      this.error = (e as Error).message;
+      return false;
+    }
+  }
+
   async saveProfile(characterId: string, data: Record<string, unknown>): Promise<boolean> {
     this.error = null;
     try {

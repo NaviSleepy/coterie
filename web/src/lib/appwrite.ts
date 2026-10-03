@@ -108,3 +108,8 @@ export function presenceId(chronicleId: string, userId: string): string {
   const key = `${chronicleId}:${userId}`;
   return `p${h(key, 1)}${h(key, 2)}`.slice(0, 36);
 }
+
+/** This user's notepad row in a chronicle: same hash, its own prefix. */
+export function noteId(chronicleId: string, userId: string): string {
+  return `n${presenceId(chronicleId, `note:${userId}`).slice(1)}`;
+}

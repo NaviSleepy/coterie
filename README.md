@@ -128,6 +128,10 @@ The player screen's right column shows two more panels, built from the library.
 
 "Create a DMPC" on the screen opens the same creation form, and the character is created with the Storyteller as its owner. It goes through the same validation and blood roll as anyone else's and has the same permissions: the Storyteller reads it, players don't, and nobody writes it except through Functions. The screen marks it DMPC. The Storyteller plays it from "My sheet", where the roll panel builds pools from its traits as it does for a player. There's no proposal step, because the Storyteller edits the sheet directly from the screen.
 
+### A private notepad
+
+Every seat at the table has a notepad: on the player's screen next to the feed, and behind the Storyteller's screen. Use it for names, debts, and who lied to whom. It saves itself a moment after you stop typing, and again when you leave the page. Notes carry no stakes, so the client writes them directly, like presence. Each person has one row per chronicle, and its permissions name only its author. Other players can't read it, and neither can the Storyteller. A player's notes are just as private from the Storyteller as the Storyteller's are from the players.
+
 ### The red card
 
 Every screen at the table carries a red card in the corner. Anyone seated, players and Storyteller alike, can raise it with one tap. A banner then goes up for the whole table: the current thread stops, and nobody has to explain why. The Storyteller rewinds, skips past it or takes the scene somewhere else, then clears the card. Only the Storyteller can clear it.
