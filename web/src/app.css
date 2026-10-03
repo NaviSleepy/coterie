@@ -327,6 +327,26 @@ button:focus-visible {
   white-space: nowrap;
 }
 
+/* Dice egg: someone cut the lights (a botch of nothing but ones). */
+body.lights-out::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: #000;
+  animation: lights-out 1.2s steps(1, end) forwards;
+}
+@keyframes lights-out {
+  0% { opacity: 0.92; }
+  12% { opacity: 0; }
+  20% { opacity: 0.85; }
+  45% { opacity: 0.85; }
+  52% { opacity: 0.2; }
+  58% { opacity: 0.7; }
+  70%, 100% { opacity: 0; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
