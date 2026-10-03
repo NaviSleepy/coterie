@@ -67,7 +67,9 @@
     {:else}
       <label>Generation
         <select bind:value={draft.generation}>
-          {#each [13, 12, 11, 10, 9, 8, 7, 6, 5, 4] as g (g)}<option value={g}>{g}th — pool {bloodPoolMax(g)}, {bloodPerTurn(g)}/turn</option>{/each}
+          <option value={15}>15th — thin-blooded: pool 10, 6 usable at double cost (4-pt Flaw)</option>
+            <option value={14}>14th — thin-blooded: pool 10, 8 usable (2-pt Flaw)</option>
+            {#each [13, 12, 11, 10, 9, 8, 7, 6, 5, 4] as g (g)}<option value={g}>{g}th — pool {bloodPoolMax(g)}, {bloodPerTurn(g)}/turn</option>{/each}
         </select>
       </label>
     {/if}

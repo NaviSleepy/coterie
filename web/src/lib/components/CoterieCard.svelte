@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { woundLevel, woundPenalty } from '$engine/index.ts';
+  import { bloodRules, woundLevel, woundPenalty } from '$engine/index.ts';
   import { healthOf, type Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
   import BloodPool from './BloodPool.svelte';
@@ -25,7 +25,7 @@
     <span class="label">Blood</span>
     <span><b>{character.bloodPool}</b> / {character.bloodPoolMax} · {spent} of {character.bloodPerTurn} this turn</span>
   </div>
-  <BloodPool pool={character.bloodPool} max={character.bloodPoolMax} small />
+  <BloodPool pool={character.bloodPool} max={character.bloodPoolMax} reserve={bloodRules(character).reserve} small />
   <div class="pair">
     <div>
       <span class="label">Willpower {character.willpowerTemporary} / {character.willpowerPermanent}</span>

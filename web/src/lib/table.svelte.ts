@@ -24,6 +24,7 @@ import type { RealtimeResponseEvent, RealtimeSubscription } from 'appwrite';
 
 import {
   applyDamage,
+  bloodRules,
   remainingThisTurn,
   spendBlood,
   turnRef,
@@ -179,7 +180,7 @@ export class TableState {
         const out = applyDamage(healthOf(c), p.amount, p.type);
         c = { ...c, healthBashing: out.track.bashing, healthLethal: out.track.lethal, healthAggravated: out.track.aggravated };
       } else {
-        const out = spendBlood(stateOf(c), p.amount, this.turnRef);
+        const out = spendBlood(stateOf(c), p.amount, this.turnRef, bloodRules(c));
         if (out.ok) c = { ...c, bloodPool: out.bloodPool, bloodSpentThisTurn: out.bloodSpentThisTurn, bloodSpentTurnRef: out.bloodSpentTurnRef };
       }
     }

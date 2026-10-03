@@ -19,9 +19,11 @@
  */
 
 import {
+  bloodRules,
   feed,
   healDamage,
   remainingThisTurn,
+  usableBlood,
   turnRef,
   type HealthTrack,
 } from '../../../engine/src/index.ts';
@@ -55,15 +57,21 @@ export async function handler(ctx: Ctx, body: any) {
       const healed = { lethal: 0, bashing: 0, aggravated: 0 };
       let turnSpend = 0;
 
+      // Thin blood heals from the usable part of the pool only, and at 15th
+      // Generation (or with the Thin Blood Flaw) each point of healing costs two.
+      const rules = bloodRules(c);
       if (heal > 0) {
         // Worst first: lethal is the one that kills.
-        const budget = Math.min(pool, remainingThisTurn({ ...stateOf(c), bloodPool: pool }, ref));
+        const usable = usableBlood(pool, rules);
+        const budget = Math.min(usable, remainingThisTurn({ ...stateOf(c), bloodPool: pool }, ref));
         if (budget <= 0) {
           throw refused(
-            pool <= 0 ? 'insufficient-blood' : 'per-turn-cap',
+            pool <= 0 ? 'insufficient-blood' : usable <= 0 ? 'thin-blood-reserve' : 'per-turn-cap',
             pool <= 0
               ? 'No blood in the pool to heal with.'
-              : 'No blood left to draw this turn. Healing waits for the Storyteller to advance the turn.',
+              : usable <= 0
+                ? `Thin blood: the last ${rules.reserve} points only keep you rising, and can't heal.`
+                : 'No blood left to draw this turn. Healing waits for the Storyteller to advance the turn.',
           );
         }
         let wanted = heal;
@@ -76,17 +84,17 @@ export async function handler(ctx: Ctx, body: any) {
           spendable -= out.bloodSpent;
           turnSpend += out.bloodSpent;
         }
-        pool -= turnSpend;
+        pool -= turnSpend * rules.multiplier;
       }
 
       if (healAggravated > 0) {
-        const out = healDamage(track, healAggravated, 'aggravated', pool);
+        const out = healDamage(track, healAggravated, 'aggravated', usableBlood(pool, rules));
         track = out.track;
         healed.aggravated = out.healed;
-        pool -= out.bloodSpent;
+        pool -= out.bloodSpent * rules.multiplier;
       }
 
-      const aggBlood = healed.aggravated * 5;
+      const aggBlood = healed.aggravated * 5 * rules.multiplier;
       const alreadyThisTurn = ref >= 0 && c.bloodSpentTurnRef === ref ? c.bloodSpentThisTurn : 0;
       return {
         patch: {
@@ -106,7 +114,7 @@ export async function handler(ctx: Ctx, body: any) {
           gained: fed.gained,
           overflow: fed.overflow,
           healed,
-          bloodSpentHealing: turnSpend + aggBlood,
+          bloodSpentHealing: turnSpend * rules.multiplier + aggBlood,
         },
       };
     },

@@ -318,6 +318,30 @@ describe('the creation budget', () => {
   });
 });
 
+describe('thin-blooded characters', () => {
+  const create = (w: any, sheet: any) =>
+    character(w.as(DMITRI_PLAYER, [9]), { action: 'create', chronicleId: CHRONICLE, profile: { name: 'Thinny' }, sheet });
+
+  it('creates 14th and 15th Generation with a pool of 10, the Flaw counted toward the budget', async () => {
+    const w = ashenCourt();
+    // 15 freebies plus the 4-point Fifteenth Generation Flaw pay for a Discipline dot past three.
+    const { characterId, bloodPool }: any = await create(w, { generation: 15, disciplines: [{ name: 'Obfuscate', level: 3 }, { name: 'Auspex', level: 1 }], merits: [{ name: 'Iron Will', points: 3 }], willpowerPermanent: 9, virtues: { conscience: 1, selfControl: 1, courage: 1 }, pathRating: 2 });
+    const row = w.tables.row('characters', characterId)!;
+    assert.equal(row.generation, 15);
+    assert.equal(row.bloodPoolMax, 10);
+    assert.equal(row.bloodPerTurn, 1);
+    assert.ok(bloodPool <= 10);
+  });
+
+  it('holds Disciplines to four dots at 14th and three at 15th, on creation and adjustment', async () => {
+    const w = ashenCourt();
+    await rejects(create(w, { generation: 15, disciplines: [{ name: 'Obfuscate', level: 4 }] }), 400);
+    const { characterId }: any = await create(w, { generation: 14, disciplines: [{ name: 'Potence', level: 3 }] });
+    await rejects(character(w.as(ST), { action: 'adjust', characterId, sheet: { disciplines: [{ name: 'Potence', level: 5 }] } }), 400);
+    await character(w.as(ST), { action: 'adjust', characterId, sheet: { disciplines: [{ name: 'Potence', level: 4 }] } });
+  });
+});
+
 describe('dhampirs', () => {
   const create = (w: any, sheet: any, dice = [3]) =>
     character(w.as(DMITRI_PLAYER, dice), { action: 'create', chronicleId: CHRONICLE, profile: { name: 'Mara Kell' }, sheet });

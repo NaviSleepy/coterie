@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { feed, remainingThisTurn, spendBlood, spentThisTurn } from '../src/blood.ts';
-import { bloodPerTurn, bloodPoolMax, generationLimits, isValidGeneration } from '../src/generation.ts';
+import { bloodRules, feed, remainingThisTurn, spendBlood, spentThisTurn, usableBlood } from '../src/blood.ts';
+import { bloodPerTurn, bloodPoolMax, disciplineCap, generationLimits, isThinBlooded, isValidGeneration } from '../src/generation.ts';
 import { EMPTY_TRACK } from '../src/health.ts';
 import type { CharacterState } from '../src/types.ts';
 
@@ -32,8 +32,8 @@ describe('the generation table', () => {
   });
 
   it('throws on a generation outside the modelled range', () => {
-    assert.equal(isValidGeneration(14), false);
-    assert.throws(() => generationLimits(14), RangeError);
+    assert.equal(isValidGeneration(16), false);
+    assert.throws(() => generationLimits(16), RangeError);
     assert.throws(() => generationLimits(3), RangeError);
   });
 
@@ -136,5 +136,46 @@ describe('feeding', () => {
     const out = feed(isolde({ bloodPool: 13 }), 4);
     assert.equal(out.gained, 0);
     assert.equal(out.overflow, 4);
+  });
+});
+
+describe('thin blood', () => {
+  it('models 14th and 15th Generation as a pool of 10 at one a turn', () => {
+    for (const g of [14, 15]) {
+      assert.ok(isValidGeneration(g));
+      assert.ok(isThinBlooded(g));
+      assert.deepEqual(generationLimits(g), { bloodPoolMax: 10, bloodPerTurn: 1 });
+    }
+    assert.equal(isThinBlooded(13), false);
+    assert.deepEqual([disciplineCap(13), disciplineCap(14), disciplineCap(15)], [null, 4, 3]);
+  });
+
+  it('reads the rules off the Generation and the Thin Blood Flaw', () => {
+    assert.deepEqual(bloodRules({ generation: 13 }), { reserve: 0, multiplier: 1 });
+    assert.deepEqual(bloodRules({ generation: 14 }), { reserve: 2, multiplier: 1 });
+    assert.deepEqual(bloodRules({ generation: 15 }), { reserve: 4, multiplier: 2 });
+    assert.deepEqual(bloodRules({ generation: 12, flaws: [{ name: 'Thin Blood' }] }), { reserve: 0, multiplier: 2 });
+    assert.deepEqual(bloodRules({ generation: 15, template: 'dhampir' }), { reserve: 0, multiplier: 1 });
+    assert.equal(usableBlood(10, { reserve: 4, multiplier: 2 }), 3);
+  });
+
+  it('keeps a 14th-Generation vampire from spending the last two points', () => {
+    const rules = bloodRules({ generation: 14 });
+    const ok = spendBlood(isolde({ generation: 14, bloodPool: 3 }), 1, -1, rules);
+    assert.ok(ok.ok && ok.bloodPool === 2);
+    const no = spendBlood(isolde({ generation: 14, bloodPool: 2 }), 1, -1, rules);
+    assert.ok(!no.ok && no.reason === 'thin-blood-reserve');
+  });
+
+  it('charges a 15th-Generation vampire two points for one, counting one against the turn', () => {
+    const out = spendBlood(isolde({ generation: 15, bloodPool: 10 }), 1, 5, bloodRules({ generation: 15 }));
+    assert.ok(out.ok);
+    if (out.ok) {
+      assert.equal(out.bloodPool, 8);
+      assert.equal(out.spent, 2);
+      assert.equal(out.bloodSpentThisTurn, 1);
+    }
+    const low = spendBlood(isolde({ generation: 15, bloodPool: 5 }), 1, -1, bloodRules({ generation: 15 }));
+    assert.ok(!low.ok && low.reason === 'thin-blood-reserve');
   });
 });

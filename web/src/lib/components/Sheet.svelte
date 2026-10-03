@@ -63,8 +63,13 @@
       <p class="lineage caps" title={gloss(findEntry(table.library, 'sect', character.sect)) || undefined}>
         {character.template === 'dhampir'
           ? ['Dhampir', character.dhampirConcept, character.clan ? `${character.clan} Antecedent` : '', character.sect].filter(Boolean).join(' · ')
-          : [character.clan, `${ordinal(character.generation)} Generation`, character.sect].filter(Boolean).join(' · ')}
+          : [character.clan, `${ordinal(character.generation)} Generation`, character.generation >= 14 ? 'Thin-blooded' : '', character.sect].filter(Boolean).join(' · ')}
       </p>
+      {#if character.template !== 'dhampir' && character.generation >= 14}
+        <p class="thin">{character.generation >= 15
+          ? 'Thin-blooded: 6 of 10 blood usable, two for one · Disciplines up to 3 · no ghouls, bonds or childer · sunlight does lethal, not aggravated · food stays down for an hour.'
+          : 'Thin-blooded: 8 of 10 blood usable · Disciplines up to 4.'}</p>
+      {/if}
       {#if character.title}
         <p class="title" title={gloss(findEntry(table.library, 'title', character.title)) || undefined}>{character.title}</p>
       {/if}
@@ -215,6 +220,11 @@
     color: var(--oxblood);
     margin: 4px 0 0;
     font-size: 0.95rem;
+  }
+  .thin {
+    margin: 2px 0 0;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
   }
   .title {
     margin: 2px 0 0;

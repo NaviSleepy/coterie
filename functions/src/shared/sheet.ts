@@ -10,6 +10,7 @@ import {
   VIRTUES,
   bloodPerTurn,
   bloodPoolMax,
+  disciplineCap,
   isValidGeneration,
   traitDots,
   traitKind,
@@ -92,7 +93,7 @@ export function validateSheet(
 
   if (has('generation')) {
     const g = input.generation ?? 13;
-    if (!isValidGeneration(g as number)) throw badRequest('generation must be 4–13.');
+    if (!isValidGeneration(g as number)) throw badRequest('generation must be 4–15.');
     patch.generation = g as number;
     if (template === 'vampire') {
       patch.bloodPoolMax = bloodPoolMax(g as number);
@@ -137,6 +138,11 @@ export function validateSheet(
   }
 
   if (has('disciplines')) patch.disciplines = named(input.disciplines, 'Discipline', 'level', 10);
+  // Thin blood holds Disciplines down: 4 dots at 14th Generation, 3 at 15th.
+  const generation = patch.generation ?? current?.generation ?? 13;
+  const cap = template === 'vampire' ? disciplineCap(generation) : null;
+  const tooHigh = cap === null ? undefined : patch.disciplines?.find((d: { level: number }) => d.level > cap);
+  if (tooHigh) throw badRequest(`${generation}th Generation can't hold ${tooHigh.name} above ${cap} dots.`);
   if (has('backgrounds')) patch.backgrounds = named(input.backgrounds, 'Background', 'level', 5);
   if (has('merits')) patch.merits = named(input.merits, 'Merit', 'points', 7);
   if (has('rituals')) patch.rituals = named(input.rituals, 'Ritual', 'level', 10);

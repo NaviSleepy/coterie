@@ -12,7 +12,7 @@
  * Body: characterId, amount, reason
  */
 
-import { spendBlood as spend, turnRef } from '../../../engine/src/index.ts';
+import { bloodRules, spendBlood as spend, turnRef } from '../../../engine/src/index.ts';
 import { loadCharacterFor, loadCurrentScene } from '../shared/auth.ts';
 import { stateOf } from '../shared/codec.ts';
 import { entry, int, optStr, refused, str, type Ctx } from '../shared/http.ts';
@@ -31,7 +31,8 @@ export async function handler(ctx: Ctx, body: any) {
     'spendBlood',
     access.chronicle.teamId,
     (c) => {
-      const out = spend(stateOf(c), amount, ref);
+      // Thin blood: a reserve that can't be spent, and double cost at 15th Generation or with the Thin Blood Flaw.
+      const out = spend(stateOf(c), amount, ref, bloodRules(c));
       if (!out.ok) throw refused(out.reason, out.message);
       return {
         patch: {
@@ -39,7 +40,7 @@ export async function handler(ctx: Ctx, body: any) {
           bloodSpentThisTurn: out.bloodSpentThisTurn,
           bloodSpentTurnRef: out.bloodSpentTurnRef,
         },
-        summary: `spent ${amount} blood (${reason}); ${out.bloodPool} left`,
+        summary: `spent ${out.spent} blood (${reason})${out.spent !== amount ? ` for ${amount} point${amount === 1 ? '' : 's'} of effect` : ''}; ${out.bloodPool} left`,
         result: out,
       };
     },

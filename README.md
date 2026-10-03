@@ -79,6 +79,17 @@ The standard PDF fonts can't draw every character, so names are printed as close
 
 A player may bring as many characters as they like to a table and switch between them on their screen. `character.delete` removes one for good: its player or the Storyteller can call it, and it must name the character, so a stray call deletes nothing. In one transaction it removes the sheet, profile, open proposal, sealed difficulty and the seals on secrets about it, and takes it out of scenes and initiative. Its rolls and ledger stay as history, and the transaction writes a last ledger line saying who deleted it. That line takes the next version, so a write racing the delete collides with it and the delete is refused with a 409 rather than half-applied.
 
+### Thin-blooded vampires
+
+Generation runs from 4th to 15th. The 14th and 15th are the thin-blooded, following V20's Fourteenth and Fifteenth Generation Flaws. Both hold 10 blood and draw 1 a turn, and the engine's `bloodRules` holds what changes:
+
+- **The reserve:** the bottom of the pool only keeps a thin-blood rising. That's 2 points at 14th and 4 at 15th, and they can't pay for Disciplines, healing or raising Attributes.
+- **The cost:** at 15th Generation, and for anyone with the Thin Blood Flaw, each point of effect costs two blood. The per-turn cap counts points of effect, so a 15th-Generation vampire can still act once a turn.
+
+`spendBlood` and `feedAndHeal` apply both, and so do the table's local prediction and the demo. The sheet shows the reserve as dashed vials and says how much is left to spend.
+
+Disciplines are capped at 4 dots for 14th and 3 for 15th; `validateSheet` enforces this on creation, proposals and the Storyteller's adjustments. At creation, choosing a thin-blooded Generation takes its Flaw (2 or 4 points, within the seven-point flaw refund) unless it's already listed. It rules out the Generation Background and starting Status. The sheet's lineage line reads "Thin-blooded", with the rules in a line beneath.
+
 ### Dhampirs
 
 A character's `template` is `vampire` (the default, and what rows from before templates read as) or `dhampir`. Following Accursed Heirs, a dhampir's blood doesn't follow Generation. Their pool is 10 and they spend one point a turn. They start with a full pool rather than rolling for it, since their living body makes the blood. The Storyteller can raise the pool for Antiquity through `character.adjust` (`bloodPoolMax`), and changing the template resets the pool to the new template's rule. `dhampirConcept` (Aspirant, Renegade and the rest) is on the sheet, and players can propose it. They can't propose the template or the pool.

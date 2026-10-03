@@ -129,3 +129,41 @@ describe('feedAndHeal', () => {
     await rejects(feedAndHeal(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, healAggravated: 1 }), 403);
   });
 });
+
+describe('thin blood', () => {
+  const thin = (w: any, generation: number, over: Record<string, unknown> = {}) =>
+    w.tables.seed('characters', ISOLDE, { ...w.tables.row('characters', ISOLDE), generation, bloodPoolMax: 10, bloodPerTurn: 1, ...over });
+
+  it('keeps the last two points of a 14th-Generation pool for rising', async () => {
+    const w = ashenCourt();
+    thin(w, 14, { bloodPool: 3 });
+    await spendBlood(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, amount: 1 });
+    assert.equal(w.tables.row('characters', ISOLDE)!.bloodPool, 2);
+    w.tables.seed('characters', ISOLDE, { ...w.tables.row('characters', ISOLDE), bloodSpentTurnRef: -1, bloodSpentThisTurn: 0 });
+    await rejects(spendBlood(w.as(ST), { characterId: ISOLDE, amount: 1 }), 422, 'thin-blood-reserve');
+  });
+
+  it('charges a 15th-Generation vampire double, for spending and for healing', async () => {
+    const w = ashenCourt();
+    thin(w, 15, { bloodPool: 10, healthLethal: 2, healthBashing: 0, healthAggravated: 0 });
+    const out: any = await spendBlood(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, amount: 1 });
+    assert.equal(out.bloodPool, 8);
+    assert.equal(out.spent, 2);
+    // A new turn's worth: heal one lethal for two blood.
+    w.tables.seed('characters', ISOLDE, { ...w.tables.row('characters', ISOLDE), bloodSpentTurnRef: -1, bloodSpentThisTurn: 0 });
+    await feedAndHeal(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, heal: 1 });
+    const c = w.tables.row('characters', ISOLDE)!;
+    assert.equal(c.healthLethal, 1);
+    assert.equal(c.bloodPool, 6);
+    // Six left, four of them reserved: one more point of effect, then nothing.
+    w.tables.seed('characters', ISOLDE, { ...c, bloodSpentTurnRef: -1, bloodSpentThisTurn: 0, bloodPool: 5 });
+    await rejects(feedAndHeal(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, heal: 1 }), 422, 'thin-blood-reserve');
+  });
+
+  it('doubles costs for the Thin Blood Flaw at any Generation', async () => {
+    const w = ashenCourt();
+    w.tables.seed('characters', ISOLDE, { ...w.tables.row('characters', ISOLDE), bloodPool: 6, flaws: JSON.stringify([{ name: 'Thin Blood', points: 4 }]) });
+    const out: any = await spendBlood(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, amount: 1 });
+    assert.equal(out.bloodPool, 4);
+  });
+});
