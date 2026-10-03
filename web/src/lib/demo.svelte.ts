@@ -15,6 +15,7 @@ import {
   bloodPoolMax,
   buildPool,
   canSpendWillpower,
+  cleanCreationOverrides,
   creationCost,
   cryptoDie,
   describeCost,
@@ -568,6 +569,17 @@ export class DemoTable extends TableState {
         }
         break;
       case 'chronicle': {
+        if (b.action === 'update' && b.creationRules !== undefined) {
+          if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller can do that.');
+          let rules;
+          try {
+            rules = cleanCreationOverrides(b.creationRules);
+          } catch (e) {
+            throw new Refusal((e as Error).message);
+          }
+          this.chronicle = { ...this.chronicle!, creationRules: JSON.stringify(rules) };
+          return this.chronicle;
+        }
         if (b.action === 'saveNpc' || b.action === 'removeNpc') {
           if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller can do that.');
           if (b.action === 'removeNpc') delete w.npcs[b.npcId];
@@ -602,7 +614,7 @@ export class DemoTable extends TableState {
       case 'character': {
         if (b.action === 'create' || b.action === 'requestCreation') {
           const st = this.me === DEMO_ST;
-          const cost = creationCost(b.sheet ?? {});
+          const cost = creationCost(b.sheet ?? {}, parseJson(this.chronicle?.creationRules, {}));
           if (!String(b.profile?.name ?? '').trim()) throw new Refusal('A character needs a name.');
           if (b.action === 'create' && !st && !cost.ok) throw new Refusal(`This character needs the Storyteller's approval: ${describeCost(cost).join('; ')}.`);
           if (b.action === 'requestCreation') {

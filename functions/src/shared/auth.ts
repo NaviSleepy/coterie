@@ -7,6 +7,8 @@ import { Query } from 'node-appwrite';
 
 import { decodeCharacter, type Character } from './codec.ts';
 import { forbidden, notFound, type Ctx } from './http.ts';
+import type { CreationOverrides } from '../../../engine/src/index.ts';
+import { parseJson } from './codec.ts';
 import type { Row } from './store.ts';
 
 export interface Chronicle {
@@ -19,6 +21,7 @@ export interface Chronicle {
   inviteCode: string;
   botchRule: 'zero-with-a-one-is-a-botch' | 'only-negative-is-a-botch';
   turnSerial: number;
+  creationRules: CreationOverrides;
 }
 
 export function decodeChronicle(row: Row): Chronicle {
@@ -32,6 +35,7 @@ export function decodeChronicle(row: Row): Chronicle {
     inviteCode: row.inviteCode,
     botchRule: row.botchRule ?? 'zero-with-a-one-is-a-botch',
     turnSerial: row.turnSerial ?? 0,
+    creationRules: parseJson<CreationOverrides>(row.creationRules, {}),
   };
 }
 

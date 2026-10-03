@@ -126,7 +126,7 @@ async function create(ctx: Ctx, body: any) {
   // A player's new character must fit the creation budget; one that doesn't
   // goes to the Storyteller as a request. The Storyteller's own DMPCs are theirs to judge.
   if (!isStoryteller(ctx, chronicle)) {
-    const cost = creationCost(sheet);
+    const cost = creationCost(sheet, chronicle.creationRules);
     if (!cost.ok) {
       throw new HttpError(409, 'needs-approval', `This character needs the Storyteller's approval: ${describeCost(cost).join('; ')}.`);
     }
@@ -155,7 +155,7 @@ async function requestCreation(ctx: Ctx, body: any) {
       ownerId: ctx.userId,
       profile: JSON.stringify(profile),
       sheet: JSON.stringify(sheet),
-      cost: JSON.stringify(describeCost(creationCost(sheet))),
+      cost: JSON.stringify(describeCost(creationCost(sheet, chronicle.creationRules))),
       status: 'pending',
       note: '',
     },

@@ -63,6 +63,71 @@ export const CREATION_RULES: Record<'vampire' | 'dhampir', CreationRules> = {
   },
 };
 
+export type Template = 'vampire' | 'dhampir';
+/** A campaign's changes to the book's numbers, per template. Missing fields keep the book's. */
+export type CreationOverrides = Partial<Record<Template, Partial<Omit<CreationRules, 'generationCosts' | 'cost'> & { cost: Partial<CreationRules['cost']> }>>>;
+
+/** The numbers a campaign uses for a template: the book's, with its overrides laid over. */
+export function rulesFor(template: Template, overrides?: CreationOverrides | null): CreationRules {
+  const book = CREATION_RULES[template];
+  const o = overrides?.[template] ?? {};
+  return { ...book, ...o, generationCosts: book.generationCosts, cost: { ...book.cost, ...(o.cost ?? {}) } } as CreationRules;
+}
+
+/** What a Storyteller may set, and the range each number must fall in. */
+export const CREATION_LIMITS = {
+  attributes: [0, 15],
+  abilities: [0, 30],
+  abilityCap: [1, 5],
+  disciplines: [0, 10],
+  backgrounds: [0, 20],
+  virtues: [0, 15],
+  freebies: [0, 100],
+  maxFlaws: [0, 20],
+  maxMerits: [0, 20],
+  maxGeneration: [0, 9],
+  cost: [0, 20],
+} as const;
+
+/**
+ * Checks a Storyteller's overrides and returns them clean (only known fields,
+ * whole numbers in range), or throws an Error naming the first bad one.
+ */
+export function cleanCreationOverrides(input: unknown): CreationOverrides {
+  if (input === null || input === undefined) return {};
+  if (typeof input !== 'object' || Array.isArray(input)) throw new Error('creationRules must be an object.');
+  const out: CreationOverrides = {};
+  const num = (v: unknown, [lo, hi]: readonly [number, number], what: string) => {
+    if (!Number.isInteger(v) || (v as number) < lo || (v as number) > hi) throw new Error(`${what} must be a whole number from ${lo} to ${hi}.`);
+    return v as number;
+  };
+  for (const [template, raw] of Object.entries(input as Record<string, unknown>)) {
+    if (template !== 'vampire' && template !== 'dhampir') throw new Error(`Unknown template: ${template}.`);
+    if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new Error(`${template} rules must be an object.`);
+    const t: Record<string, unknown> = {};
+    for (const [key, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (key === 'attributes' || key === 'abilities') {
+        if (!Array.isArray(v) || v.length !== 3) throw new Error(`${template} ${key} must be three numbers.`);
+        t[key] = v.map((x, i) => num(x, CREATION_LIMITS[key], `${template} ${key} ${i + 1}`));
+      } else if (key === 'cost') {
+        if (typeof v !== 'object' || v === null || Array.isArray(v)) throw new Error(`${template} cost must be an object.`);
+        const cost: Record<string, number> = {};
+        for (const [ck, cv] of Object.entries(v as Record<string, unknown>)) {
+          if (!(ck in CREATION_RULES[template].cost)) throw new Error(`Unknown cost: ${ck}.`);
+          cost[ck] = num(cv, CREATION_LIMITS.cost, `${template} ${ck} cost`);
+        }
+        t.cost = cost;
+      } else if (key in CREATION_LIMITS) {
+        t[key] = num(v, CREATION_LIMITS[key as keyof typeof CREATION_LIMITS] as readonly [number, number], `${template} ${key}`);
+      } else {
+        throw new Error(`Unknown creation rule: ${key}.`);
+      }
+    }
+    out[template] = t as CreationOverrides[Template];
+  }
+  return out;
+}
+
 export interface CreationSheet {
   template?: string | null;
   generation?: number;
@@ -133,9 +198,9 @@ function bestFit(spent: number[], budgets: [number, number, number]) {
   return best;
 }
 
-export function creationCost(sheet: CreationSheet): CreationCost {
+export function creationCost(sheet: CreationSheet, overrides?: CreationOverrides | null): CreationCost {
   const template = sheet.template === 'dhampir' ? 'dhampir' : 'vampire';
-  const r = CREATION_RULES[template];
+  const r = rulesFor(template, overrides);
   const lines: CreationLine[] = [];
   const problems: string[] = [];
 
@@ -180,7 +245,7 @@ export function creationCost(sheet: CreationSheet): CreationCost {
     problems.push(
       r.generationCosts
         ? `Generation ${sheet.generation}th needs ${generationDots} dots of the Generation Background; a new character can have at most ${r.maxGeneration}.`
-        : 'A new character this template can\'t buy Generation.',
+        : 'A new character of this template can\'t buy Generation.',
     );
   }
 
