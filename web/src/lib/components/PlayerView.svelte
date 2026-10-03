@@ -6,6 +6,7 @@
   import EquipmentPanel from './EquipmentPanel.svelte';
   import HungerPrompt from './HungerPrompt.svelte';
   import LibraryPanel from './LibraryPanel.svelte';
+  import Notepad from './Notepad.svelte';
   import CreationRequests from './CreationRequests.svelte';
   import ProposalPanel from './ProposalPanel.svelte';
   import Reckoning from './Reckoning.svelte';
@@ -70,6 +71,7 @@
       <RollPanel {table} {character} />
       <DisciplinePanel {table} {character} />
       <EquipmentPanel {table} {character} />
+      <Notepad {table} />
       <RollFeed {table} />
     </div>
   </main>

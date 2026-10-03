@@ -392,6 +392,19 @@ export class DemoTable extends TableState {
     this.project();
   }
 
+  /** One notepad per seat, like the real thing: the Storyteller never reads the player's. */
+  private notes: Record<string, string> = {
+    [DEMO_PLAYER]: 'Ask the Sheriff about the Rookery fire.\nDmitri owes me a favor — he doesn\'t know I know about Lucien.',
+    [DEMO_ST]: 'Aldana knows about the fire. Reveal at the Elysium, not before.',
+  };
+  override async loadNote() {
+    return this.notes[this.me] ?? '';
+  }
+  override async saveNote(body: string) {
+    this.notes[this.me] = body;
+    return true;
+  }
+
   override async saveProfile(characterId: string, data: Record<string, unknown>) {
     const row = this.profiles[characterId];
     if (!row) return false;

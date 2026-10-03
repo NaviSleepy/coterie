@@ -3,6 +3,7 @@
   import BehindScreen from './BehindScreen.svelte';
   import CoterieCard from './CoterieCard.svelte';
   import LibraryPanel from './LibraryPanel.svelte';
+  import Notepad from './Notepad.svelte';
   import NpcPanel from './NpcPanel.svelte';
   import CreationBudget from './CreationBudget.svelte';
   import CreationRequests from './CreationRequests.svelte';
@@ -79,6 +80,7 @@
       <ProposalsReview {table} />
       <CreationBudget {table} />
       <LibraryPanel {table} />
+      <Notepad {table} />
 
       {#if character}
         {#key character.$id}<StControls {table} {character} onclose={() => (selected = null)} />{/key}

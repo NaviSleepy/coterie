@@ -380,6 +380,19 @@ export const TABLES = {
   },
 
   /** Clients create and heartbeat their own row. Table-level create for users. */
+  /**
+   * One private notepad per user per chronicle, row id from noteId(). The
+   * client writes it directly — notes carry no stakes — and each row is
+   * readable and writable by its author alone, not even the Storyteller.
+   */
+  notes: {
+    id: 'notes',
+    name: 'Notes',
+    permissions: ['create("users")'],
+    columns: [str('chronicleId', 36, { required: true }), str('userId', 36, { required: true }), { key: 'body', type: 'text' }],
+    indexes: [byChronicle],
+  },
+
   presence: {
     id: 'presence',
     name: 'Presence',
