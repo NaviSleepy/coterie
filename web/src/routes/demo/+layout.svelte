@@ -3,6 +3,7 @@
   import { page } from '$app/state';
   import { DemoTable } from '$lib/demo.svelte';
   import TableBar from '$lib/components/TableBar.svelte';
+  import RedCard from '$lib/components/RedCard.svelte';
 
   let { children } = $props();
 
@@ -23,6 +24,7 @@
   </a>
 </div>
 <TableBar {table} base="/demo" />
+<RedCard {table} />
 {#if opened}{@render children()}{/if}
 
 {#if table.error}

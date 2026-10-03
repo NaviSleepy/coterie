@@ -5,6 +5,7 @@
   import { session } from '$lib/session.svelte';
   import { TableState } from '$lib/table.svelte';
   import TableBar from '$lib/components/TableBar.svelte';
+  import RedCard from '$lib/components/RedCard.svelte';
 
   let { children } = $props();
 
@@ -23,6 +24,7 @@
 </script>
 
 <TableBar {table} base={`/c/${table.chronicleId}`} />
+<RedCard {table} />
 
 {#if failed}
   <p class="failed error">{failed}</p>

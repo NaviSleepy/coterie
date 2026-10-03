@@ -22,6 +22,7 @@ export interface Chronicle {
   botchRule: 'zero-with-a-one-is-a-botch' | 'only-negative-is-a-botch';
   turnSerial: number;
   creationRules: CreationOverrides;
+  redCardAt: string | null;
 }
 
 export function decodeChronicle(row: Row): Chronicle {
@@ -36,6 +37,7 @@ export function decodeChronicle(row: Row): Chronicle {
     botchRule: row.botchRule ?? 'zero-with-a-one-is-a-botch',
     turnSerial: row.turnSerial ?? 0,
     creationRules: parseJson<CreationOverrides>(row.creationRules, {}),
+    redCardAt: row.redCardAt || null,
   };
 }
 

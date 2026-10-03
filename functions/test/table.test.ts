@@ -75,6 +75,20 @@ describe('chronicles and invites', () => {
     await rejects(chronicle(w.as(STRANGER), { action: 'join', inviteCode: 'ASHEN234' }), 404);
   });
 
+  it('lets anyone at the table raise the red card, anonymously, and only the ST clear it', async () => {
+    const w = ashenCourt();
+    await rejects(chronicle(w.as(STRANGER), { action: 'redCard', chronicleId: CHRONICLE }), 403);
+    const { redCardAt }: any = await chronicle(w.as(ISOLDE_PLAYER), { action: 'redCard', chronicleId: CHRONICLE });
+    assert.ok(redCardAt);
+    const row = w.tables.rows('chronicles').find((r: any) => r.$id === CHRONICLE)!;
+    assert.ok(!JSON.stringify(row).includes(ISOLDE_PLAYER), 'who raised it is not stored');
+    const again: any = await chronicle(w.as(DMITRI_PLAYER), { action: 'redCard', chronicleId: CHRONICLE });
+    assert.equal(again.redCardAt, redCardAt, 'a second raise changes nothing');
+    await rejects(chronicle(w.as(ISOLDE_PLAYER), { action: 'clearRedCard', chronicleId: CHRONICLE }), 403);
+    await chronicle(w.as(ST), { action: 'clearRedCard', chronicleId: CHRONICLE });
+    assert.equal(w.tables.rows('chronicles').find((r: any) => r.$id === CHRONICLE)!.redCardAt, null);
+  });
+
   it('mints codes without the characters people misread', () => {
     for (let i = 0; i < 200; i++) assert.match(inviteCode(), /^[A-HJKMNP-Z2-9]{8}$/);
   });

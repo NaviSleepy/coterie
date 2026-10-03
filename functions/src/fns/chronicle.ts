@@ -17,6 +17,9 @@
  *   saveNpc       ST only. Creates an NPC, or edits one (only the fields sent):
  *                 stat block, health, blood, Willpower, notes. Behind the screen.
  *   removeNpc     ST only.
+ *   redCard       Anyone at the table. Raises the red card: the current thread
+ *                 stops, no explanation owed. Who raised it is never stored.
+ *   clearRedCard  ST only, once the scene has changed course.
  *
  * Joining goes through a server key because a client can't add itself to a
  * team — which is exactly the property that makes the team a trustworthy
@@ -27,7 +30,7 @@ import { ID, Query } from 'node-appwrite';
 
 import { cleanCreationOverrides } from '../../../engine/src/index.ts';
 
-import { decodeChronicle, loadChronicle, requireStoryteller } from '../shared/auth.ts';
+import { decodeChronicle, loadChronicle, requireMember, requireStoryteller } from '../shared/auth.ts';
 import { badRequest, entry, HttpError, int, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
 import { checkNpc, validateNpc } from '../shared/npc.ts';
 import { storytellerOnly, tableReadable } from '../shared/perms.ts';
@@ -248,8 +251,32 @@ async function removeNpc(ctx: Ctx, body: any) {
   return { npcId };
 }
 
+/**
+ * The red card is anonymous by construction: the row records only when, the
+ * Function never logs the caller, and raising it twice changes nothing, so the
+ * timestamp can't be used to tell who pressed it second.
+ */
+async function redCard(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  await requireMember(ctx, chronicle);
+  if (chronicle.redCardAt) return { redCardAt: chronicle.redCardAt };
+  const row = await ctx.store.update('chronicles', chronicle.$id, { redCardAt: ctx.now().toISOString() });
+  return { redCardAt: row.redCardAt };
+}
+
+async function clearRedCard(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  requireStoryteller(ctx, chronicle);
+  await ctx.store.update('chronicles', chronicle.$id, { redCardAt: null });
+  return { redCardAt: null };
+}
+
 export async function handler(ctx: Ctx, body: any) {
-  switch (oneOf(body, 'action', ['create', 'join', 'rotateInvite', 'update', 'saveEntry', 'removeEntry', 'saveNpc', 'removeNpc'] as const)) {
+  switch (oneOf(body, 'action', ['create', 'join', 'rotateInvite', 'update', 'saveEntry', 'removeEntry', 'saveNpc', 'removeNpc', 'redCard', 'clearRedCard'] as const)) {
+    case 'redCard':
+      return redCard(ctx, body);
+    case 'clearRedCard':
+      return clearRedCard(ctx, body);
     case 'saveNpc':
       return saveNpc(ctx, body);
     case 'removeNpc':

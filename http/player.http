@@ -430,3 +430,58 @@ X-Appwrite-JWT: {{jwtPlayer}}
     client.assert(response.status === 401 || response.status === 403, `expected 401/403, got ${response.status}`);
   });
 %}
+
+### Red card: a player may raise it through the Function
+POST {{endpoint}}/functions/chronicle/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"redCard\",\"chronicleId\":\"{{chronicleId}}\"}" }
+
+> {%
+  client.test("anyone at the table can raise the red card", () => {
+    client.assert(response.body.responseStatusCode === 200, `expected 200, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Red card: the chronicle row says a card is up, never who raised it
+GET {{endpoint}}/tablesdb/{{db}}/tables/chronicles/rows/{{chronicleId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("the card is anonymous", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    client.assert(!!response.body.redCardAt, "expected redCardAt to be set");
+    client.assert(!JSON.stringify(response.body).includes("sec-player"), "the raiser's id must not appear on the row");
+  });
+%}
+
+### Red card: a player cannot clear it
+POST {{endpoint}}/functions/chronicle/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"clearRedCard\",\"chronicleId\":\"{{chronicleId}}\"}" }
+
+> {%
+  client.test("only the Storyteller clears the red card", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Red card: nor write the chronicle row around the Function
+PATCH {{endpoint}}/tablesdb/{{db}}/tables/chronicles/rows/{{chronicleId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "data": { "redCardAt": null } }
+
+> {%
+  client.test("player cannot write the chronicle directly", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}

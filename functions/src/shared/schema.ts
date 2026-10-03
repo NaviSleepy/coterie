@@ -69,6 +69,8 @@ export const TABLES = {
       int('turnSerial', 0, undefined, { default: 0 }),
       // The campaign's changes to the creation budget, per template (engine CreationOverrides). Empty: the book's.
       json('creationRules'),
+      // The red card: when someone at the table raised it. Never who. Empty: no card is up.
+      { key: 'redCardAt', type: 'datetime' },
     ],
     indexes: [{ key: 'by_invite', type: 'unique', columns: ['inviteCode'] }],
   },
