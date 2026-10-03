@@ -131,16 +131,16 @@
       {#if template === 'vampire'}
         <label>Generation
           <select bind:value={generation}>
-            <option value={15}>15th — thin-blooded: pool 10, 6 usable at double cost (4-pt Flaw)</option>
-            <option value={14}>14th — thin-blooded: pool 10, 8 usable (2-pt Flaw)</option>
+            <option value={15}>15th — thin-blooded</option>
+            <option value={14}>14th — thin-blooded</option>
             {#each [13, 12, 11, 10, 9, 8, 7, 6, 5, 4] as g (g)}<option value={g}>{g}th — pool {bloodPoolMax(g)}, {bloodPerTurn(g)}/turn</option>{/each}
           </select>
-          {#if generation >= 14}
-            <span class="hint">{thinBloodHint(generation)}</span>
-          {/if}
         </label>
       {/if}
     </fieldset>
+    {#if template === 'vampire' && generation >= 14}
+      <p class="hint thin">{thinBloodHint(generation)}</p>
+    {/if}
 
     <h2>Attributes</h2>
     <div class="cols">
@@ -405,11 +405,30 @@
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 12px 20px;
   }
+  .grid {
+    align-items: start;
+  }
   .grid label {
     display: grid;
+    align-content: start;
+    min-width: 0;
     gap: 4px;
     font-size: 0.95rem;
     color: var(--ink-soft);
+  }
+  .grid :global(select),
+  .grid :global(input:not(.small)) {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+  .thin {
+    margin: 10px 0 0;
+    max-width: 70ch;
+  }
+  .budget > * {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .cols {
     display: grid;
