@@ -405,6 +405,24 @@ export class DemoTable extends TableState {
     return true;
   }
 
+  /** Portraits stay in this browser tab, like everything else in the demo. */
+  private portraits = new Map<string, string>();
+  override portraitSrc(fileId: string) {
+    return Promise.resolve(this.portraits.get(fileId) ?? null);
+  }
+  override async uploadPortrait(characterId: string, file: File) {
+    if (!file.type.startsWith('image/')) return 'Choose a JPEG, PNG, GIF or WebP image.';
+    const id = `demo-portrait-${Date.now()}`;
+    this.portraits.set(id, URL.createObjectURL(file));
+    await this.saveProfile(characterId, { portrait: id });
+    return null;
+  }
+  override async removePortrait(characterId: string) {
+    await this.saveProfile(characterId, { portrait: '' });
+    return null;
+  }
+  override async deletePortraitFile() {}
+
   override async openCoterieNotes() {
     this.coterieNote ??= { ...row(DEMO_ID, { chronicleId: DEMO_ID, body: 'Haven: the old organ loft above the Rookery Gallery.\nAldana wants the ledger back by Friday.', editedBy: 'Dmitri’s player' }, 0), $updatedAt: new Date(Date.now() - 3600_000).toISOString() };
   }

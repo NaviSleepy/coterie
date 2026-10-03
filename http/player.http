@@ -643,3 +643,49 @@ X-Appwrite-JWT: {{jwtOther}}
     client.assert(response.body.body === "Fixture coterie note.");
   });
 %}
+
+### Portraits: a player sees their own character's portrait
+GET {{endpoint}}/storage/buckets/character-portraits/files/{{portraitFileId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("its owner reads the portrait", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+  });
+%}
+
+### Portraits: another player at the table cannot
+GET {{endpoint}}/storage/buckets/character-portraits/files/{{portraitFileId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtOther}}
+
+> {%
+  client.test("a portrait is private from other players", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### Portraits: nor list the bucket to find others
+GET {{endpoint}}/storage/buckets/character-portraits/files
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtOther}}
+
+> {%
+  client.test("listing shows another player none of this player's portraits", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    const ids = response.body.files.map((f) => f.$id);
+    client.assert(!ids.includes(request.environment.get("portraitFileId")), "a portrait leaked into another player's list");
+  });
+%}
+
+### Portraits: nor delete it
+DELETE {{endpoint}}/storage/buckets/character-portraits/files/{{portraitFileId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtOther}}
+
+> {%
+  client.test("another player cannot delete a portrait", () => {
+    client.assert(response.status === 404 || response.status === 401, `expected 404 or 401, got ${response.status}`);
+  });
+%}

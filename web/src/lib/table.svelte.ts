@@ -40,6 +40,8 @@ import {
   listAll,
   listRows,
   noteId,
+  portraitObjectUrl,
+  storage,
   presenceId,
   Query,
   realtime,
@@ -47,7 +49,7 @@ import {
   teams,
   type AnyRow,
 } from './appwrite';
-import { DATABASE_ID } from '$schema';
+import { DATABASE_ID, PORTRAITS_BUCKET_ID } from '$schema';
 
 export interface Member {
   userId: string;
@@ -58,6 +60,10 @@ export interface Member {
 type Pending =
   | { id: string; characterId: string; kind: 'damage'; amount: number; type: DamageType; until?: number }
   | { id: string; characterId: string; kind: 'blood'; amount: number; until?: number };
+
+/** Portrait uploads: what the bucket accepts. */
+export const PORTRAIT_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+export const PORTRAIT_MAX_BYTES = 5 * 1024 * 1024;
 
 /** Longest notepad the app saves, in characters. */
 export const NOTE_MAX = 20000;
@@ -447,6 +453,62 @@ export class TableState {
    * The cosmetic profile — name, concept, Nature, Demeanor, gear — is the one
    * row a player writes directly; the row's permissions are the check.
    */
+  private portraitCache = new Map<string, Promise<string | null>>();
+
+  /** A portrait file as something an <img> can show, or null if it can't be read. Cached per file. */
+  portraitSrc(fileId: string): Promise<string | null> {
+    if (!this.portraitCache.has(fileId)) {
+      this.portraitCache.set(fileId, portraitObjectUrl(fileId).catch(() => null));
+    }
+    return this.portraitCache.get(fileId)!;
+  }
+
+  /**
+   * Uploads a portrait for the caller's own character and points its profile
+   * at it. The file is readable by the owner and the Storyteller, and either
+   * may delete it (the Storyteller, when deleting the character). Returns an
+   * error message, or null on success.
+   */
+  async uploadPortrait(characterId: string, file: File): Promise<string | null> {
+    if (!PORTRAIT_TYPES.includes(file.type)) return 'Choose a JPEG, PNG, GIF or WebP image.';
+    if (file.size > PORTRAIT_MAX_BYTES) return 'Portraits must be 5 MB or smaller.';
+    const teamId = this.chronicle?.teamId as string | undefined;
+    if (!teamId) return 'The table is still connecting. Try again in a moment.';
+    const previous = this.profiles[characterId]?.portrait as string | undefined;
+    let uploaded = '';
+    try {
+      const me = Role.user(this.me);
+      const st = Role.team(teamId, 'storyteller');
+      uploaded = (
+        await storage.createFile({
+          bucketId: PORTRAITS_BUCKET_ID,
+          fileId: ID.unique(),
+          file,
+          permissions: [Permission.read(me), Permission.update(me), Permission.delete(me), Permission.read(st), Permission.delete(st)],
+        })
+      ).$id;
+      if (!(await this.saveProfile(characterId, { portrait: uploaded }))) throw new Error(this.error ?? 'Could not save the portrait.');
+      if (previous) await storage.deleteFile({ bucketId: PORTRAITS_BUCKET_ID, fileId: previous }).catch(() => {});
+      return null;
+    } catch (e) {
+      if (uploaded) await storage.deleteFile({ bucketId: PORTRAITS_BUCKET_ID, fileId: uploaded }).catch(() => {});
+      return (e as Error).message;
+    }
+  }
+
+  async removePortrait(characterId: string): Promise<string | null> {
+    const fileId = this.profiles[characterId]?.portrait as string | undefined;
+    if (!fileId) return null;
+    if (!(await this.saveProfile(characterId, { portrait: '' }))) return this.error ?? 'Could not remove the portrait.';
+    await this.deletePortraitFile(fileId);
+    return null;
+  }
+
+  /** Best effort: a file left behind costs storage, never access. */
+  async deletePortraitFile(fileId: string): Promise<void> {
+    await storage.deleteFile({ bucketId: PORTRAITS_BUCKET_ID, fileId }).catch(() => {});
+  }
+
   /** The caller's own notepad for this chronicle, or '' when they haven't written one. */
   async loadNote(): Promise<string> {
     const row = await getRow('notes', noteId(this.chronicleId, this.me));

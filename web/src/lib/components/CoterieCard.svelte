@@ -5,6 +5,7 @@
   import BloodPool from './BloodPool.svelte';
   import Dots from './Dots.svelte';
   import HealthTrack from './HealthTrack.svelte';
+  import Portrait from './Portrait.svelte';
   import { ordinal } from './Sheet.svelte';
 
   let { table, character, onselect }: { table: TableState; character: Character; onselect: () => void } = $props();
@@ -17,6 +18,7 @@
 
 <button class="card" class:low onclick={onselect}>
   <div class="top">
+    <Portrait {table} fileId={(table.profiles[character.$id]?.portrait as string) ?? ''} name={table.nameOf(character.$id)} size="small" />
     <h3>{table.nameOf(character.$id)}{#if table.isDmpc(character)} <span class="dmpc caps" title="Played by the Storyteller">DMPC</span>{/if}</h3>
     <span class="caps">{character.template === 'dhampir' ? `Dhampir${character.clan ? ` · ${character.clan}` : ''}` : `${character.clan || 'Caitiff'} · ${ordinal(character.generation)}`}</span>
   </div>
@@ -74,6 +76,13 @@
     align-items: baseline;
     gap: 10px;
     flex-wrap: wrap;
+  }
+  .top {
+    align-items: center;
+  }
+  .top h3 {
+    flex: 1;
+    min-width: 0;
   }
   h3 {
     margin: 0;
