@@ -1,12 +1,12 @@
 <script lang="ts">
-  /** Vials, one per point of the generation's ceiling. */
-  let { pool, max, small = false, flash = false }: { pool: number; max: number; small?: boolean; flash?: boolean } =
+  /** Vials, one per point of the generation's ceiling. Thin blood's reserve is the bottom few: drawn dashed, kept for rising. */
+  let { pool, max, small = false, flash = false, reserve = 0 }: { pool: number; max: number; small?: boolean; flash?: boolean; reserve?: number } =
     $props();
 </script>
 
-<div class="vials" class:small class:flash role="img" aria-label={`Blood pool ${pool} of ${max}`}>
+<div class="vials" class:small class:flash role="img" aria-label={`Blood pool ${pool} of ${max}${reserve ? `, ${reserve} kept for rising` : ''}`}>
   {#each Array(max) as _, i (i)}
-    <span class:full={i < pool} class:last={i === pool - 1 && pool <= 2}></span>
+    <span class:full={i < pool} class:reserved={i < reserve} class:last={i === pool - 1 && pool <= 2}></span>
   {/each}
 </div>
 
@@ -31,6 +31,12 @@
   }
   span.full {
     background: var(--oxblood);
+  }
+  span.reserved {
+    border-style: dashed;
+  }
+  span.reserved.full {
+    background: color-mix(in oklab, var(--oxblood), transparent 45%);
   }
   span.last {
     box-shadow: 0 0 10px 1px color-mix(in oklab, var(--oxblood), #ff3b4e 40%);

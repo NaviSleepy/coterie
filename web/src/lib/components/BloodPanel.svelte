@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { bloodRules, usableBlood } from '$engine/index.ts';
   import type { Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
   import BloodPool from './BloodPool.svelte';
@@ -7,6 +8,8 @@
   let { table, character }: { table: TableState; character: Character } = $props();
 
   const spentThisTurn = $derived(character.bloodPerTurn - table.remainingThisTurn(character));
+  const rules = $derived(bloodRules(character));
+  const usable = $derived(usableBlood(character.bloodPool, rules));
   let refusal = $state<string | null>(null);
 
   async function spend() {
@@ -37,12 +40,15 @@
     <h2>Blood Pool</h2>
     <span class="count"><b>{character.bloodPool}</b> / {character.bloodPoolMax}</span>
   </div>
-  <BloodPool pool={character.bloodPool} max={character.bloodPoolMax} flash={table.isFlashing(`${character.$id}:blood`)} />
+  <BloodPool pool={character.bloodPool} max={character.bloodPoolMax} reserve={rules.reserve} flash={table.isFlashing(`${character.$id}:blood`)} />
+  {#if rules.reserve || rules.multiplier > 1}
+    <p class="thin">Thin blood: {#if rules.reserve}the dashed {rules.reserve} only keep you rising{/if}{#if rules.reserve && rules.multiplier > 1}{', and '}{/if}{#if rules.multiplier > 1}each point of effect costs {rules.multiplier}{/if}. {usable} to spend.</p>
+  {/if}
   <div class="row">
     <span class="turn">{spentThisTurn} of {character.bloodPerTurn} spent this turn</span>
     <div class="actions">
-      {#if hurt}<button class="btn quiet" onclick={heal} disabled={character.bloodPool === 0}>Heal a box</button>{/if}
-      <button class="btn" onclick={spend} disabled={character.bloodPool === 0}>Spend blood</button>
+      {#if hurt}<button class="btn quiet" onclick={heal} disabled={usable === 0}>Heal a box</button>{/if}
+      <button class="btn" onclick={spend} disabled={usable === 0}>Spend blood</button>
     </div>
   </div>
   {#if refusal}
@@ -58,6 +64,12 @@
 </section>
 
 <style>
+  .thin {
+    margin: 4px 0 0;
+    font-size: 0.88rem;
+    font-style: italic;
+    color: var(--ink-soft);
+  }
   .blood {
     display: grid;
     gap: 14px;

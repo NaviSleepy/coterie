@@ -9,7 +9,7 @@
  */
 
 import { ABILITIES, ATTRIBUTES } from './traits.ts';
-import { LOWEST_GENERATION } from './generation.ts';
+import { disciplineCap, LOWEST_GENERATION } from './generation.ts';
 
 export interface CreationRules {
   attributes: [number, number, number];
@@ -166,10 +166,14 @@ export interface CreationCost {
   freebiesLeft: number;
   /** Freebie points over budget; 0 when within it. */
   overBy: number;
-  /** Rules broken that freebies can't buy, in words. */
+  /** Rules broken that freebies can't buy, in words. The Storyteller can still approve these. */
   problems: string[];
+  /** Limits nobody can approve past (thin blood's Discipline cap): the server refuses the sheet. */
+  blocked: string[];
   /** Within budget and breaking no rule: a player may take a seat without asking. */
   ok: boolean;
+  /** Points of the Fourteenth or Fifteenth Generation Flaw a thin-blooded Generation brings (0, 2 or 4), counted with the flaws. */
+  thinBloodFlaw: number;
   /** Path rating and Willpower the Virtues give for free. */
   basePath: number;
   baseWillpower: number;
@@ -203,6 +207,7 @@ export function creationCost(sheet: CreationSheet, overrides?: CreationOverrides
   const r = rulesFor(template, overrides);
   const lines: CreationLine[] = [];
   const problems: string[] = [];
+  const blocked: string[] = [];
 
   // Attributes start at one dot each.
   const attrGroups = Object.entries(ATTRIBUTES);
@@ -267,7 +272,21 @@ export function creationCost(sheet: CreationSheet, overrides?: CreationOverrides
   lines.push({ key: 'merits', label: 'Merits', spent: meritPoints, budget: 0, freebies: meritPoints });
   if (meritPoints > r.maxMerits) problems.push(`${meritPoints} points of Merits; a new character can have at most ${r.maxMerits}.`);
 
-  const flawPoints = sum(named(sheet.flaws).map((f) => f.points ?? 0));
+  // Thin blood is V20's Fourteenth (2 pt) or Fifteenth (4 pt) Generation Flaw:
+  // choosing the Generation takes the Flaw, unless it's already listed.
+  const generation = sheet.generation ?? LOWEST_GENERATION;
+  const flawNames = named(sheet.flaws).map((f) => f.name.trim().toLowerCase());
+  const thinName = generation >= 15 ? 'fifteenth generation' : generation === 14 ? 'fourteenth generation' : '';
+  const thinBloodFlaw = template === 'vampire' && thinName && !flawNames.includes(thinName) ? (generation >= 15 ? 4 : 2) : 0;
+  if (template === 'vampire' && generation >= 14) {
+    if (listedGeneration > 0) problems.push('A thin-blooded character can\'t have the Generation Background.');
+    if (backgrounds.some((b) => b.name.trim().toLowerCase() === 'status' && (b.level ?? 0) > 0)) problems.push('A thin-blooded character can\'t start with Status.');
+    const cap = disciplineCap(generation)!;
+    const over = named(sheet.disciplines).filter((d) => (d.level ?? 0) > cap);
+    if (over.length) blocked.push(`${generation}th Generation can't hold a Discipline above ${cap}: ${over.map((d) => d.name).join(', ')}.`);
+  }
+
+  const flawPoints = sum(named(sheet.flaws).map((f) => f.points ?? 0)) + thinBloodFlaw;
   const flawRefund = Math.min(flawPoints, r.maxFlaws);
 
   const freebieBudget = r.freebies + flawRefund;
@@ -283,7 +302,9 @@ export function creationCost(sheet: CreationSheet, overrides?: CreationOverrides
     freebiesLeft,
     overBy,
     problems,
-    ok: overBy === 0 && problems.length === 0,
+    blocked,
+    ok: overBy === 0 && problems.length === 0 && blocked.length === 0,
+    thinBloodFlaw,
     basePath,
     baseWillpower,
   };

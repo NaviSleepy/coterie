@@ -53,8 +53,14 @@
     creationCost({ template, generation, attributes, abilities, disciplines, backgrounds, virtues, pathRating, willpowerPermanent, merits, flaws }, overrides),
   );
   const rules = $derived(rulesFor(template, overrides));
-  const needsApproval = $derived(!table.isStoryteller && !cost.ok);
+  const needsApproval = $derived(!table.isStoryteller && !cost.ok && cost.blocked.length === 0);
   let sent = $state(false);
+
+  /** What thin blood means, in a line, for whoever picks it. */
+  const thinBloodHint = (g: number) =>
+    g >= 15
+      ? "V20's Fifteenth Generation Flaw (4 points, counted for you): only 6 of 10 blood work for Disciplines and healing, at two for one; Disciplines up to 3; no ghouls, bonds or childer. Sunlight does lethal damage, and food stays down for an hour."
+      : "V20's Fourteenth Generation Flaw (2 points, counted for you): only 8 of 10 blood work for Disciplines and healing; Disciplines up to 4; no Generation Background or starting Status. Most also take the Thin Blood Flaw.";
 
   const eligible = $derived(
     [...Object.entries(attributes), ...Object.entries(abilities)].filter(([, v]) => v >= 4).map(([k]) => k),
@@ -124,8 +130,13 @@
       {#if template === 'vampire'}
         <label>Generation
           <select bind:value={generation}>
+            <option value={15}>15th — thin-blooded: pool 10, 6 usable at double cost (4-pt Flaw)</option>
+            <option value={14}>14th — thin-blooded: pool 10, 8 usable (2-pt Flaw)</option>
             {#each [13, 12, 11, 10, 9, 8, 7, 6, 5, 4] as g (g)}<option value={g}>{g}th — pool {bloodPoolMax(g)}, {bloodPerTurn(g)}/turn</option>{/each}
           </select>
+          {#if generation >= 14}
+            <span class="hint">{thinBloodHint(generation)}</span>
+          {/if}
         </label>
       {/if}
     </fieldset>
@@ -251,8 +262,8 @@
     {#if sent}
       <p class="sent">Sent. The Storyteller will look it over; you'll find it on your page, and the character takes its seat when they approve it. <a href={table.home}>Back to the table</a></p>
     {:else}
-      {#if needsApproval}<p class="hint">This goes over the creation budget{cost.problems.length ? ' or breaks a creation rule' : ''}, so it needs the Storyteller's approval. You can trim it, or send it as it is.</p>{/if}
-      <button class="btn solid submit" disabled={busy || !profile.name.trim()}>{busy ? (needsApproval ? 'Sending…' : template === 'dhampir' ? 'Taking a seat…' : 'Rolling starting blood…') : table.isStoryteller ? 'Create DMPC' : needsApproval ? 'Send to the Storyteller for approval' : 'Take a seat'}</button>
+      {#if cost.blocked.length}<p class="hint problem">{cost.blocked.join(' ')} Lower it to take a seat.</p>{:else if needsApproval}<p class="hint">This goes over the creation budget{cost.problems.length ? ' or breaks a creation rule' : ''}, so it needs the Storyteller's approval. You can trim it, or send it as it is.</p>{/if}
+      <button class="btn solid submit" disabled={busy || !profile.name.trim() || cost.blocked.length > 0}>{busy ? (needsApproval ? 'Sending…' : template === 'dhampir' ? 'Taking a seat…' : 'Rolling starting blood…') : table.isStoryteller ? 'Create DMPC' : needsApproval ? 'Send to the Storyteller for approval' : 'Take a seat'}</button>
     {/if}
     {#if table.error}<p class="error">{table.error}</p>{/if}
   </form>
@@ -275,9 +286,10 @@
       <span>Freebies</span>
       <span>{cost.freebiesSpent} / {cost.freebieBudget}</span>
     </div>
-    {#if cost.flawRefund}<p class="groups">{rules.freebies} + {cost.flawRefund} from flaws</p>{/if}
+    {#if cost.flawRefund}<p class="groups refund">{rules.freebies} + {cost.flawRefund} from flaws{cost.thinBloodFlaw ? ` (${cost.thinBloodFlaw} for ${generation}th Generation)` : ''}</p>{/if}
     <p class="left">{cost.overBy ? `${cost.overBy} over` : `${cost.freebiesLeft} left`}</p>
     {#each cost.problems as p (p)}<p class="problem">{p}</p>{/each}
+    {#each cost.blocked as p (p)}<p class="problem">{p}</p>{/each}
     <p class="hint">Priorities pick themselves: the biggest pool goes where you spent the most.</p>
   </aside>
 </main>
@@ -319,6 +331,9 @@
     margin: 0 0 4px;
     font-size: 0.8rem;
     color: var(--ink-soft);
+  }
+  .budget .groups.refund {
+    text-transform: none;
   }
   .budget .total {
     border-top: 1px solid var(--rule);

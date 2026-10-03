@@ -1,6 +1,34 @@
 import type { CharacterState, EngineResult } from './types.ts';
 import { bloodPerTurn, bloodPoolMax } from './generation.ts';
 
+/**
+ * How thin blood changes spending, from V20's Flaws. `reserve` is the bottom
+ * of the pool that only keeps the vampire rising (2 at 14th Generation, 4 at
+ * 15th): it can't pay for Disciplines, healing or raising Attributes.
+ * `multiplier` is what one point of effect costs (2 at 15th, and with the
+ * Thin Blood Flaw). Rising each night always costs one, whatever the rules.
+ */
+export interface BloodRules {
+  reserve: number;
+  multiplier: number;
+}
+
+export const NORMAL_BLOOD: BloodRules = { reserve: 0, multiplier: 1 };
+
+export function bloodRules(c: { generation: number; template?: string | null; flaws?: { name: string }[] }): BloodRules {
+  if (c.template === 'dhampir') return NORMAL_BLOOD;
+  const thinFlaw = (c.flaws ?? []).some((f) => f.name.trim().toLowerCase() === 'thin blood');
+  return {
+    reserve: c.generation >= 15 ? 4 : c.generation === 14 ? 2 : 0,
+    multiplier: c.generation >= 15 || thinFlaw ? 2 : 1,
+  };
+}
+
+/** Points of effect the pool can still pay for under these rules. */
+export function usableBlood(pool: number, rules: BloodRules): number {
+  return Math.max(0, Math.floor((pool - rules.reserve) / rules.multiplier));
+}
+
 export interface SpendOutcome {
   bloodPool: number;
   spent: number;
@@ -24,6 +52,7 @@ export function spendBlood(
   character: CharacterState,
   amount: number,
   sceneTurn: number,
+  rules: BloodRules = NORMAL_BLOOD,
 ): EngineResult<SpendOutcome> {
   if (!Number.isInteger(amount) || amount <= 0) {
     return {
@@ -53,21 +82,32 @@ export function spendBlood(
     };
   }
 
-  if (amount > character.bloodPool) {
+  // The per-turn cap counts points of effect; thin blood pays more for each.
+  const cost = amount * rules.multiplier;
+  if (cost > character.bloodPool) {
     return {
       ok: false,
       reason: 'insufficient-blood',
-      message: `${character.bloodPool} blood in the pool. There isn't ${amount} there to spend.`,
+      message: rules.multiplier > 1
+        ? `${character.bloodPool} blood in the pool, and thin blood costs ${rules.multiplier} a point. There isn't ${cost} there to spend.`
+        : `${character.bloodPool} blood in the pool. There isn't ${amount} there to spend.`,
+    };
+  }
+  if (character.bloodPool - cost < rules.reserve) {
+    return {
+      ok: false,
+      reason: 'thin-blood-reserve',
+      message: `Thin blood: the last ${rules.reserve} points only keep you rising. ${usableBlood(character.bloodPool, rules)} point${usableBlood(character.bloodPool, rules) === 1 ? '' : 's'} of effect left to spend.`,
     };
   }
 
-  const bloodPool = character.bloodPool - amount;
+  const bloodPool = character.bloodPool - cost;
   const bloodSpentThisTurn = alreadySpent + amount;
 
   return {
     ok: true,
     bloodPool,
-    spent: amount,
+    spent: cost,
     bloodSpentThisTurn,
     bloodSpentTurnRef: sceneTurn,
     remainingThisTurn: perTurn - bloodSpentThisTurn,

@@ -13,6 +13,7 @@ import {
   applyDamage,
   bloodPerTurn,
   bloodPoolMax,
+  bloodRules,
   buildPool,
   canSpendWillpower,
   cleanCreationOverrides,
@@ -26,6 +27,7 @@ import {
   spendBlood,
   traitDots,
   traitLabel,
+  usableBlood,
   virtueForCheck,
   type DamageType,
 } from '$engine/index.ts';
@@ -400,7 +402,7 @@ export class DemoTable extends TableState {
 
   override async spend(characterId: string, amount: number) {
     const c = this.world.characters[characterId];
-    const out = spendBlood(stateOf(c), amount, this.turnRef);
+    const out = spendBlood(stateOf(c), amount, this.turnRef, bloodRules(c));
     if (!out.ok) {
       this.flashing[`${characterId}:blood`] = Date.now();
       this.error = out.message;
@@ -529,7 +531,10 @@ export class DemoTable extends TableState {
         let track = healthOf(c);
         const patch: Partial<Character> = {};
         if (b.heal) {
-          const budget = Math.min(pool, remainingThisTurn({ ...stateOf(c), bloodPool: pool }, this.turnRef));
+          const rules = bloodRules(c);
+          const usable = usableBlood(pool, rules);
+          const budget = Math.min(usable, remainingThisTurn({ ...stateOf(c), bloodPool: pool }, this.turnRef));
+          if (usable <= 0 && pool > 0) throw new Refusal(`Thin blood: the last ${rules.reserve} points only keep you rising, and can't heal.`);
           if (budget <= 0) throw new Refusal('No blood left to draw this turn. Healing waits for the Storyteller to advance the turn.');
           let spent = 0;
           for (const type of ['lethal', 'bashing'] as const) {
@@ -537,13 +542,14 @@ export class DemoTable extends TableState {
             track = out.track;
             spent += out.bloodSpent;
           }
-          pool -= spent;
+          pool -= spent * rules.multiplier;
           Object.assign(patch, { bloodSpentThisTurn: c.bloodPerTurn - remainingThisTurn(stateOf(c), this.turnRef) + spent, bloodSpentTurnRef: this.turnRef });
         }
         if (b.healAggravated) {
-          const out = healDamage(track, 1, 'aggravated', pool);
+          const rules = bloodRules(c);
+          const out = healDamage(track, 1, 'aggravated', usableBlood(pool, rules));
           track = out.track;
-          pool -= out.bloodSpent;
+          pool -= out.bloodSpent * rules.multiplier;
         }
         this.commit(c, { ...patch, bloodPool: pool, healthBashing: track.bashing, healthLethal: track.lethal, healthAggravated: track.aggravated });
         return {};

@@ -88,4 +88,19 @@ describe('character creation budget', () => {
     assert.throws(() => cleanCreationOverrides({ vampire: { generationCosts: false } }));
     assert.throws(() => cleanCreationOverrides({ vampire: { cost: { flight: 1 } } }));
   });
+
+  it('counts a thin-blooded Generation as its Flaw, once, and holds it to the thin-blood limits', () => {
+    const fourteenth = creationCost({ ...base, generation: 14 });
+    assert.equal(fourteenth.thinBloodFlaw, 2);
+    assert.equal(fourteenth.freebieBudget, 17);
+    const listed = creationCost({ ...base, generation: 15, flaws: [{ name: 'Fifteenth Generation', points: 4 }] });
+    assert.equal(listed.thinBloodFlaw, 0);
+    assert.equal(listed.freebieBudget, 19, 'listed once, not twice');
+    const capped = creationCost({ ...base, generation: 15, flaws: [{ name: 'Thin Blood', points: 4 }] });
+    assert.equal(capped.flawRefund, 7, 'still under the seven-point cap');
+    const rules = creationCost({ ...base, generation: 15, disciplines: [{ name: 'Obfuscate', level: 4 }], backgrounds: [{ name: 'Generation', level: 1 }, { name: 'Status', level: 1 }] });
+    assert.equal(rules.problems.length, 2);
+    assert.equal(rules.blocked.length, 1);
+    assert.equal(creationCost({ ...base, generation: 15, template: 'dhampir' }).thinBloodFlaw, 0);
+  });
 });
