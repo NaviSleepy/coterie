@@ -32,6 +32,29 @@ describe('chronicles and invites', () => {
     assert.deepEqual(w.tables.row('chronicles', c.$id)!.$permissions, [`read("team:${c.teamId}")`]);
   });
 
+  it('starts a new chronicle with the starter chronicle\'s library, readable by its own team', async () => {
+    const w = ashenCourt();
+    const st = { ...w.as(ST), starterChronicleId: CHRONICLE };
+    await chronicle(st, { action: 'saveEntry', chronicleId: CHRONICLE, kind: 'sect', name: 'Camarilla', summary: 'Ivory Tower', page: 'V20 p. 38' });
+    await chronicle(st, { action: 'saveEntry', chronicleId: CHRONICLE, kind: 'merit', name: 'Iron Will', points: 3 });
+    const source = w.tables.rows('library').filter((r: any) => r.chronicleId === CHRONICLE).length;
+    const c: any = await chronicle({ ...w.as('user_new_st'), starterChronicleId: CHRONICLE }, { action: 'create', name: 'By Night' });
+    assert.equal(c.libraryCopied, source);
+    const copied = w.tables.rows('library').filter((r: any) => r.chronicleId === c.$id);
+    assert.equal(copied.length, source);
+    const sect = copied.find((r: any) => r.kind === 'sect')!;
+    assert.equal(sect.summary, 'Ivory Tower');
+    assert.deepEqual(sect.$permissions, [`read("team:${c.teamId}")`]);
+    assert.equal(copied.find((r: any) => r.kind === 'merit')!.points, 3);
+    assert.equal(w.tables.rows('library').filter((r: any) => r.chronicleId === CHRONICLE).length, source, 'the source is untouched');
+  });
+
+  it('creates a chronicle with an empty library when no starter is configured', async () => {
+    const w = world();
+    const c: any = await chronicle(w.as('user_new_st'), { action: 'create', name: 'By Night' });
+    assert.equal(c.libraryCopied, 0);
+  });
+
   it('joins a player by code, case- and space-insensitively, exactly once', async () => {
     const w = ashenCourt();
     await chronicle(w.as(STRANGER), { action: 'join', inviteCode: 'ashen 234' });

@@ -98,6 +98,8 @@ Each chronicle has a library of clans and bloodlines, merits, flaws, Disciplines
 
 It holds no rulebook text by design (see *Content and licensing* below): a page number points into a book the reader owns without copying it. Names are unique within a kind, since that's how a sheet finds its entry. Players can still type something the library doesn't list; the Storyteller decides whether to approve it.
 
+A new chronicle starts with a copy of a starter chronicle's library, so its Storyteller isn't facing an empty reference. The starter is an ordinary chronicle, named by the chronicle Function's `STARTER_CHRONICLE_ID` variable (`STARTER_CHRONICLE_ID=… npm run provision` sets it; it applies on the Function's next deployment). The copy is made once, at creation, as entries the new chronicle owns: its Storyteller can edit or remove them, and later changes to the starter don't reach chronicles that already exist. Without the variable a chronicle starts empty, and a failed copy never fails the creation.
+
 ## Dice
 
 `rollPool` takes trait names, never numbers. A player sends `{"traits": ["dexterity", "firearms"]}`. The Function reads the sheet from the database, sums the dots, reads marked health for the wound penalty, reads temporary Willpower, checks any claimed specialty against the 4-dot rule, and rolls every die with `crypto.getRandomValues`, using rejection sampling so a d10 from a byte carries no modulo bias.
