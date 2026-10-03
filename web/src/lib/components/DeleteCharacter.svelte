@@ -13,9 +13,12 @@
 
   async function remove() {
     busy = true;
+    const portrait = table.profiles[character.$id]?.portrait as string | undefined;
     const out = await table.act('character', { action: 'delete', characterId: character.$id, name: typed });
     busy = false;
     if (out) {
+      // The sheet is gone; its portrait file goes too (owner and Storyteller may both delete it).
+      if (portrait) void table.deletePortraitFile(portrait);
       open = false;
       typed = '';
       ondeleted?.();

@@ -15,7 +15,8 @@
 
 import { writeFileSync } from 'node:fs';
 
-import { Client, Query, TablesDB, Teams, Users } from 'node-appwrite';
+import { Client, ID, Query, Storage, TablesDB, Teams, Users } from 'node-appwrite';
+import { InputFile } from 'node-appwrite/file';
 
 import { cryptoDie } from '../engine/src/index.ts';
 import { handler as character } from '../functions/src/fns/character.ts';
@@ -25,6 +26,7 @@ import { handler as rollPool } from '../functions/src/fns/rollPool.ts';
 import { handler as sealDifficulty } from '../functions/src/fns/sealDifficulty.ts';
 import type { Ctx } from '../functions/src/shared/http.ts';
 import { Store, type TablesLike, type TeamsLike } from '../functions/src/shared/store.ts';
+import { PORTRAITS_BUCKET_ID } from '../functions/src/shared/schema.ts';
 
 const endpoint = process.env.APPWRITE_ENDPOINT;
 const project = process.env.APPWRITE_PROJECT_ID;
@@ -109,6 +111,28 @@ const { secretId } = await createSecret(as(ROLES.st), {
   visibleTo: [ROLES.other],
 });
 
+// A portrait on the player's character, permissioned exactly as the web client does it.
+const PIXEL_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+const storage = new Storage(client);
+const portrait = await storage.createFile({
+  bucketId: PORTRAITS_BUCKET_ID,
+  fileId: ID.unique(),
+  file: InputFile.fromBuffer(PIXEL_PNG, 'portrait.png'),
+  permissions: [
+    `read("user:${ROLES.player}")`,
+    `update("user:${ROLES.player}")`,
+    `delete("user:${ROLES.player}")`,
+    `read("team:${chron.teamId}/storyteller")`,
+    `delete("team:${chron.teamId}/storyteller")`,
+  ],
+});
+// Last run's portraits go, so the bucket doesn't fill with fixtures.
+for (const f of (await storage.listFiles({ bucketId: PORTRAITS_BUCKET_ID, queries: [Query.limit(100)] })).files) {
+  if (f.$id !== portrait.$id && f.name === 'portrait.png' && f.$permissions.includes(`read("user:${ROLES.player}")`)) {
+    await storage.deleteFile({ bucketId: PORTRAITS_BUCKET_ID, fileId: f.$id });
+  }
+}
+
 const jwt = async (userId: string) => (await users.createJWT({ userId, duration: 900 })).jwt;
 
 const env = {
@@ -124,6 +148,7 @@ const env = {
     tableRollId: tableRoll.rollId,
     hiddenRollId: hiddenRoll.rollId,
     secretId,
+    portraitFileId: portrait.$id,
   },
 };
 writeFileSync(new URL('../http/http-client.private.env.json', import.meta.url), JSON.stringify(env, null, 2));

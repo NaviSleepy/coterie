@@ -108,7 +108,7 @@
     <p class="hint">A character you play yourself alongside the coterie. It sits on the screen with everyone else's, marked DMPC, and you play it from "My sheet". Players can't open its sheet, just as they can't open each other's, and its rolls show in the feed like anyone's.</p>
   {:else}
     <h1>Bring a character to the table</h1>
-    <p class="hint">Mechanical traits are checked by the server when you submit. The Storyteller can adjust them later; you can always edit your name, concept, Nature and Demeanor yourself.</p>
+    <p class="hint">Mechanical traits are checked by the server when you submit. The Storyteller can adjust them later; you can always edit your profile and add a character portrait after taking your seat.</p>
   {/if}
 
   <form onsubmit={(e) => { e.preventDefault(); void submit(); }}>

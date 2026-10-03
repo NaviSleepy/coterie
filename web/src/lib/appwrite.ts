@@ -10,7 +10,7 @@
 import { env } from '$env/dynamic/public';
 import { Account, Channel, Client, Functions, Query, Realtime, Storage, TablesDB, Teams } from 'appwrite';
 
-import { DATABASE_ID, type FunctionId, type TableId } from '$schema';
+import { DATABASE_ID, PORTRAITS_BUCKET_ID, type FunctionId, type TableId } from '$schema';
 
 export const client = new Client()
   .setEndpoint(env.PUBLIC_APPWRITE_ENDPOINT ?? 'https://cloud.appwrite.io/v1')
@@ -57,6 +57,17 @@ export async function getRow<T extends AnyRow = AnyRow>(table: TableId, rowId: s
 
 export function channel(table: TableId): string {
   return Channel.tablesdb(DATABASE_ID).table(table).row().toString();
+}
+
+/**
+ * A portrait as an object URL. Read through the SDK so the session travels
+ * with the request even where third-party cookies are blocked; a plain
+ * <img src> to the Appwrite endpoint would fail in those browsers.
+ */
+export async function portraitObjectUrl(fileId: string): Promise<string> {
+  const url = new URL(storage.getFileView({ bucketId: PORTRAITS_BUCKET_ID, fileId }));
+  const bytes = (await client.call('GET', url, {}, {}, 'arrayBuffer')) as ArrayBuffer;
+  return URL.createObjectURL(new Blob([bytes]));
 }
 
 /** A Function said no: forbidden, a rules refusal, a conflict. `message` is UI copy. */

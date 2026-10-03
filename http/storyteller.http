@@ -197,3 +197,14 @@ Content-Type: application/json
     client.assert(response.body.responseStatusCode === 200, `expected 200, got ${response.body.responseStatusCode}`);
   });
 %}
+
+### Portraits: the Storyteller sees a player's portrait
+GET {{endpoint}}/storage/buckets/character-portraits/files/{{portraitFileId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+
+> {%
+  client.test("the Storyteller reads portraits at their table", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+  });
+%}

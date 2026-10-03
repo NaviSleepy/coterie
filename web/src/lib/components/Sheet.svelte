@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ABILITIES, ATTRIBUTES, traitLabel, woundPenalty } from '$engine/index.ts';
   import { healthOf, type Character } from '$shared/codec.ts';
+  import Portrait from './Portrait.svelte';
   import type { TableState } from '$lib/table.svelte';
   import { dotLadder, dotMeaning, entriesOf, findEntry, gloss } from '$lib/library';
   import Dots from './Dots.svelte';
@@ -20,6 +21,11 @@
   let editing = $state(false);
   let draft = $state({ name: '', concept: '', nature: '', demeanor: '' });
   let saveError = $state<string | null>(null);
+  let portraitBusy = $state(false);
+  let portraitError = $state<string | null>(null);
+  let portraitInput = $state<HTMLInputElement>();
+
+  const portraitId = $derived(typeof profile.portrait === 'string' ? profile.portrait : '');
 
   function edit() {
     draft = {
@@ -39,6 +45,22 @@
     else saveError = table.error;
   }
 
+  async function uploadPortrait(event: Event) {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    portraitBusy = true;
+    portraitError = await table.uploadPortrait(character.$id, file);
+    portraitBusy = false;
+  }
+
+  async function removePortrait() {
+    portraitBusy = true;
+    portraitError = await table.removePortrait(character.$id);
+    portraitBusy = false;
+  }
+
   const ABILITY_GROUPS = [
     ['Talents', ABILITIES.talents],
     ['Skills', ABILITIES.skills],
@@ -54,25 +76,28 @@
 
 <article class="sheet panel">
   <header>
-    <div>
-      {#if editing}
-        <input class="name-input" bind:value={draft.name} aria-label="Name" />
-      {:else}
-        <h1>{profile.name ?? 'Unnamed'}</h1>
-      {/if}
-      <p class="lineage caps" title={gloss(findEntry(table.library, 'sect', character.sect)) || undefined}>
-        {character.template === 'dhampir'
-          ? ['Dhampir', character.dhampirConcept, character.clan ? `${character.clan} Antecedent` : '', character.sect].filter(Boolean).join(' · ')
-          : [character.clan, `${ordinal(character.generation)} Generation`, character.generation >= 14 ? 'Thin-blooded' : '', character.sect].filter(Boolean).join(' · ')}
-      </p>
-      {#if character.template !== 'dhampir' && character.generation >= 14}
-        <p class="thin">{character.generation >= 15
-          ? 'Thin-blooded: 6 of 10 blood usable, two for one · Disciplines up to 3 · no ghouls, bonds or childer · sunlight does lethal, soaked with Stamina, at most 3 a turn, and Rötschreck from it is 2 easier to resist · food stays down for an hour.'
-          : 'Thin-blooded: 8 of 10 blood usable · Disciplines up to 4.'}</p>
-      {/if}
-      {#if character.title}
-        <p class="title" title={gloss(findEntry(table.library, 'title', character.title)) || undefined}>{character.title}</p>
-      {/if}
+    <div class="identity">
+      <Portrait {table} fileId={portraitId} name={profile.name ?? ''} />
+      <div>
+        {#if editing}
+          <input class="name-input" bind:value={draft.name} aria-label="Name" />
+        {:else}
+          <h1>{profile.name ?? 'Unnamed'}</h1>
+        {/if}
+        <p class="lineage caps" title={gloss(findEntry(table.library, 'sect', character.sect)) || undefined}>
+          {character.template === 'dhampir'
+            ? ['Dhampir', character.dhampirConcept, character.clan ? `${character.clan} Antecedent` : '', character.sect].filter(Boolean).join(' · ')
+            : [character.clan, `${ordinal(character.generation)} Generation`, character.generation >= 14 ? 'Thin-blooded' : '', character.sect].filter(Boolean).join(' · ')}
+        </p>
+        {#if character.template !== 'dhampir' && character.generation >= 14}
+          <p class="thin">{character.generation >= 15
+            ? 'Thin-blooded: 6 of 10 blood usable, two for one · Disciplines up to 3 · no ghouls, bonds or childer · sunlight does lethal, soaked with Stamina, at most 3 a turn, and Rötschreck from it is 2 easier to resist · food stays down for an hour.'
+            : 'Thin-blooded: 8 of 10 blood usable · Disciplines up to 4.'}</p>
+        {/if}
+        {#if character.title}
+          <p class="title" title={gloss(findEntry(table.library, 'title', character.title)) || undefined}>{character.title}</p>
+        {/if}
+      </div>
     </div>
     <dl class="meta">
       {#if editing}
@@ -97,8 +122,24 @@
             <button class="linkish" onclick={edit}>Edit profile</button>
           {/if}
         {/if}
+        {#if isOwner && !editing}
+          <input
+            class="portrait-input"
+            bind:this={portraitInput}
+            type="file"
+            accept="image/jpeg,image/png,image/gif,image/webp"
+            onchange={uploadPortrait}
+          />
+          <button class="linkish" disabled={portraitBusy} onclick={() => portraitInput?.click()}>
+            {portraitBusy ? 'Uploading…' : portraitId ? 'Replace portrait' : 'Upload portrait'}
+          </button>
+          {#if portraitId}
+            <button class="linkish" disabled={portraitBusy} onclick={removePortrait}>Remove portrait</button>
+          {/if}
+        {/if}
         {#if !editing}<ExportSheet {table} {character} />{/if}
         {#if saveError}<span class="error">{saveError}</span>{/if}
+        {#if portraitError}<span class="error">{portraitError}</span>{/if}
       </div>
     {/if}
   </header>
@@ -212,6 +253,12 @@
     margin: 0;
     line-height: 1.1;
   }
+  .identity {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    min-width: 0;
+  }
   .name-input {
     font-size: 1.8rem;
     width: 100%;
@@ -262,6 +309,10 @@
     display: flex;
     gap: 8px;
     align-items: center;
+    flex-wrap: wrap;
+  }
+  .portrait-input {
+    display: none;
   }
   .linkish {
     background: none;
