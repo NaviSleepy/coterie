@@ -1,7 +1,8 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, CREATION_RULES, creationCost, traitLabel } from '$engine/index.ts';
+  import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, creationCost, rulesFor, traitLabel, type CreationOverrides } from '$engine/index.ts';
+  import { parseJson } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
   import { dotMeaning, entriesOf, findEntry, gloss, parseRitual, sectNames } from '$lib/library';
 
@@ -44,11 +45,14 @@
   const pathRating = $derived(Math.min(10, basePath + pathExtra));
   const willpowerPermanent = $derived(Math.min(10, (virtues.courage ?? 1) + willpowerExtra));
 
+  /** This campaign's changes to the book's budget, set by the Storyteller. */
+  const overrides = $derived(parseJson<CreationOverrides>(table.chronicle?.creationRules, {}));
+  const custom = $derived(Object.keys(overrides[template] ?? {}).length > 0);
   /** The same budget the server holds a player to. */
   const cost = $derived(
-    creationCost({ template, generation, attributes, abilities, disciplines, backgrounds, virtues, pathRating, willpowerPermanent, merits, flaws }),
+    creationCost({ template, generation, attributes, abilities, disciplines, backgrounds, virtues, pathRating, willpowerPermanent, merits, flaws }, overrides),
   );
-  const rules = $derived(CREATION_RULES[template]);
+  const rules = $derived(rulesFor(template, overrides));
   const needsApproval = $derived(!table.isStoryteller && !cost.ok);
   let sent = $state(false);
 
@@ -255,7 +259,7 @@
 
   <aside class="budget" class:over={!cost.ok} aria-label="Creation budget">
     <h2>Budget</h2>
-    {#if table.isStoryteller}<p class="hint">A DMPC isn't held to it; it's here as a guide.</p>{/if}
+    <p class="hint">{custom ? "This campaign's own numbers, set by the Storyteller." : 'V20 as written.'}{#if table.isStoryteller} A DMPC isn't held to it; it's here as a guide.{/if}</p>
     {#each cost.lines as l (l.key)}
       {#if l.budget || l.spent}
         <div class="line" class:spending={l.freebies > 0}>

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { creationCost } from '../src/index.ts';
+import { cleanCreationOverrides, creationCost, rulesFor } from '../src/index.ts';
 
 const attrs = (o: Record<string, number>) => ({ strength: 1, dexterity: 1, stamina: 1, charisma: 1, manipulation: 1, appearance: 1, perception: 1, intelligence: 1, wits: 1, ...o });
 const base = { virtues: { conscience: 3, selfControl: 3, courage: 4 }, pathRating: 6, willpowerPermanent: 4 };
@@ -63,5 +63,29 @@ describe('character creation budget', () => {
     assert.equal(c.freebieBudget, 18);
     assert.equal(c.lines.find((l) => l.key === 'disciplines')!.freebies, 10);
     assert.equal(c.lines.find((l) => l.key === 'backgrounds')!.spent, 0, 'Generation costs nothing');
+  });
+
+  it("uses a campaign's own numbers in place of the book's", () => {
+    const sheet = { ...base, disciplines: [{ name: 'Celerity', level: 4 }], abilities: { brawl: 4 } };
+    assert.equal(creationCost(sheet).overBy, 0);
+    assert.equal(creationCost(sheet).freebiesSpent, 9);
+    const generous = { vampire: { disciplines: 4, abilityCap: 4, freebies: 21 } };
+    const c = creationCost(sheet, generous);
+    assert.equal(c.freebiesSpent, 0);
+    assert.equal(c.freebieBudget, 21);
+    const stingy = creationCost(sheet, { vampire: { freebies: 5, cost: { discipline: 10 } } });
+    assert.equal(stingy.lines.find((l) => l.key === 'disciplines')!.freebies, 10);
+    assert.ok(stingy.overBy > 0);
+    assert.equal(rulesFor('dhampir', generous).freebies, 18, 'other templates keep the book');
+  });
+
+  it('cleans overrides and refuses nonsense', () => {
+    assert.deepEqual(cleanCreationOverrides({ vampire: { attributes: [8, 6, 4], cost: { attribute: 4 } } }), { vampire: { attributes: [8, 6, 4], cost: { attribute: 4 } } });
+    assert.deepEqual(cleanCreationOverrides(null), {});
+    assert.throws(() => cleanCreationOverrides({ vampire: { freebies: 1000 } }));
+    assert.throws(() => cleanCreationOverrides({ vampire: { attributes: [7, 5] } }));
+    assert.throws(() => cleanCreationOverrides({ ghoul: {} }));
+    assert.throws(() => cleanCreationOverrides({ vampire: { generationCosts: false } }));
+    assert.throws(() => cleanCreationOverrides({ vampire: { cost: { flight: 1 } } }));
   });
 });

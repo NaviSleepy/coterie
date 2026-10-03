@@ -67,6 +67,8 @@ export const TABLES = {
         default: 'zero-with-a-one-is-a-botch',
       },
       int('turnSerial', 0, undefined, { default: 0 }),
+      // The campaign's changes to the creation budget, per template (engine CreationOverrides). Empty: the book's.
+      json('creationRules'),
     ],
     indexes: [{ key: 'by_invite', type: 'unique', columns: ['inviteCode'] }],
   },

@@ -297,6 +297,20 @@ describe('the creation budget', () => {
     assert.equal(w.tables.row('creationRequests', requestId), undefined);
   });
 
+  it("holds players to the campaign's own budget, which only the Storyteller sets", async () => {
+    const w = ashenCourt();
+    const sheet = { disciplines: [{ name: 'Celerity', level: 4 }, { name: 'Potence', level: 2 }], abilities: { brawl: 4 } };
+    await rejects(send(w, DMITRI_PLAYER, 'create', sheet), 409);
+    await rejects(chronicle(w.as(DMITRI_PLAYER), { action: 'update', chronicleId: CHRONICLE, creationRules: { vampire: { disciplines: 6 } } }), 403);
+    await rejects(chronicle(w.as(ST), { action: 'update', chronicleId: CHRONICLE, creationRules: { vampire: { freebies: -1 } } }), 400);
+    await chronicle(w.as(ST), { action: 'update', chronicleId: CHRONICLE, creationRules: { vampire: { disciplines: 6, abilityCap: 4 } } });
+    assert.deepEqual(JSON.parse(w.tables.row('chronicles', CHRONICLE)!.creationRules), { vampire: { disciplines: 6, abilityCap: 4 } });
+    const { characterId }: any = await send(w, DMITRI_PLAYER, 'create', sheet);
+    assert.ok(w.tables.row('characters', characterId));
+    await chronicle(w.as(ST), { action: 'update', chronicleId: CHRONICLE, creationRules: {} });
+    await rejects(send(w, DMITRI_PLAYER, 'create', sheet), 409);
+  });
+
   it('caps a player at three open requests', async () => {
     const w = ashenCourt();
     for (let i = 0; i < 3; i++) await send(w, DMITRI_PLAYER, 'requestCreation');

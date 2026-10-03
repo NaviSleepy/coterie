@@ -25,6 +25,8 @@
 
 import { ID, Query } from 'node-appwrite';
 
+import { cleanCreationOverrides } from '../../../engine/src/index.ts';
+
 import { decodeChronicle, loadChronicle, requireStoryteller } from '../shared/auth.ts';
 import { badRequest, entry, HttpError, int, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
 import { checkNpc, validateNpc } from '../shared/npc.ts';
@@ -158,6 +160,13 @@ async function update(ctx: Ctx, body: any) {
   if (name) data.name = name;
   if (body.botchRule !== undefined) data.botchRule = oneOf(body, 'botchRule', BOTCH_RULES);
   if (body.tenets !== undefined) data.tenets = tenets(body.tenets);
+  if (body.creationRules !== undefined) {
+    try {
+      data.creationRules = JSON.stringify(cleanCreationOverrides(body.creationRules));
+    } catch (e) {
+      throw badRequest((e as Error).message);
+    }
+  }
   if (Object.keys(data).length === 0) throw badRequest('Nothing to update.');
   return decodeChronicle(await ctx.store.update('chronicles', chronicle.$id, data));
 }
