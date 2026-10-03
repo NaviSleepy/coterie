@@ -7,6 +7,7 @@
   import TableBar from '$lib/components/TableBar.svelte';
   import RedCard from '$lib/components/RedCard.svelte';
   import FallBanner from '$lib/components/FallBanner.svelte';
+  import DawnWarning from '$lib/components/DawnWarning.svelte';
 
   let { children } = $props();
 
@@ -27,6 +28,7 @@
 <TableBar {table} base={`/c/${table.chronicleId}`} />
 <RedCard {table} />
 <FallBanner {table} />
+<DawnWarning />
 
 {#if failed}
   <p class="failed error">{failed}</p>

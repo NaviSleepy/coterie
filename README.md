@@ -146,6 +146,12 @@ Each skin is a set of CSS tokens under `[data-theme]` in `app.css`: colours, fon
 
 The choice is stored in the browser only, in `localStorage`, and never reaches the server. A small script in `app.html` applies it before first paint, so the page doesn't flash the default. Each skin's fonts load only when someone picks it.
 
+### The dawn warning
+
+In the half hour before the player's local sunrise, warm light creeps in from the edges of the page and a strip under the masthead counts down: *The sky is lightening. Find your haven. Dawn in 12 minutes.* It disappears when the sun is up, and it can be dismissed for the morning.
+
+Sunrise is calculated in the browser (`lib/dawn.ts`) with the NOAA approximation, which is good to a minute or two except near the poles. During polar night the warning simply never fires. Location is guessed from the browser's time zone, using that zone's main city, or from the UTC offset if the zone isn't in the list. **Not your sky? Use my location** asks for the device's location once. It's rounded to a neighbourhood and kept in `localStorage`; it is never sent anywhere.
+
 ### Dice eggs
 
 A few rolls hatch something in the feed (`lib/dice-eggs.ts`):
