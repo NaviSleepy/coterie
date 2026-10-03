@@ -1,10 +1,26 @@
 <script lang="ts">
   import { theme } from '$lib/theme.svelte';
+  import { eggOf } from '$lib/dice-eggs';
   import type { TableState } from '$lib/table.svelte';
   import { parseJson } from '$shared/codec.ts';
   import Die from './Die.svelte';
 
   let { table }: { table: TableState } = $props();
+
+  const eggFor = (r: any) => eggOf({ dice: parseJson<{ value: number }[]>(r.dice, []), outcome: r.outcome, netSuccesses: r.netSuccesses, refusal: r.refusal });
+
+  // A botch of nothing but ones cuts the lights, once, as it lands. Never on reload.
+  const darkened = new Set<string>();
+  $effect(() => {
+    for (const r of table.rolls) {
+      if (!table.fresh[r.$id] || darkened.has(r.$id) || eggFor(r)?.kind !== 'dark') continue;
+      darkened.add(r.$id);
+      document.body.classList.remove('lights-out');
+      void document.body.offsetWidth;
+      document.body.classList.add('lights-out');
+      setTimeout(() => document.body.classList.remove('lights-out'), 1300);
+    }
+  });
 
   function time(iso: string) {
     return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -56,6 +72,7 @@
 
   {#each table.rolls as r (r.$id)}
     {@const dice = parseJson<{ value: number; rerolled: boolean }[]>(r.dice, [])}
+    {@const egg = eggFor(r)}
     {@const difficulty = r.revealedDifficulty ?? (table.isStoryteller ? (table.rollSecrets[r.$id]?.difficulty ?? null) : null)}
     <article class:fresh={table.fresh[r.$id]} class:missed={table.replayed[r.$id]} class:hidden={r.visibility === 'storyteller'}>
       <div class="head">
@@ -63,7 +80,7 @@
         <time datetime={r.$createdAt}>{time(r.$createdAt)}</time>
       </div>
       <div class="body">
-        <div class="dice">
+        <div class="dice" class:purr={egg?.kind === 'purr'} class:live={!!table.fresh[r.$id]}>
           {#each dice as d, i (i)}
             <Die value={d.value} rerolled={d.rerolled} {difficulty} animate={!!table.fresh[r.$id]} delay={i * 70} />
           {/each}
@@ -76,6 +93,7 @@
         <p class="change" class:fell={k.fell}>{k.change}</p>
       {/if}
       {#if detail(r)}<p class="detail">{detail(r)}</p>{/if}
+      {#if egg}<p class="egg {egg.kind}" class:live={!!table.fresh[r.$id]}>{egg.line}</p>{/if}
       {#if table.replayed[r.$id]}<p class="detail away">While you were away</p>{/if}
       {#if r.visibility === 'storyteller'}<p class="detail hidden-tag">Hidden from the table</p>{/if}
     </article>
@@ -83,6 +101,45 @@
 </section>
 
 <style>
+  /* Dice eggs (lib/dice-eggs.ts). */
+  .dice.purr :global(.die) {
+    border-color: var(--gold);
+    color: var(--gold);
+    box-shadow: 0 0 8px 1px color-mix(in oklab, var(--gold), transparent 35%);
+  }
+  .dice.purr.live :global(.die) {
+    animation: purr 1.6s ease-in-out 0.6s 2;
+  }
+  @keyframes purr {
+    50% {
+      box-shadow: 0 0 16px 4px color-mix(in oklab, var(--gold), transparent 15%);
+    }
+  }
+  .egg {
+    margin: 4px 0 0;
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+  .egg.purr {
+    color: var(--gold);
+  }
+  .egg.dark {
+    color: var(--oxblood);
+  }
+  .egg.thirteen {
+    color: var(--ink-faint);
+    opacity: 0.45;
+    letter-spacing: 0.04em;
+  }
+  .egg.thirteen.live {
+    animation: whisper 4s ease-out both;
+  }
+  @keyframes whisper {
+    from {
+      opacity: 1;
+      color: var(--ink);
+    }
+  }
   .sin {
     margin: 6px 0 2px;
     font-style: italic;

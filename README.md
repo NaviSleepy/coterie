@@ -146,6 +146,16 @@ Each skin is a set of CSS tokens under `[data-theme]` in `app.css`: colours, fon
 
 The choice is stored in the browser only, in `localStorage`, and never reaches the server. A small script in `app.html` applies it before first paint, so the page doesn't flash the default. Each skin's fonts load only when someone picks it.
 
+### Dice eggs
+
+A few rolls hatch something in the feed (`lib/dice-eggs.ts`):
+
+- **Three or more dice, every one a 10:** the dice glow gold and the feed says *The Beast purrs.*
+- **A botch where every die is a 1, with two dice or more:** the lights flicker once.
+- **Exactly thirteen successes:** a whisper appears and fades.
+
+The flicker and the glow animation play only when a roll arrives live, never on reload. The flicker is skipped when someone prefers reduced motion. The eggs are decoration on rolls the server already made; they never change a result.
+
 ### A private notepad
 
 Every seat at the table has a notepad: on the player's screen next to the feed, and behind the Storyteller's screen. Use it for names, debts, and who lied to whom. It saves itself a moment after you stop typing, and again when you leave the page. Notes carry no stakes, so the client writes them directly, like presence. Each person has one row per chronicle, and its permissions name only its author. Other players can't read it, and neither can the Storyteller. A player's notes are just as private from the Storyteller as the Storyteller's are from the players.
