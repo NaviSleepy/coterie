@@ -24,7 +24,7 @@ X-Appwrite-Project: {{project}}
 %}
 
 ### The blank sheet is for signed-in players only
-GET {{endpoint}}/storage/buckets/sheet-templates/files/v20-sheet/view
+GET {{endpoint}}/storage/buckets/sheet-templates/files/v20-sheet
 X-Appwrite-Project: {{project}}
 
 > {%

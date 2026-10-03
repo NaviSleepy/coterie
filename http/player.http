@@ -409,8 +409,8 @@ Content-Type: application/json
   });
 %}
 
-### The blank sheet: a player may read it, for Export PDF
-GET {{endpoint}}/storage/buckets/sheet-templates/files/v20-sheet/view
+### The blank sheet: a player may read it, for Export PDF (metadata: same permission, no binary)
+GET {{endpoint}}/storage/buckets/sheet-templates/files/v20-sheet
 X-Appwrite-Project: {{project}}
 X-Appwrite-JWT: {{jwtPlayer}}
 
