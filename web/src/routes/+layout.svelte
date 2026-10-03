@@ -1,6 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import { onMount } from 'svelte';
+  import { page } from '$app/state';
   import { session } from '$lib/session.svelte';
   import { apply, theme } from '$lib/theme.svelte';
   import ThemePicker from '$lib/components/ThemePicker.svelte';
@@ -12,7 +13,8 @@
   });
 </script>
 
-{#if session.ready}
+<!-- An error page needs no session: a dead link shouldn't wait on Appwrite. -->
+{#if session.ready || page.error}
   {@render children()}
 {:else}
   <p class="loading">Lighting the candles…</p>
