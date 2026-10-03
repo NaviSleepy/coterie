@@ -26,7 +26,7 @@ Every table has row security on. Rows carry their own read lists; almost no role
 | chronicles | chronicle team | Functions only |
 | characters | owner + `storyteller` role | **Functions only**, for every role |
 | profiles | owner + `storyteller` role | owner (cosmetic fields live only here) |
-| character portraits | owner + `storyteller` role (file permissions; the bucket grants upload only) | owner uploads (JPEG, PNG, GIF or WebP up to 5 MB); owner or Storyteller deletes |
+| character portraits | owner + `storyteller` role (file permissions; the bucket grants upload only) | owner uploads (JPEG, PNG, GIF or WebP up to 5 MB) readable by themselves alone; the `character` Function's `setPortrait` checks the file is theirs and adds the Storyteller. Owner or Storyteller deletes |
 | rolls | team, or `storyteller` role only when rolled behind the screen | **nobody**; append-only, created by Functions |
 | rollSecrets | `storyteller` role; the team too once revealed | Functions only |
 | sealedDifficulties | `storyteller` role | Functions only |

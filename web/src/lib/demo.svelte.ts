@@ -421,7 +421,6 @@ export class DemoTable extends TableState {
     await this.saveProfile(characterId, { portrait: '' });
     return null;
   }
-  override async deletePortraitFile() {}
 
   override async openCoterieNotes() {
     this.coterieNote ??= { ...row(DEMO_ID, { chronicleId: DEMO_ID, body: 'Haven: the old organ loft above the Rookery Gallery.\nAldana wants the ledger back by Friday.', editedBy: 'Dmitri’s player' }, 0), $updatedAt: new Date(Date.now() - 3600_000).toISOString() };

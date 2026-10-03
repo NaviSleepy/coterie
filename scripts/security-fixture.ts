@@ -111,21 +111,17 @@ const { secretId } = await createSecret(as(ROLES.st), {
   visibleTo: [ROLES.other],
 });
 
-// A portrait on the player's character, permissioned exactly as the web client does it.
+// A portrait on the player's character, set the way the web client does it:
+// uploaded readable by its owner alone, then handed to the character Function.
 const PIXEL_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const storage = new Storage(client);
 const portrait = await storage.createFile({
   bucketId: PORTRAITS_BUCKET_ID,
   fileId: ID.unique(),
   file: InputFile.fromBuffer(PIXEL_PNG, 'portrait.png'),
-  permissions: [
-    `read("user:${ROLES.player}")`,
-    `update("user:${ROLES.player}")`,
-    `delete("user:${ROLES.player}")`,
-    `read("team:${chron.teamId}/storyteller")`,
-    `delete("team:${chron.teamId}/storyteller")`,
-  ],
+  permissions: [`read("user:${ROLES.player}")`, `update("user:${ROLES.player}")`, `delete("user:${ROLES.player}")`],
 });
+await character({ ...as(ROLES.player), files: storage as any }, { action: 'setPortrait', characterId: playerCharacterId, fileId: portrait.$id });
 // Last run's portraits go, so the bucket doesn't fill with fixtures.
 for (const f of (await storage.listFiles({ bucketId: PORTRAITS_BUCKET_ID, queries: [Query.limit(100)] })).files) {
   if (f.$id !== portrait.$id && f.name === 'portrait.png' && f.$permissions.includes(`read("user:${ROLES.player}")`)) {

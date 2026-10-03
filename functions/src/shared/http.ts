@@ -6,13 +6,21 @@
  * status codes. Tests call handlers directly with a fake store.
  */
 
-import { Client, TablesDB, Teams } from 'node-appwrite';
+import { Client, Storage, TablesDB, Teams } from 'node-appwrite';
 
 import { cryptoDie, type DieSource } from '../../../engine/src/index.ts';
 import { Store, type TablesLike, type TeamsLike } from './store.ts';
 
+/** The slice of Appwrite Storage the Functions use: character portraits. */
+export interface FilesLike {
+  getFile(p: { bucketId: string; fileId: string }): Promise<{ $id: string; $permissions: string[]; mimeType?: string }>;
+  updateFile(p: { bucketId: string; fileId: string; permissions: string[] }): Promise<unknown>;
+  deleteFile(p: { bucketId: string; fileId: string }): Promise<unknown>;
+}
+
 export interface Ctx {
   store: Store;
+  files?: FilesLike;
   /** Set by Appwrite from the caller's session. Never read from the body. */
   userId: string;
   die: DieSource;
@@ -72,6 +80,7 @@ export function entry(name: string, handler: Handler) {
 
     const ctx: Ctx = {
       store: new Store(new TablesDB(client) as unknown as TablesLike, new Teams(client) as unknown as TeamsLike),
+      files: new Storage(client) as unknown as FilesLike,
       userId,
       die: cryptoDie,
       now: () => new Date(),
