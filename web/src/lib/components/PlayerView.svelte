@@ -8,6 +8,7 @@
   import LibraryPanel from './LibraryPanel.svelte';
   import CreationRequests from './CreationRequests.svelte';
   import ProposalPanel from './ProposalPanel.svelte';
+  import Reckoning from './Reckoning.svelte';
   import RollFeed from './RollFeed.svelte';
   import RollPanel from './RollPanel.svelte';
   import Secrets from './Secrets.svelte';
@@ -43,6 +44,7 @@
   </main>
 {:else}
   <main class="table">
+    {#key character.$id}<Reckoning {table} {character} />{/key}
     <div class="left">
       <div class="switch">
         {#if mine.length > 1}

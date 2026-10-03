@@ -20,6 +20,7 @@ import { refused, type Ctx } from './http.ts';
 import { mutateCharacter } from './mutate.ts';
 import { npcHealth, type Npc } from './npc.ts';
 import { storytellerOnly, tableReadable } from './perms.ts';
+import type { Tx } from './store.ts';
 
 /** V20's standard difficulty when the Storyteller hasn't sealed another. */
 export const DEFAULT_DIFFICULTY = 6;
@@ -37,6 +38,12 @@ export interface RollInput {
   spendWillpower: boolean;
   visibility: Visibility;
   note?: string;
+  /** Show the difficulty with the roll from the start, as a degeneration check does. */
+  revealDifficulty?: boolean;
+  /** Runs inside the compare-and-swap, before the dice: throw to refuse. Re-runs on a retry. */
+  guard?: () => Promise<void>;
+  /** More rows to write in the same transaction as the roll. */
+  stageExtra?: (tx: Tx) => Promise<void>;
   /** Consequences written in the same version as the roll — a Path drop, say. */
   after?: (result: RollResult, character: Character) => { patch: CharacterPatch; note?: string };
 }
@@ -72,6 +79,7 @@ export async function executeRoll(ctx: Ctx, access: Access, input: RollInput): P
   const rollId = ID.unique();
 
   const { result } = await mutateCharacter(ctx, character.$id, input.kind === 'pool' ? 'rollPool' : 'virtueCheck', chronicle.teamId, async (c) => {
+    if (input.guard) await input.guard();
     if (isIncapacitated(healthOf(c))) {
       throw refused('incapacitated', 'Incapacitated — the character cannot act.');
     }
@@ -178,15 +186,17 @@ export async function executeRoll(ctx: Ctx, access: Access, input: RollInput): P
             visibility: pub.visibility,
             refusal: pub.refusal,
             note: pub.note,
+            ...(input.revealDifficulty ? { revealedDifficulty: difficulty } : {}),
           },
           input.visibility === 'table' ? tableReadable(chronicle.teamId) : storytellerOnly(chronicle.teamId),
         );
         await tx.create(
           'rollSecrets',
           rollId,
-          { rollId, chronicleId: chronicle.$id, difficulty, revealed: false },
-          storytellerOnly(chronicle.teamId),
+          { rollId, chronicleId: chronicle.$id, difficulty, revealed: Boolean(input.revealDifficulty) },
+          input.revealDifficulty ? tableReadable(chronicle.teamId) : storytellerOnly(chronicle.teamId),
         );
+        if (input.stageExtra) await input.stageExtra(tx);
         if (sealConsumed) await tx.remove('sealedDifficulties', c.$id);
       },
       result: asStoryteller ? { ...pub, difficulty, difficultySource: source } : pub,

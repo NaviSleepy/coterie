@@ -4,6 +4,7 @@
   import { DemoTable } from '$lib/demo.svelte';
   import TableBar from '$lib/components/TableBar.svelte';
   import RedCard from '$lib/components/RedCard.svelte';
+  import FallBanner from '$lib/components/FallBanner.svelte';
 
   let { children } = $props();
 
@@ -25,6 +26,7 @@
 </div>
 <TableBar {table} base="/demo" />
 <RedCard {table} />
+<FallBanner {table} />
 {#if opened}{@render children()}{/if}
 
 {#if table.error}

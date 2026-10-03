@@ -286,6 +286,28 @@ export const TABLES = {
    * exactly as sent, owned by the player; declining keeps the request, with a
    * note, so the player can see why. Read by its owner and the Storyteller.
    */
+  /**
+   * Row id = character id. A sin the Storyteller has laid before a character,
+   * in the Storyteller's own words, waiting for the player to face it. Read by
+   * the owner and the Storyteller; virtueCheck removes it when the dice fall.
+   */
+  reckonings: {
+    id: 'reckonings',
+    name: 'Reckonings',
+    permissions: [],
+    columns: [str('chronicleId', 36, { required: true }), str('sin', 280, { required: true })],
+    indexes: [byChronicle],
+  },
+
+  /** Row id = character id. The difficulty for that reckoning: the Storyteller's alone until the roll reveals it. */
+  reckoningSeals: {
+    id: 'reckoningSeals',
+    name: 'Reckoning seals',
+    permissions: [],
+    columns: [str('chronicleId', 36, { required: true }), int('difficulty', 2, 10, { required: true })],
+    indexes: [byChronicle],
+  },
+
   creationRequests: {
     id: 'creationRequests',
     name: 'Creation requests',

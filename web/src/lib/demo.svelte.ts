@@ -105,6 +105,7 @@ export class DemoTable extends TableState {
     creationRequests: {} as Record<string, AnyRow>,
     library: {} as Record<string, AnyRow>,
     npcs: {} as Record<string, AnyRow>,
+    reckonings: {} as Record<string, { sin: string; difficulty: number }>,
   };
 
   constructor() {
@@ -368,6 +369,9 @@ export class DemoTable extends TableState {
     this.creationRequests = Object.fromEntries(Object.entries(w.creationRequests).filter(([, r]) => st || r.ownerId === this.me));
     this.library = { ...w.library };
     this.npcs = st ? { ...w.npcs } : {};
+    const laid = Object.entries(w.reckonings).filter(([id]) => st || w.characters[id]?.ownerId === this.me);
+    this.reckonings = Object.fromEntries(laid.map(([id, r]) => [id, row(id, { chronicleId: DEMO_ID, sin: r.sin }, 0)]));
+    this.reckoningSeals = st ? Object.fromEntries(laid.map(([id, r]) => [id, row(id, { chronicleId: DEMO_ID, difficulty: r.difficulty }, 0)])) : {};
   }
 
   /** The adjust and approve paths: traits set, derived limits kept true. */
@@ -451,6 +455,39 @@ export class DemoTable extends TableState {
     return { r, patch };
   }
 
+  /** The demo's version of virtueCheck's three-step degeneration: lay, face, withdraw. */
+  private degeneration(c: Character, b: Record<string, any>) {
+    const w = this.world;
+    const action = b.action ?? 'face';
+    if (action === 'lay') {
+      if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller names a sin.');
+      if (!String(b.sin ?? '').trim()) throw new Refusal('Name the sin.');
+      w.reckonings[c.$id] = { sin: String(b.sin).trim().slice(0, 280), difficulty: b.difficulty };
+      this.project();
+      return { characterId: c.$id };
+    }
+    if (action === 'withdraw') {
+      if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller withdraws a sin.');
+      delete w.reckonings[c.$id];
+      this.project();
+      return { withdrawn: c.$id };
+    }
+    if (c.ownerId !== this.me) throw new Refusal("Only the character's own player faces it.");
+    const laid = w.reckonings[c.$id];
+    if (!laid) throw new Refusal('There is no sin waiting to be faced.');
+    const virtue = virtueForCheck(c.virtues, 'degeneration');
+    const { r, patch } = this.roll(c, { label: `Degeneration · ${traitLabel(virtue)}`, basePool: traitDots(sheetOf(c), virtue), kind: 'degeneration', difficulty: laid.difficulty });
+    const fell = r.outcome !== 'success';
+    if (fell) patch.pathRating = Math.max(0, c.pathRating - 1);
+    const rollRow = w.rolls[0];
+    rollRow.note = `${laid.sin} — ${c.path} ${fell ? `falls to ${patch.pathRating}` : `holds at ${c.pathRating}`}`;
+    rollRow.revealedDifficulty = laid.difficulty;
+    w.rollSecrets[rollRow.$id].revealed = true;
+    delete w.reckonings[c.$id];
+    this.commit(c, patch);
+    return { ...r, rollId: rollRow.$id, note: rollRow.note };
+  }
+
   /** The demo's version of rollPool's NPC branch. */
   private npcRoll(b: Record<string, any>) {
     if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller rolls for NPCs.');
@@ -500,15 +537,12 @@ export class DemoTable extends TableState {
       }
       case 'virtueCheck': {
         if (!c) break;
+        if (b.kind === 'degeneration') return this.degeneration(c, b);
         const virtue = virtueForCheck(c.virtues, b.kind);
-        const name = b.kind === 'degeneration' ? 'Degeneration' : b.kind === 'frenzy' ? 'Frenzy' : 'Rötschreck';
+        const name = b.kind === 'frenzy' ? 'Frenzy' : 'Rötschreck';
         const { r, patch } = this.roll(c, {
-          label: `${name} · ${traitLabel(virtue)}`, basePool: traitDots(sheetOf(c), virtue), kind: b.kind, note: b.sin ?? b.provocation, difficulty: b.difficulty,
+          label: `${name} · ${traitLabel(virtue)}`, basePool: traitDots(sheetOf(c), virtue), kind: b.kind, note: b.provocation, difficulty: b.difficulty,
         });
-        if (b.kind === 'degeneration' && r.outcome !== 'success') {
-          patch.pathRating = Math.max(0, c.pathRating - 1);
-          w.rolls[0].note = `${b.sin} — ${c.path} falls to ${patch.pathRating}`;
-        }
         this.commit(c, patch);
         return r;
       }

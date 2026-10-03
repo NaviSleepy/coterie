@@ -190,30 +190,62 @@ describe('rolls behind the screen', () => {
 });
 
 describe('virtueCheck', () => {
-  it('drops the Path on a failed degeneration check and logs the sin', async () => {
+  const SIN = 'Fed from a sleeping child of the Rookery';
+  const lay = (w: ReturnType<typeof ashenCourt>, difficulty = 7) =>
+    virtueCheck(w.as(ST), { characterId: ISOLDE, kind: 'degeneration', action: 'lay', sin: SIN, difficulty });
+
+  it('lays a sin the player can read but whose difficulty only the Storyteller can', async () => {
     const w = ashenCourt();
-    const roll = await virtueCheck(w.as(ST, [2, 3, 4]), {
-      characterId: ISOLDE,
-      kind: 'degeneration',
-      sin: 'Fed from a sleeping child of the Rookery',
-      difficulty: 7,
-    });
+    await lay(w);
+    const reckoning = w.tables.row('reckonings', ISOLDE)!;
+    assert.equal(reckoning.sin, SIN);
+    assert.equal('difficulty' in reckoning, false);
+    assert.ok(reckoning.$permissions.some((p: string) => p.includes(ISOLDE_PLAYER)), 'her player reads the sin');
+    assert.equal(w.tables.row('reckoningSeals', ISOLDE)!.$permissions.some((p: string) => p.includes(ISOLDE_PLAYER)), false);
+    assert.equal(w.tables.row('characters', ISOLDE)!.pathRating, 6, 'laying it changes nothing yet');
+  });
+
+  it('drops the Path when she faces it and fails, and logs the sin, difficulty and fall', async () => {
+    const w = ashenCourt();
+    await lay(w);
+    const roll = await virtueCheck(w.as(ISOLDE_PLAYER, [2, 3, 4]), { characterId: ISOLDE, kind: 'degeneration', action: 'face' });
     assert.equal(roll.label, 'Degeneration · Conscience');
     assert.equal(roll.outcome, 'failure');
-    assert.match(roll.note!, /Humanity falls to 5/);
+    assert.equal(roll.note, `${SIN} — Humanity falls to 5`);
     assert.equal(w.tables.row('characters', ISOLDE)!.pathRating, 5);
-    assert.deepEqual(w.tables.row('rolls', roll.rollId)!.$permissions, TABLE, 'the fall is public');
+    const row = w.tables.row('rolls', roll.rollId)!;
+    assert.deepEqual(row.$permissions, TABLE, 'the fall is public');
+    assert.equal(row.revealedDifficulty, 7, 'the difficulty goes in the feed');
+    assert.equal(w.tables.row('reckonings', ISOLDE), undefined);
+    assert.equal(w.tables.row('reckoningSeals', ISOLDE), undefined);
   });
 
   it('holds the Path on success', async () => {
     const w = ashenCourt();
-    await virtueCheck(w.as(ST, [9, 9, 9]), { characterId: ISOLDE, kind: 'degeneration', sin: 'x', difficulty: 7 });
+    await lay(w);
+    const roll = await virtueCheck(w.as(ISOLDE_PLAYER, [9, 9, 9]), { characterId: ISOLDE, kind: 'degeneration' });
+    assert.match(roll.note!, /Humanity holds at 6/);
     assert.equal(w.tables.row('characters', ISOLDE)!.pathRating, 6);
   });
 
-  it('is the Storyteller\'s to call', async () => {
+  it('can be faced once, and only with a sin laid', async () => {
     const w = ashenCourt();
-    await rejects(virtueCheck(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, kind: 'degeneration', sin: 'x' }), 403);
+    await rejects(virtueCheck(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, kind: 'degeneration' }), 422);
+    await lay(w);
+    await virtueCheck(w.as(ISOLDE_PLAYER, [2, 3, 4]), { characterId: ISOLDE, kind: 'degeneration' });
+    await rejects(virtueCheck(w.as(ISOLDE_PLAYER, [2, 3, 4]), { characterId: ISOLDE, kind: 'degeneration' }), 422);
+    assert.equal(w.tables.row('characters', ISOLDE)!.pathRating, 5);
+  });
+
+  it("is the Storyteller's to name and her player's to face, never one click", async () => {
+    const w = ashenCourt();
+    await rejects(virtueCheck(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, kind: 'degeneration', action: 'lay', sin: 'x', difficulty: 2 }), 403);
+    await lay(w);
+    await rejects(virtueCheck(w.as(ST, [2, 3, 4]), { characterId: ISOLDE, kind: 'degeneration' }), 403);
+    await rejects(virtueCheck(w.as(DMITRI_PLAYER), { characterId: ISOLDE, kind: 'degeneration' }), 403);
+    await rejects(virtueCheck(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, kind: 'degeneration', action: 'withdraw' }), 403);
+    await virtueCheck(w.as(ST), { characterId: ISOLDE, kind: 'degeneration', action: 'withdraw' });
+    assert.equal(w.tables.row('reckonings', ISOLDE), undefined);
   });
 
   it('lets a player roll their own frenzy check against a sealed difficulty', async () => {

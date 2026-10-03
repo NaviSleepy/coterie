@@ -485,3 +485,45 @@ Content-Type: application/json
     client.assert(response.status === 401, `expected 401, got ${response.status}`);
   });
 %}
+
+### Degeneration: a player cannot name a sin
+POST {{endpoint}}/functions/virtueCheck/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"kind\":\"degeneration\",\"action\":\"lay\",\"sin\":\"Jaywalking\",\"difficulty\":2}" }
+
+> {%
+  client.test("only the Storyteller lays a sin", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Degeneration: nor roll one nobody laid
+POST {{endpoint}}/functions/virtueCheck/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"kind\":\"degeneration\",\"action\":\"face\"}" }
+
+> {%
+  client.test("there is nothing to face without a sin laid", () => {
+    client.assert(response.body.responseStatusCode === 422, `expected 422, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Degeneration: nor write a reckoning directly
+POST {{endpoint}}/tablesdb/{{db}}/tables/reckonings/rows
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "rowId": "{{playerCharacterId}}", "data": { "chronicleId": "{{chronicleId}}", "sin": "Nothing much" } }
+
+> {%
+  client.test("no client writes reckonings", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
