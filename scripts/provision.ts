@@ -17,7 +17,8 @@
  * one-time step in the console; see the README.
  */
 
-import { Client, Functions, ID, OrderBy, Query, Runtime, TablesDB, TablesDBIndexType } from 'node-appwrite';
+import { Client, Functions, ID, OrderBy, Query, Runtime, Storage, TablesDB, TablesDBIndexType } from 'node-appwrite';
+import { InputFile } from 'node-appwrite/file';
 
 import { DATABASE_ID, FUNCTIONS, TABLES, type Column, type TableDef } from '../functions/src/shared/schema.ts';
 
@@ -28,6 +29,7 @@ const key = need('APPWRITE_API_KEY');
 const client = new Client().setEndpoint(endpoint).setProject(project).setKey(key);
 const db = new TablesDB(client);
 const fns = new Functions(client);
+const storage = new Storage(client);
 // List endpoints default to 25 results; characters alone has more columns than that.
 const ALL = [Query.limit(100)];
 
@@ -181,6 +183,27 @@ async function ensureFunction(id: string) {
 }
 
 /**
+ * The blank character sheet the web app fills in for "Export as PDF". Signed-in
+ * players read it; only the console writes it. SHEET_TEMPLATE, when set, is
+ * the uploaded sheet to copy in as `v20-sheet`: "bucketId/fileId".
+ */
+export const SHEET_BUCKET = 'sheet-templates';
+export const SHEET_FILE = 'v20-sheet';
+async function ensureSheetTemplates() {
+  const spec = { bucketId: SHEET_BUCKET, name: 'Sheet templates', permissions: ['read("users")'], fileSecurity: false, allowedFileExtensions: ['pdf'] };
+  if (!(await exists(() => storage.getBucket({ bucketId: SHEET_BUCKET })))) {
+    await storage.createBucket(spec);
+    console.log(`+ bucket ${SHEET_BUCKET}`);
+  }
+  const source = process.env.SHEET_TEMPLATE;
+  if (!source || (await exists(() => storage.getFile({ bucketId: SHEET_BUCKET, fileId: SHEET_FILE })))) return;
+  const [bucketId, fileId] = source.split('/');
+  const bytes = await storage.getFileDownload({ bucketId, fileId });
+  await storage.createFile({ bucketId: SHEET_BUCKET, fileId: SHEET_FILE, file: InputFile.fromBuffer(Buffer.from(bytes as ArrayBuffer), 'v20-sheet.pdf') });
+  console.log(`+ file ${SHEET_BUCKET}/${SHEET_FILE} from ${source}`);
+}
+
+/**
  * STARTER_CHRONICLE_ID, when set, is the chronicle whose library every new
  * chronicle copies. It reaches the chronicle Function as an env variable,
  * which takes effect on that Function's next deployment.
@@ -200,4 +223,5 @@ await ensureDatabase();
 for (const table of Object.values(TABLES)) await ensureTable(table);
 for (const id of FUNCTIONS) await ensureFunction(id);
 await ensureStarterVariable();
+await ensureSheetTemplates();
 console.log(`\n${project} is provisioned: ${Object.keys(TABLES).length} tables, ${FUNCTIONS.length} functions.`);

@@ -12,7 +12,7 @@
     "node": ">=22.6"
   },
   "scripts": {
-    "test": "npm run test -w engine && npm run test -w functions",
+    "test": "npm run test -w engine && npm run test -w functions && npm run test -w web",
     "typecheck": "npm run typecheck -w engine && npm run typecheck -w functions && tsc -p scripts --noEmit && npm run check -w web",
     "build": "npm run build -w functions && npm run build -w web",
     "provision": "node --experimental-strip-types scripts/provision.ts",

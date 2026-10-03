@@ -79,6 +79,9 @@ const PRESENT_WITHIN_MS = 90_000;
 export class TableState {
   readonly chronicleId: string;
   /** Where this table's pages live: the demo overrides it. */
+  /** Where the blank character sheet comes from; unset means the sheet-templates bucket. */
+  sheetTemplate?: () => Promise<ArrayBuffer>;
+
   get home(): string {
     return `/c/${this.chronicleId}`;
   }

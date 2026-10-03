@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ExportSheet from './ExportSheet.svelte';
   /** The Storyteller's hands on one character: seal, wound, feed, test, adjust. */
   import type { Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
@@ -33,7 +34,7 @@
 <section class="controls panel">
   <header>
     <h2>{table.nameOf(character.$id)}</h2>
-    <button class="btn quiet" onclick={onclose}>Close</button>
+    <span class="head-actions"><ExportSheet {table} {character} /> <button class="btn quiet" onclick={onclose}>Close</button></span>
   </header>
 
   <div class="grid">

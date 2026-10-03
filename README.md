@@ -65,6 +65,16 @@ The creation form shows the budget live beside the sheet. The server runs the sa
 
 Each campaign can change the numbers. The Storyteller's "Creation budget" panel on the screen edits priorities, free dots, freebies, the Ability cap, the Generation limit, the flaw refund and merit caps, and every freebie price, separately for vampires and dhampirs. It's saved on the chronicle as `creationRules`, holding only what differs from the book (`chronicle.update`, checked by `cleanCreationOverrides`; "Reset all to V20" saves `{}`). The form and the server both read it, so players are held to the campaign's budget, not the book's.
 
+### Export as PDF
+
+A character's owner and the Storyteller can export the sheet as a filled-in V20 character sheet ("Export PDF" on the sheet, and in the Storyteller's controls). The blank sheet is a file in the `sheet-templates` bucket (`v20-sheet`), readable by signed-in users and written only from the console. `SHEET_TEMPLATE=bucketId/fileId npm run provision` creates the bucket and copies an uploaded sheet into it. The sheet has no form fields, so `web/src/lib/sheet-pdf.ts` draws onto it at the template's own coordinates with pdf-lib, in the browser:
+
+- **Page one:** identity, every dot, specialties written small beside their trait, Disciplines and Backgrounds, Virtues (marked Conviction or Instinct when a Path uses them), sect and title, Humanity or Path, Willpower, the blood pool (unavailable boxes struck through), health marks (`*` aggravated, `X` lethal, `/` bashing) and experience.
+- **Page two:** merits, flaws, rituals, and any Disciplines or Backgrounds past six as Other Traits. The combat table and armor are read from the library's weapon and armor write-ups.
+- **Page three:** carried gear.
+
+The standard PDF fonts can't draw every character, so names are printed as close as they can get ("Aydın" becomes "Aydin"). pdf-lib is loaded only when someone exports.
+
 ### Players can keep several characters, and delete them
 
 A player may bring as many characters as they like to a table and switch between them on their screen. `character.delete` removes one for good: its player or the Storyteller can call it, and it must name the character, so a stray call deletes nothing. In one transaction it removes the sheet, profile, open proposal, sealed difficulty and the seals on secrets about it, and takes it out of scenes and initiative. Its rolls and ledger stay as history, and the transaction writes a last ledger line saying who deleted it. That line takes the next version, so a write racing the delete collides with it and the delete is refused with a 409 rather than half-applied.
