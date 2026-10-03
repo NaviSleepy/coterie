@@ -8,6 +8,7 @@
   import { traitDots, traitLabel, virtueForCheck } from '$engine/index.ts';
   import { sheetOf, type Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
+  import PathDrop from './PathDrop.svelte';
 
   let { table, character }: { table: TableState; character: Character } = $props();
 
@@ -67,8 +68,11 @@
 {#if result}
   {@const fell = result.to < result.from}
   <section class="reckoning done" class:fell aria-live="assertive">
-    <p class="caps kicker">{fell ? 'The Beast takes its due' : 'She held'}</p>
+    <p class="caps kicker">{fell ? 'The Beast takes its due' : `${table.nameOf(character.$id).split(' ')[0]} held`}</p>
     <blockquote>“{result.sin}”</blockquote>
+    {#if fell}
+      <PathDrop name={table.nameOf(character.$id)} path={result.path} from={result.from} to={result.to} />
+    {:else}
     <div class="track" aria-label={`${result.path} ${result.to} of 10`}>
       {#each Array(10) as _, i (i)}
         <span class="dot" class:full={i < result.to} class:lost={fell && i === result.to}>
@@ -80,6 +84,7 @@
         {#if fell}<s>{result.from}</s> <b>{result.to}</b>{:else}<b class="held">{result.from}</b>{/if}
       </span>
     </div>
+    {/if}
     <p class="verdict">{fell ? `${result.path} falls to ${result.to}.` : `${result.path} holds at ${result.from}.`}</p>
     <button class="btn" onclick={() => (result = null)}>Close</button>
   </section>

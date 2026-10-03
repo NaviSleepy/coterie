@@ -11,13 +11,15 @@
 <style>
   .dots {
     display: inline-flex;
-    gap: 3px;
+    align-items: center;
+    gap: var(--pip-gap);
     flex-shrink: 0;
   }
   span span {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+    width: var(--pip-size);
+    height: var(--pip-size);
+    border-radius: var(--pip-radius);
+    transform: rotate(var(--pip-rotate));
     border: 1px solid var(--ink);
   }
   span span.on {

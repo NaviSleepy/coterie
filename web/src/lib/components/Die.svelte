@@ -27,6 +27,7 @@
     width: 30px;
     height: 30px;
     border: 1px solid var(--ink-faint);
+    border-radius: var(--die-radius);
     background: var(--paper);
     font-variant-numeric: lining-nums;
     font-size: 0.95rem;

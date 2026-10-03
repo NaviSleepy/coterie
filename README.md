@@ -129,6 +129,23 @@ The player screen's right column shows two more panels, built from the library.
 
 "Create a DMPC" on the screen opens the same creation form, and the character is created with the Storyteller as its owner. It goes through the same validation and blood roll as anyone else's and has the same permissions: the Storyteller reads it, players don't, and nobody writes it except through Functions. The screen marks it DMPC. The Storyteller plays it from "My sheet", where the roll panel builds pools from its traits as it does for a player. There's no proposal step, because the Storyteller edits the sheet directly from the screen.
 
+### Six skins
+
+Everyone picks their own look from **Theme** in the top bar or the page footer:
+
+| Skin | Look |
+|---|---|
+| Camarilla | Candlelight and gold leaf. This is the default. |
+| Classical | Marble, terracotta and Tyrian purple, with inscribed caps and diamond pips. |
+| Dark Ages | Parchment leaves on a cold green crypt, red wax, and round dice. |
+| Toreador | A fashion quarterly: Didone names, spaced sans-serif caps, one crimson. |
+| Jazz Age | Black lacquer, gold deco, a green-felt roll table, diamond pips and a poker-chip seal. |
+| Sabbat | Bone and blackletter, typewritten labels, square pips, slashed vitae and a torn red edge. |
+
+Each skin is a set of CSS tokens under `[data-theme]` in `app.css`: colours, fonts, pip, die and vial shapes, and the solid button. A skin also has a small lexicon in `lib/theme.svelte.ts`. For example, the roll is "Tonight's performance" and "Perform" in Toreador, and "The rite" and "Strike" in Sabbat. When a degeneration check fails, each skin shows its own moment: the seal breaks, the marble cracks, the ink runs, a correction is printed, the gold tarnishes, the mark is scored.
+
+The choice is stored in the browser only, in `localStorage`, and never reaches the server. A small script in `app.html` applies it before first paint, so the page doesn't flash the default. Each skin's fonts load only when someone picks it.
+
 ### A private notepad
 
 Every seat at the table has a notepad: on the player's screen next to the feed, and behind the Storyteller's screen. Use it for names, debts, and who lied to whom. It saves itself a moment after you stop typing, and again when you leave the page. Notes carry no stakes, so the client writes them directly, like presence. Each person has one row per chronicle, and its permissions name only its author. Other players can't read it, and neither can the Storyteller. A player's notes are just as private from the Storyteller as the Storyteller's are from the players.

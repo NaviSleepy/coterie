@@ -2,9 +2,14 @@
   import '../app.css';
   import { onMount } from 'svelte';
   import { session } from '$lib/session.svelte';
+  import { apply, theme } from '$lib/theme.svelte';
+  import ThemePicker from '$lib/components/ThemePicker.svelte';
 
   let { children } = $props();
-  onMount(() => void session.load());
+  onMount(() => {
+    apply(theme.current);
+    void session.load();
+  });
 </script>
 
 {#if session.ready}
@@ -14,6 +19,7 @@
 {/if}
 
 <footer>
+  <p class="skin"><ThemePicker /></p>
   Portions of the materials are the copyrights and trademarks of Paradox Interactive AB, and are used with
   permission. All rights reserved. For more information please visit
   <a href="https://www.worldofdarkness.com" rel="noopener">worldofdarkness.com</a>. This is a free, unofficial
@@ -37,5 +43,8 @@
   }
   footer a {
     color: inherit;
+  }
+  .skin {
+    margin: 0 0 12px;
   }
 </style>

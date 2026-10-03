@@ -12,6 +12,21 @@
       rel="stylesheet"
     />
     <title>Coterie</title>
+    <script>
+      // The reader's skin, before first paint (see lib/theme.svelte.ts).
+      try {
+        var t = localStorage.getItem('coterie-theme');
+        if (t) document.documentElement.dataset.theme = t;
+        var f = localStorage.getItem('coterie-theme-fonts');
+        if (f) {
+          var l = document.createElement('link');
+          l.id = 'theme-fonts';
+          l.rel = 'stylesheet';
+          l.href = f;
+          document.head.appendChild(l);
+        }
+      } catch (e) {}
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

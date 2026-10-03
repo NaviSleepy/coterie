@@ -17,17 +17,18 @@
     gap: 5px;
   }
   span {
-    width: 17px;
-    height: 24px;
+    width: var(--vial-w);
+    height: var(--vial-h);
     border: 1.5px solid var(--oxblood);
-    border-radius: 2px 2px 9px 9px;
+    border-radius: var(--vial-radius);
+    transform: skewX(var(--vial-skew));
     transition:
       background 0.4s ease,
       box-shadow 0.4s ease;
   }
   .small span {
-    width: 13px;
-    height: 19px;
+    width: calc(var(--vial-w) * 0.76);
+    height: calc(var(--vial-h) * 0.79);
   }
   span.full {
     background: var(--oxblood);

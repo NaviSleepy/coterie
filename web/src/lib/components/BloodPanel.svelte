@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { theme } from '$lib/theme.svelte';
   import { bloodRules, isThinBlooded, REAWAKEN_BLOOD, usableBlood } from '$engine/index.ts';
   import type { Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
@@ -53,7 +54,7 @@
 
 <section class="panel blood">
   <div class="top">
-    <h2>Blood Pool</h2>
+    <h2>{theme.words.blood}</h2>
     <span class="count"><b>{character.bloodPool}</b> / {character.bloodPoolMax}</span>
   </div>
   <BloodPool pool={character.bloodPool} max={character.bloodPoolMax} reserve={rules.reserve} flash={table.isFlashing(`${character.$id}:blood`)} />
