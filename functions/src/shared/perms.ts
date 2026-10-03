@@ -18,6 +18,11 @@ export function tableReadable(teamId: string): string[] {
   return [read(team(teamId))];
 }
 
+/** Everyone at the table reads it and may edit it directly: the coterie's shared notes. */
+export function tableEditable(teamId: string): string[] {
+  return [read(team(teamId)), update(team(teamId))];
+}
+
 /** Behind the screen. */
 export function storytellerOnly(teamId: string): string[] {
   return [read(storytellers(teamId))];

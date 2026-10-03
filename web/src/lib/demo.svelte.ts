@@ -405,6 +405,15 @@ export class DemoTable extends TableState {
     return true;
   }
 
+  override async openCoterieNotes() {
+    this.coterieNote ??= { ...row(DEMO_ID, { chronicleId: DEMO_ID, body: 'Haven: the old organ loft above the Rookery Gallery.\nAldana wants the ledger back by Friday.', editedBy: 'Dmitri’s player' }, 0), $updatedAt: new Date(Date.now() - 3600_000).toISOString() };
+  }
+  override async saveCoterieNote(body: string, base: string) {
+    if (this.coterieNote && this.coterieNote.$updatedAt !== base) return { conflict: this.coterieNote };
+    this.coterieNote = { ...this.coterieNote!, body, editedBy: this.me === DEMO_ST ? 'The Storyteller' : 'Isolde’s player', $updatedAt: new Date().toISOString() };
+    return { row: this.coterieNote };
+  }
+
   override async saveProfile(characterId: string, data: Record<string, unknown>) {
     const row = this.profiles[characterId];
     if (!row) return false;

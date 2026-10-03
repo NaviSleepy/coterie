@@ -393,6 +393,19 @@ export const TABLES = {
     indexes: [byChronicle],
   },
 
+  /**
+   * Row id = chronicle id. The coterie's shared notes: everyone at the table
+   * reads and edits it. Only the chronicle Function creates it (no table-level
+   * create), so nobody outside the team can claim the id first.
+   */
+  coterieNotes: {
+    id: 'coterieNotes',
+    name: 'Coterie notes',
+    permissions: [],
+    columns: [str('chronicleId', 36, { required: true }), { key: 'body', type: 'text' }, str('editedBy', 120)],
+    indexes: [byChronicle],
+  },
+
   presence: {
     id: 'presence',
     name: 'Presence',

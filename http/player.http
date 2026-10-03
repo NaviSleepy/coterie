@@ -589,3 +589,57 @@ X-Appwrite-JWT: {{jwtPlayer}}
     client.assert(response.status === 204, `expected 204, got ${response.status}`);
   });
 %}
+
+### Coterie notes: a player opens the shared page through the Function
+POST {{endpoint}}/functions/chronicle/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"openNotes\",\"chronicleId\":\"{{chronicleId}}\"}" }
+
+> {%
+  client.test("anyone at the table can open the coterie notes", () => {
+    client.assert(response.body.responseStatusCode === 200, `expected 200, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Coterie notes: but cannot create the row around it
+POST {{endpoint}}/tablesdb/{{db}}/tables/coterieNotes/rows
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "rowId": "unique()", "data": { "chronicleId": "{{chronicleId}}", "body": "squatting" } }
+
+> {%
+  client.test("only the Function creates the shared page", () => {
+    client.assert(response.status === 401, `expected 401, got ${response.status}`);
+  });
+%}
+
+### Coterie notes: the player edits them directly
+PATCH {{endpoint}}/tablesdb/{{db}}/tables/coterieNotes/rows/{{chronicleId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "data": { "body": "Fixture coterie note.", "editedBy": "sec-player" } }
+
+> {%
+  client.test("the table edits its shared notes", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+  });
+%}
+
+### Coterie notes: and the other player reads them
+GET {{endpoint}}/tablesdb/{{db}}/tables/coterieNotes/rows/{{chronicleId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtOther}}
+
+> {%
+  client.test("everyone at the table reads the shared notes", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    client.assert(response.body.body === "Fixture coterie note.");
+  });
+%}

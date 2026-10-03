@@ -79,3 +79,42 @@ Content-Type: application/json
     client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
   });
 %}
+
+### Cannot read a table's coterie notes
+GET {{endpoint}}/tablesdb/{{db}}/tables/coterieNotes/rows/{{chronicleId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStranger}}
+
+> {%
+  client.test("shared notes stay at the table", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### Nor edit them
+PATCH {{endpoint}}/tablesdb/{{db}}/tables/coterieNotes/rows/{{chronicleId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStranger}}
+Content-Type: application/json
+
+{ "data": { "body": "defaced" } }
+
+> {%
+  client.test("a stranger cannot write a table's notes", () => {
+    client.assert(response.status === 404 || response.status === 401, `expected 404 or 401, got ${response.status}`);
+  });
+%}
+
+### Nor open them through the Function
+POST {{endpoint}}/functions/chronicle/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStranger}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"openNotes\",\"chronicleId\":\"{{chronicleId}}\"}" }
+
+> {%
+  client.test("a stranger cannot open a table's notes", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
