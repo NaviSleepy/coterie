@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
   import type { TableState } from '$lib/table.svelte';
-  import { dotMeaning, entriesOf, findEntry, gloss, parseRitual } from '$lib/library';
+  import { dotMeaning, entriesOf, findEntry, gloss, parseRitual, sectNames } from '$lib/library';
 
   const table = getContext<TableState>('table');
 
@@ -98,7 +98,8 @@
         <label>Dhampir concept <input bind:value={dhampirConcept} list="lib-concept" placeholder="Renegade" />{#if gloss(findEntry(table.library, 'concept', dhampirConcept))}<span class="hint">{gloss(findEntry(table.library, 'concept', dhampirConcept))}</span>{/if}</label>
       {/if}
       <label>{template === 'dhampir' ? "Antecedent's clan" : 'Clan'} <input bind:value={clan} list="lib-clan" />{#if gloss(findEntry(table.library, 'clan', clan))}<span class="hint">{gloss(findEntry(table.library, 'clan', clan))}</span>{/if}</label>
-      <label>Sect <input bind:value={sect} /></label>
+      <label>Sect <input bind:value={sect} list="lib-sect" />{#if gloss(findEntry(table.library, 'sect', sect))}<span class="hint">{gloss(findEntry(table.library, 'sect', sect))}</span>{/if}</label>
+      <datalist id="lib-sect">{#each sectNames(table.library) as s (s)}<option value={s}></option>{/each}</datalist>
       <label>Sire <input bind:value={sire} /></label>
       {#if template === 'vampire'}
         <label>Generation

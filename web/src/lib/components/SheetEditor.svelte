@@ -6,7 +6,7 @@
    */
   import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
   import type { AnyRow } from '$lib/appwrite';
-  import { dotMeaning, entriesOf, findEntry, gloss, parseRitual, type LibraryKind } from '$lib/library';
+  import { dotMeaning, entriesOf, findEntry, gloss, parseRitual, sectNames, type LibraryKind } from '$lib/library';
   import type { Draft } from '$lib/sheet-edit';
 
   let {
@@ -56,8 +56,8 @@
       <label>Dhampir concept <input bind:value={draft.dhampirConcept} list={listId('concept')} />{#if gloss(findEntry(library, 'concept', draft.dhampirConcept))}<span class="ref">{gloss(findEntry(library, 'concept', draft.dhampirConcept))}</span>{/if}</label>
     {/if}
     <label>{dhampir ? "Antecedent's clan" : 'Clan'} <input bind:value={draft.clan} list={listId('clan')} />{#if gloss(findEntry(library, 'clan', draft.clan))}<span class="ref">{gloss(findEntry(library, 'clan', draft.clan))}</span>{/if}</label>
-    <label>Sect <input bind:value={draft.sect} list={`sects-${uid}`} /></label>
-    <datalist id={`sects-${uid}`}><option value="Camarilla"></option><option value="Sabbat"></option><option value="Anarch"></option><option value="Independent"></option></datalist>
+    <label>Sect <input bind:value={draft.sect} list={`sects-${uid}`} />{#if gloss(findEntry(library, 'sect', draft.sect))}<span class="ref">{gloss(findEntry(library, 'sect', draft.sect))}</span>{/if}</label>
+    <datalist id={`sects-${uid}`}>{#each sectNames(library) as s (s)}<option value={s}></option>{/each}</datalist>
     {#if storyteller}
       <label>Title <input bind:value={draft.title} list={listId('title')} placeholder="Sheriff, Bishop, Ductus…" />{#if gloss(findEntry(library, 'title', draft.title))}<span class="ref">{gloss(findEntry(library, 'title', draft.title))}</span>{/if}</label>
     {/if}

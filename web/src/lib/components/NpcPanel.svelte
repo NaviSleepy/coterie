@@ -9,7 +9,7 @@
   import { parseJson } from '$shared/codec.ts';
   import type { AnyRow } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
-  import { disciplineLevels, entriesOf, findEntry, gloss } from '$lib/library';
+  import { disciplineLevels, entriesOf, findEntry, gloss, sectNames } from '$lib/library';
   import HealthTrack from './HealthTrack.svelte';
 
   let { table, fighting = $bindable([]) }: { table: TableState; fighting?: string[] } = $props();
@@ -186,7 +186,7 @@
             <label>Clan <input bind:value={draft.clan} maxlength="60" /></label>
             <label>Sect <input bind:value={draft.sect} maxlength="60" list="npc-sects" /></label>
             <label title={gloss(findEntry(table.library, 'title', draft.title)) || undefined}>Title <input bind:value={draft.title} maxlength="80" list="lib-title-npc" /></label>
-            <datalist id="npc-sects"><option value="Camarilla"></option><option value="Sabbat"></option><option value="Anarch"></option><option value="Independent"></option></datalist>
+            <datalist id="npc-sects">{#each sectNames(table.library) as s (s)}<option value={s}></option>{/each}</datalist>
             <datalist id="lib-title-npc">{#each entriesOf(table.library, 'title') as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
             {#if draft.kind === 'vampire'}<label>Generation <input type="number" min="3" max="15" bind:value={draft.generation} /></label>{/if}
             <label>Willpower max <input type="number" min="1" max="10" bind:value={draft.willpowerMax} /></label>

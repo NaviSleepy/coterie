@@ -319,6 +319,8 @@ export class DemoTable extends TableState {
     entry('demo-l41', { kind: 'ritual', name: "Sun Dance", page: "V20 p. 511", summary: "Sabbat ignoblis rite: A full-moon dance from dusk to dawn, then a test of who braves the open longest." });
     entry('demo-l42', { kind: 'title', name: 'Harpy', page: 'Guide to the Camarilla', summary: "Camarilla title: Elysium's arbiter of social standing; a Harpy's mockery can cost a Kindred their Status." });
     entry('demo-l43', { kind: 'title', name: 'Sheriff', page: 'Guide to the Camarilla', summary: "Camarilla title: The Prince's enforcer, who hunts down Masquerade breaches and anyone who defies the Prince's law." });
+    entry('demo-l44', { kind: 'sect', name: 'Camarilla', page: 'V20 p. 38', summary: 'The Ivory Tower: the largest sect, ruled by princes under the Six Traditions, with the Masquerade above all.' });
+    entry('demo-l45', { kind: 'sect', name: 'Anarch Movement', page: 'V20 p. 44', summary: 'Nominally inside the Camarilla, pushing to change it: power by merit, not age. Barons lead local baronies.' });
     entry('demo-l3', { kind: 'rule', name: 'Feeding scenes', summary: 'Hunting happens off-screen unless someone asks to play it out.' });
     this.project();
   }
