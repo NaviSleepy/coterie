@@ -290,7 +290,7 @@ export const TABLES = {
     permissions: [],
     columns: [
       str('chronicleId', 36, { required: true }),
-      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept', 'ritual', 'title'], required: true },
+      { key: 'kind', type: 'enum', elements: ['merit', 'flaw', 'discipline', 'background', 'rule', 'clan', 'power', 'path', 'trait', 'archetype', 'equipment', 'concept', 'ritual', 'title', 'sect'], required: true },
       str('name', 60, { required: true }),
       int('points', 1, 7),
       str('summary', 2000),

@@ -6,7 +6,7 @@
 import { traitLabel } from '$engine/index.ts';
 import type { AnyRow } from './appwrite';
 
-export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'equipment' | 'concept' | 'ritual' | 'title' | 'background' | 'rule';
+export type LibraryKind = 'clan' | 'merit' | 'flaw' | 'discipline' | 'power' | 'path' | 'trait' | 'archetype' | 'equipment' | 'concept' | 'ritual' | 'title' | 'sect' | 'background' | 'rule';
 
 export const KIND_LABELS: Record<LibraryKind, string> = {
   clan: 'Clans',
@@ -21,17 +21,24 @@ export const KIND_LABELS: Record<LibraryKind, string> = {
   concept: 'Dhampir concepts',
   ritual: 'Rituals and rites',
   title: 'Sect titles',
+  sect: 'Sects',
   background: 'Backgrounds',
   rule: 'House rules',
 };
 
 /** One entry's kind, for a picker. */
-export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : k === 'equipment' ? 'Weapon or armor' : k === 'concept' ? 'Dhampir concept' : k === 'ritual' ? 'Ritual or rite' : k === 'title' ? 'Sect title' : KIND_LABELS[k].replace(/s$/, ''));
+export const kindLabel = (k: LibraryKind) => (k === 'path' ? 'Path' : k === 'trait' ? 'Attribute or Ability' : k === 'archetype' ? 'Archetype' : k === 'equipment' ? 'Weapon or armor' : k === 'concept' ? 'Dhampir concept' : k === 'ritual' ? 'Ritual or rite' : k === 'title' ? 'Sect title' : k === 'sect' ? 'Sect' : KIND_LABELS[k].replace(/s$/, ''));
 
 export function entriesOf(library: Record<string, AnyRow>, kind: LibraryKind): AnyRow[] {
   return Object.values(library)
     .filter((e) => e.kind === kind)
     .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+}
+
+/** The sects a sect field suggests: the library's, or the usual four when it has none. */
+export function sectNames(library: Record<string, AnyRow>): string[] {
+  const names = entriesOf(library, 'sect').map((e) => String(e.name));
+  return names.length ? names : ['Camarilla', 'Sabbat', 'Anarch Movement', 'Independent'];
 }
 
 export function findEntry(library: Record<string, AnyRow>, kind: LibraryKind, name: string): AnyRow | undefined {

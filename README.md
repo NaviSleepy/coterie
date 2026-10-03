@@ -73,7 +73,7 @@ Library entries of kind `ritual` are written `Thaumaturgy ritual 3: …`, `Koldu
 
 ### Sect titles
 
-A character can hold an office in their sect: Prince, Sheriff or Harpy in the Camarilla, Bishop, Ductus or Templar in the Sabbat. `characters.title` holds it, and only the Storyteller's `character.adjust` sets it. A player can't propose a title, and creation ignores one, because offices are awarded, never chosen. The title shows under the lineage line on the sheet and on the coterie card. NPCs have `sect` and `title` too, so the Sheriff can be filed as one. Library entries of kind `title` are written `Camarilla title: …`, `Sabbat title: …` or `Anarch title: …`, and the editors suggest them.
+A character can hold an office in their sect: Prince, Sheriff or Harpy in the Camarilla, Bishop, Ductus or Templar in the Sabbat. `characters.title` holds it, and only the Storyteller's `character.adjust` sets it. A player can't propose a title, and creation ignores one, because offices are awarded, never chosen. The title shows under the lineage line on the sheet and on the coterie card. NPCs have `sect` and `title` too, so the Sheriff can be filed as one. Library entries of kind `sect` (Camarilla, Sabbat, Anarch Movement, Independent, Inconnu and the rest) feed the sect suggestions on the creation form, the sheet editor and the NPC panel; with none in the library, those fields suggest the usual four. Hovering the lineage line on the sheet shows the character's sect. Library entries of kind `title` are written `Camarilla title: …`, `Sabbat title: …` or `Anarch title: …`, and the editors suggest them.
 
 ### NPCs behind the screen
 

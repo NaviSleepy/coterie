@@ -59,7 +59,7 @@
       {:else}
         <h1>{profile.name ?? 'Unnamed'}</h1>
       {/if}
-      <p class="lineage caps">
+      <p class="lineage caps" title={gloss(findEntry(table.library, 'sect', character.sect)) || undefined}>
         {character.template === 'dhampir'
           ? ['Dhampir', character.dhampirConcept, character.clan ? `${character.clan} Antecedent` : '', character.sect].filter(Boolean).join(' · ')
           : [character.clan, `${ordinal(character.generation)} Generation`, character.sect].filter(Boolean).join(' · ')}
