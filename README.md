@@ -90,6 +90,13 @@ Generation runs from 4th to 15th. The 14th and 15th are the thin-blooded, follow
 
 Disciplines are capped at 4 dots for 14th and 3 for 15th; `validateSheet` enforces this on creation, proposals and the Storyteller's adjustments. At creation, choosing a thin-blooded Generation takes its Flaw (2 or 4 points, within the seven-point flaw refund) unless it's already listed. It rules out the Generation Background and starting Status. The sheet's lineage line reads "Thin-blooded", with the rules in a line beneath.
 
+Time of Thin Blood adds the rest:
+
+- **Their own creation budget.** Thin-bloods use `thinBlooded` in `CREATION_RULES`: 6/5/3, 12/8/5, 2 Discipline dots at 10 freebies, and 18 freebies. A campaign's Storyteller can change it on its own tab of the budget editor. `budgetKind` picks it from the template and Generation.
+- **Caitiff and Insight.** Every 15th-Generation vampire is Caitiff, and only the thin-blooded can take the Insight Background. Breaking either goes to the Storyteller like any other creation rule.
+- **Reawakening the body.** A thin-blood can spend a Willpower point and 5 blood, not doubled but never from the reserve, to bring back a mortal function for the night. That's `spendBlood` with `reawaken: true`, from the blood panel.
+- **The library.** Insight, Time of Thin Blood's new Flaws and Merits, and write-ups of the thin-blood creation rules, body, personal Disciplines and character types are in the Chicago Dreams library and the Starter Library.
+
 ### Dhampirs
 
 A character's `template` is `vampire` (the default, and what rows from before templates read as) or `dhampir`. Following Accursed Heirs, a dhampir's blood doesn't follow Generation. Their pool is 10 and they spend one point a turn. They start with a full pool rather than rolling for it, since their living body makes the blood. The Storyteller can raise the pool for Antiquity through `character.adjust` (`bloodPoolMax`), and changing the template resets the pool to the new template's rule. `dhampirConcept` (Aspirant, Renegade and the rest) is on the sheet, and players can propose it. They can't propose the template or the pool.

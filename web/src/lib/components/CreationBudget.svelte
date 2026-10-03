@@ -12,13 +12,15 @@
   let { table }: { table: TableState } = $props();
 
   const saved = $derived(parseJson<CreationOverrides>(table.chronicle?.creationRules, {}));
+  const KINDS = ['vampire', 'thinBlooded', 'dhampir'] as const;
+  const LABEL: Record<Template, [string, string]> = { vampire: ['Vampires', 'vampires'], thinBlooded: ['Thin-blooded', 'the thin-blooded'], dhampir: ['Dhampirs', 'dhampirs'] };
   let template = $state<Template>('vampire');
-  let draft = $state<Record<Template, CreationRules>>({ vampire: rulesFor('vampire'), dhampir: rulesFor('dhampir') });
+  let draft = $state<Record<Template, CreationRules>>({ vampire: rulesFor('vampire'), thinBlooded: rulesFor('thinBlooded'), dhampir: rulesFor('dhampir') });
   let editing = $state(false);
   let flash = $state('');
 
   function edit() {
-    draft = { vampire: rulesFor('vampire', saved), dhampir: rulesFor('dhampir', saved) };
+    draft = { vampire: rulesFor('vampire', saved), thinBlooded: rulesFor('thinBlooded', saved), dhampir: rulesFor('dhampir', saved) };
     editing = true;
   }
 
@@ -47,7 +49,7 @@
 
   function saveDraft() {
     const out: Record<string, unknown> = {};
-    for (const t of ['vampire', 'dhampir'] as const) {
+    for (const t of KINDS) {
       const d = diff(t, draft[t]);
       if (Object.keys(d).length) out[t] = d;
     }
@@ -57,7 +59,7 @@
   /** The changes in words, for the closed panel. */
   function summary(t: Template): string {
     const o = saved[t];
-    if (!o || !Object.keys(o).length) return 'V20 as written';
+    if (!o || !Object.keys(o).length) return 'As written';
     const parts: string[] = [];
     if (o.attributes) parts.push(`Attributes ${o.attributes.join('/')}`);
     if (o.abilities) parts.push(`Abilities ${o.abilities.join('/')}`);
@@ -100,14 +102,13 @@
     {#if !editing}<button class="btn quiet" onclick={edit}>Change</button>{/if}
   </header>
   {#if !editing}
-    <p><span class="label">Vampires</span> {summary('vampire')}</p>
-    <p><span class="label">Dhampirs</span> {summary('dhampir')}</p>
+    {#each KINDS as t (t)}<p><span class="label">{LABEL[t][0]}</span> {summary(t)}{#if t === 'thinBlooded' && summary(t) === 'As written'}<span class="hint">{' '}(Time of Thin Blood's 6/5/3, 12/8/5, 2 Disciplines, 18 freebies)</span>{/if}</p>{/each}
     <p class="hint">Players can't take a seat over it without your approval.</p>
     {#if flash}<p class="flash">{flash}</p>{/if}
   {:else}
     <div class="tabs" role="tablist">
-      {#each ['vampire', 'dhampir'] as const as t (t)}
-        <button role="tab" aria-selected={template === t} class="btn" class:quiet={template !== t} onclick={() => (template = t)}>{t === 'vampire' ? 'Vampires' : 'Dhampirs'}</button>
+      {#each KINDS as t (t)}
+        <button role="tab" aria-selected={template === t} class="btn" class:quiet={template !== t} onclick={() => (template = t)}>{LABEL[t][0]}</button>
       {/each}
     </div>
     {@const r = draft[template]}
@@ -134,7 +135,7 @@
     </div>
     <div class="row">
       <button class="btn solid" onclick={saveDraft}>Save</button>
-      <button class="btn quiet" onclick={() => (draft[template] = rulesFor(template))}>Book numbers for {template === 'vampire' ? 'vampires' : 'dhampirs'}</button>
+      <button class="btn quiet" onclick={() => (draft[template] = rulesFor(template))}>Book numbers for {LABEL[template][1]}</button>
       <button class="btn quiet" onclick={() => save({})}>Reset all to V20</button>
       <button class="btn quiet" onclick={() => (editing = false)}>Cancel</button>
     </div>

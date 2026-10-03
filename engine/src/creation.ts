@@ -1,6 +1,7 @@
 /**
  * The character-creation budget: V20's dots by priority plus freebie points,
- * and the dhampir variant from Accursed Heirs. The creation form shows it
+ * the thin-blooded variant from Time of Thin Blood, and the dhampir variant
+ * from Accursed Heirs. The creation form shows it
  * live; the server runs the same function and refuses a player's sheet that
  * goes over without the Storyteller's approval.
  *
@@ -30,7 +31,7 @@ export interface CreationRules {
   cost: { attribute: number; ability: number; discipline: number; background: number; virtue: number; path: number; willpower: number };
 }
 
-export const CREATION_RULES: Record<'vampire' | 'dhampir', CreationRules> = {
+export const CREATION_RULES: Record<'vampire' | 'thinBlooded' | 'dhampir', CreationRules> = {
   vampire: {
     attributes: [7, 5, 3],
     abilities: [13, 9, 5],
@@ -44,6 +45,22 @@ export const CREATION_RULES: Record<'vampire' | 'dhampir', CreationRules> = {
     maxGeneration: 5,
     generationCosts: true,
     cost: { attribute: 5, ability: 2, discipline: 7, background: 1, virtue: 2, path: 1, willpower: 1 },
+  },
+  // Time of Thin Blood, for 14th and 15th Generation: 6/5/3, 12/8/5, two
+  // Discipline dots at 10 freebies apiece, 18 freebies, no Generation to buy.
+  thinBlooded: {
+    attributes: [6, 5, 3],
+    abilities: [12, 8, 5],
+    abilityCap: 3,
+    disciplines: 2,
+    backgrounds: 5,
+    virtues: 7,
+    freebies: 18,
+    maxFlaws: 7,
+    maxMerits: 7,
+    maxGeneration: 0,
+    generationCosts: false,
+    cost: { attribute: 5, ability: 2, discipline: 10, background: 1, virtue: 2, path: 1, willpower: 1 },
   },
   // Accursed Heirs: 6/4/3, 11/7/4, one Discipline dot plus a free dot of
   // Potence, 18 freebies, Disciplines at 10 a dot.
@@ -63,7 +80,13 @@ export const CREATION_RULES: Record<'vampire' | 'dhampir', CreationRules> = {
   },
 };
 
-export type Template = 'vampire' | 'dhampir';
+/** Which budget a sheet is held to: a vampire's, a thin-blood's (14th and 15th Generation) or a dhampir's. */
+export type Template = 'vampire' | 'thinBlooded' | 'dhampir';
+
+export function budgetKind(sheet: { template?: string | null; generation?: number }): Template {
+  if (sheet.template === 'dhampir') return 'dhampir';
+  return (sheet.generation ?? LOWEST_GENERATION) >= 14 ? 'thinBlooded' : 'vampire';
+}
 /** A campaign's changes to the book's numbers, per template. Missing fields keep the book's. */
 export type CreationOverrides = Partial<Record<Template, Partial<Omit<CreationRules, 'generationCosts' | 'cost'> & { cost: Partial<CreationRules['cost']> }>>>;
 
@@ -102,7 +125,7 @@ export function cleanCreationOverrides(input: unknown): CreationOverrides {
     return v as number;
   };
   for (const [template, raw] of Object.entries(input as Record<string, unknown>)) {
-    if (template !== 'vampire' && template !== 'dhampir') throw new Error(`Unknown template: ${template}.`);
+    if (!(template in CREATION_RULES)) throw new Error(`Unknown template: ${template}.`);
     if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) throw new Error(`${template} rules must be an object.`);
     const t: Record<string, unknown> = {};
     for (const [key, v] of Object.entries(raw as Record<string, unknown>)) {
@@ -113,7 +136,7 @@ export function cleanCreationOverrides(input: unknown): CreationOverrides {
         if (typeof v !== 'object' || v === null || Array.isArray(v)) throw new Error(`${template} cost must be an object.`);
         const cost: Record<string, number> = {};
         for (const [ck, cv] of Object.entries(v as Record<string, unknown>)) {
-          if (!(ck in CREATION_RULES[template].cost)) throw new Error(`Unknown cost: ${ck}.`);
+          if (!(ck in CREATION_RULES[template as Template].cost)) throw new Error(`Unknown cost: ${ck}.`);
           cost[ck] = num(cv, CREATION_LIMITS.cost, `${template} ${ck} cost`);
         }
         t.cost = cost;
@@ -123,13 +146,14 @@ export function cleanCreationOverrides(input: unknown): CreationOverrides {
         throw new Error(`Unknown creation rule: ${key}.`);
       }
     }
-    out[template] = t as CreationOverrides[Template];
+    out[template as Template] = t as CreationOverrides[Template];
   }
   return out;
 }
 
 export interface CreationSheet {
   template?: string | null;
+  clan?: string;
   generation?: number;
   attributes?: Record<string, number>;
   abilities?: Record<string, number>;
@@ -157,6 +181,8 @@ export interface CreationLine {
 
 export interface CreationCost {
   template: 'vampire' | 'dhampir';
+  /** The budget it was held to. */
+  budget: Template;
   lines: CreationLine[];
   /** Freebies available: the base, plus flaws up to the cap. */
   freebieBudget: number;
@@ -204,7 +230,8 @@ function bestFit(spent: number[], budgets: [number, number, number]) {
 
 export function creationCost(sheet: CreationSheet, overrides?: CreationOverrides | null): CreationCost {
   const template = sheet.template === 'dhampir' ? 'dhampir' : 'vampire';
-  const r = rulesFor(template, overrides);
+  const budget = budgetKind(sheet);
+  const r = rulesFor(budget, overrides);
   const lines: CreationLine[] = [];
   const problems: string[] = [];
   const blocked: string[] = [];
@@ -281,9 +308,16 @@ export function creationCost(sheet: CreationSheet, overrides?: CreationOverrides
   if (template === 'vampire' && generation >= 14) {
     if (listedGeneration > 0) problems.push('A thin-blooded character can\'t have the Generation Background.');
     if (backgrounds.some((b) => b.name.trim().toLowerCase() === 'status' && (b.level ?? 0) > 0)) problems.push('A thin-blooded character can\'t start with Status.');
+    // Time of Thin Blood: the Curse is too weak at 15th Generation to carry a clan,
+    // and Insight belongs to the thin-blooded alone (checked below).
+    if (generation >= 15 && sheet.clan && sheet.clan.trim().toLowerCase() !== 'caitiff') problems.push('Every 15th-Generation vampire is Caitiff; the blood is too thin to carry a clan.');
     const cap = disciplineCap(generation)!;
     const over = named(sheet.disciplines).filter((d) => (d.level ?? 0) > cap);
     if (over.length) blocked.push(`${generation}th Generation can't hold a Discipline above ${cap}: ${over.map((d) => d.name).join(', ')}.`);
+  }
+
+  if (budget !== 'thinBlooded' && backgrounds.some((b) => b.name.trim().toLowerCase() === 'insight' && (b.level ?? 0) > 0)) {
+    problems.push('Only the thin-blooded (14th and 15th Generation) can have Insight.');
   }
 
   const flawPoints = sum(named(sheet.flaws).map((f) => f.points ?? 0)) + thinBloodFlaw;
@@ -295,6 +329,7 @@ export function creationCost(sheet: CreationSheet, overrides?: CreationOverrides
   const overBy = Math.max(0, -freebiesLeft);
   return {
     template,
+    budget,
     lines,
     freebieBudget,
     flawRefund,

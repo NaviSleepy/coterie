@@ -324,8 +324,8 @@ describe('thin-blooded characters', () => {
 
   it('creates 14th and 15th Generation with a pool of 10, the Flaw counted toward the budget', async () => {
     const w = ashenCourt();
-    // 15 freebies plus the 4-point Fifteenth Generation Flaw pay for a Discipline dot past three.
-    const { characterId, bloodPool }: any = await create(w, { generation: 15, disciplines: [{ name: 'Obfuscate', level: 3 }, { name: 'Auspex', level: 1 }], merits: [{ name: 'Iron Will', points: 3 }], willpowerPermanent: 9, virtues: { conscience: 1, selfControl: 1, courage: 1 }, pathRating: 2 });
+    // Time of Thin Blood: 18 freebies plus the 4-point Fifteenth Generation Flaw pay for a Discipline dot past two (10), Iron Will and Willpower.
+    const { characterId, bloodPool }: any = await create(w, { generation: 15, disciplines: [{ name: 'Obfuscate', level: 2 }, { name: 'Auspex', level: 1 }], merits: [{ name: 'Iron Will', points: 3 }], willpowerPermanent: 5, virtues: { conscience: 1, selfControl: 1, courage: 1 }, pathRating: 2 });
     const row = w.tables.row('characters', characterId)!;
     assert.equal(row.generation, 15);
     assert.equal(row.bloodPoolMax, 10);

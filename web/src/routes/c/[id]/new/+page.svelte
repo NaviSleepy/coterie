@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, creationCost, rulesFor, traitLabel, type CreationOverrides } from '$engine/index.ts';
+  import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, budgetKind, creationCost, rulesFor, traitLabel, type CreationOverrides } from '$engine/index.ts';
   import { parseJson } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
   import { dotMeaning, entriesOf, findEntry, gloss, parseRitual, sectNames } from '$lib/library';
@@ -47,20 +47,21 @@
 
   /** This campaign's changes to the book's budget, set by the Storyteller. */
   const overrides = $derived(parseJson<CreationOverrides>(table.chronicle?.creationRules, {}));
-  const custom = $derived(Object.keys(overrides[template] ?? {}).length > 0);
+  const budget = $derived(budgetKind({ template, generation }));
+  const custom = $derived(Object.keys(overrides[budget] ?? {}).length > 0);
   /** The same budget the server holds a player to. */
   const cost = $derived(
-    creationCost({ template, generation, attributes, abilities, disciplines, backgrounds, virtues, pathRating, willpowerPermanent, merits, flaws }, overrides),
+    creationCost({ template, clan, generation, attributes, abilities, disciplines, backgrounds, virtues, pathRating, willpowerPermanent, merits, flaws }, overrides),
   );
-  const rules = $derived(rulesFor(template, overrides));
+  const rules = $derived(rulesFor(budget, overrides));
   const needsApproval = $derived(!table.isStoryteller && !cost.ok && cost.blocked.length === 0);
   let sent = $state(false);
 
   /** What thin blood means, in a line, for whoever picks it. */
   const thinBloodHint = (g: number) =>
     g >= 15
-      ? "V20's Fifteenth Generation Flaw (4 points, counted for you): only 6 of 10 blood work for Disciplines and healing, at two for one; Disciplines up to 3; no ghouls, bonds or childer. Sunlight does lethal damage, and food stays down for an hour."
-      : "V20's Fourteenth Generation Flaw (2 points, counted for you): only 8 of 10 blood work for Disciplines and healing; Disciplines up to 4; no Generation Background or starting Status. Most also take the Thin Blood Flaw.";
+      ? "The Fifteenth Generation Flaw (4 points, counted for you), on Time of Thin Blood's budget: only 6 of 10 blood work for Disciplines and healing, at two for one; Disciplines up to 3; always Caitiff; no ghouls, bonds or childer. Sunlight does lethal damage, and food stays down for an hour. Only the thin-blooded can take Insight."
+      : "The Fourteenth Generation Flaw (2 points, counted for you), on Time of Thin Blood's budget: only 8 of 10 blood work for Disciplines and healing; Disciplines up to 4; no Generation Background or starting Status. Most also take the Thin Blood Flaw. Only the thin-blooded can take Insight.";
 
   const eligible = $derived(
     [...Object.entries(attributes), ...Object.entries(abilities)].filter(([, v]) => v >= 4).map(([k]) => k),
@@ -270,7 +271,7 @@
 
   <aside class="budget" class:over={!cost.ok} aria-label="Creation budget">
     <h2>Budget</h2>
-    <p class="hint">{custom ? "This campaign's own numbers, set by the Storyteller." : 'V20 as written.'}{#if table.isStoryteller} A DMPC isn't held to it; it's here as a guide.{/if}</p>
+    <p class="hint">{custom ? "This campaign's own numbers, set by the Storyteller." : budget === 'thinBlooded' ? "Time of Thin Blood's budget for the thin-blooded." : budget === 'dhampir' ? "Accursed Heirs' budget for dhampirs." : 'V20 as written.'}{#if table.isStoryteller} A DMPC isn't held to it; it's here as a guide.{/if}</p>
     {#each cost.lines as l (l.key)}
       {#if l.budget || l.spent}
         <div class="line" class:spending={l.freebies > 0}>

@@ -23,6 +23,7 @@ import {
   feed,
   healDamage,
   remainingThisTurn,
+  reawakenBody,
   rollPool,
   spendBlood,
   traitDots,
@@ -524,6 +525,13 @@ export class DemoTable extends TableState {
         Object.assign(r, { revealedDifficulty: s.difficulty, visibility: 'table' });
         this.project();
         return {};
+      }
+      case 'spendBlood': {
+        if (!c || !b.reawaken) break;
+        const out = reawakenBody(c, bloodRules(c), this.turnRef);
+        if (!out.ok) throw new Refusal(out.message);
+        this.commit(c, { bloodPool: out.bloodPool, willpowerTemporary: out.willpowerTemporary, willpowerSpentTurnRef: out.willpowerSpentTurnRef });
+        return { bloodPool: out.bloodPool, willpowerTemporary: out.willpowerTemporary };
       }
       case 'feedAndHeal': {
         if (!c) break;
