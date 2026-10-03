@@ -4,6 +4,7 @@
   import type { TableState } from '$lib/table.svelte';
   import { dotLadder, dotMeaning, entriesOf, findEntry, gloss } from '$lib/library';
   import Dots from './Dots.svelte';
+  import ExportSheet from './ExportSheet.svelte';
   import HealthTrack from './HealthTrack.svelte';
 
   let { table, character }: { table: TableState; character: Character } = $props();
@@ -81,14 +82,17 @@
         <div><dt>Concept</dt><dd>{profile.concept || '—'}</dd></div>
       {/if}
     </dl>
-    {#if isOwner}
+    {#if isOwner || table.isStoryteller}
       <div class="edit">
-        {#if editing}
-          <button class="btn quiet" onclick={() => (editing = false)}>Cancel</button>
-          <button class="btn" onclick={save}>Save</button>
-        {:else}
-          <button class="linkish" onclick={edit}>Edit profile</button>
+        {#if isOwner}
+          {#if editing}
+            <button class="btn quiet" onclick={() => (editing = false)}>Cancel</button>
+            <button class="btn" onclick={save}>Save</button>
+          {:else}
+            <button class="linkish" onclick={edit}>Edit profile</button>
+          {/if}
         {/if}
+        {#if !editing}<ExportSheet {table} {character} />{/if}
         {#if saveError}<span class="error">{saveError}</span>{/if}
       </div>
     {/if}

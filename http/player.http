@@ -408,3 +408,25 @@ Content-Type: application/json
     client.assert(response.status === 401 || response.status === 403 || response.status === 404, `expected a refusal, got ${response.status}`);
   });
 %}
+
+### The blank sheet: a player may read it, for Export PDF (metadata: same permission, no binary)
+GET {{endpoint}}/storage/buckets/sheet-templates/files/v20-sheet
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("signed-in players read the sheet template", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+  });
+%}
+
+### Nor replace the blank sheet
+DELETE {{endpoint}}/storage/buckets/sheet-templates/files/v20-sheet
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("only the console writes the sheet template", () => {
+    client.assert(response.status === 401 || response.status === 403, `expected 401/403, got ${response.status}`);
+  });
+%}

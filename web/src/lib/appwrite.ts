@@ -8,7 +8,7 @@
  */
 
 import { env } from '$env/dynamic/public';
-import { Account, Channel, Client, Functions, Query, Realtime, TablesDB, Teams } from 'appwrite';
+import { Account, Channel, Client, Functions, Query, Realtime, Storage, TablesDB, Teams } from 'appwrite';
 
 import { DATABASE_ID, type FunctionId, type TableId } from '$schema';
 
@@ -21,6 +21,7 @@ export const tables = new TablesDB(client);
 export const teams = new Teams(client);
 export const functions = new Functions(client);
 export const realtime = new Realtime(client);
+export const storage = new Storage(client);
 
 export { Query };
 
