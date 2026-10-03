@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from '$app/state';
   import type { TableState } from '$lib/table.svelte';
+  import ThemePicker from './ThemePicker.svelte';
 
   let { table, base }: { table: TableState; base: string } = $props();
 
@@ -32,6 +33,7 @@
         <a href={`${base}/screen`}>The screen</a>
       {/if}
     {/if}
+    <ThemePicker />
     <span class="caps at">At the table</span>
     <ul class="avatars">
       {#each table.members as m (m.userId)}

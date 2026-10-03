@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { theme } from '$lib/theme.svelte';
   import type { TableState } from '$lib/table.svelte';
   import { parseJson } from '$shared/codec.ts';
   import Die from './Die.svelte';
@@ -45,7 +46,7 @@
 
 <section class="feed" aria-live="polite">
   <header>
-    <h2>The night so far</h2>
+    <h2>{theme.words.feed}</h2>
     <span class="status {table.status}">{table.status === 'live' ? 'live' : table.status === 'reconnecting' ? 'reconnecting…' : '…'}</span>
   </header>
 

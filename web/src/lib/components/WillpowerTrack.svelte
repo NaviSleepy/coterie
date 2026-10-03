@@ -18,7 +18,11 @@
   }
   .row {
     display: flex;
+    align-items: center;
     gap: 3px;
+  }
+  .row:first-child {
+    gap: var(--pip-gap);
   }
   .dot,
   .sq {
@@ -27,7 +31,10 @@
     border: 1px solid var(--ink);
   }
   .dot {
-    border-radius: 50%;
+    width: var(--pip-size);
+    height: var(--pip-size);
+    border-radius: var(--pip-radius);
+    transform: rotate(var(--pip-rotate));
   }
   .on {
     background: var(--ink);

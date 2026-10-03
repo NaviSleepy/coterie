@@ -1,8 +1,9 @@
 <script lang="ts">
-  let { size = 34, mark = 'St' }: { size?: number; mark?: string } = $props();
+  import { theme } from '$lib/theme.svelte';
+  let { size = 34, mark }: { size?: number; mark?: string } = $props();
 </script>
 
-<span class="seal" style:--s={`${size}px`} aria-hidden="true">{mark}</span>
+<span class="seal" style:--s={`${size}px`} aria-hidden="true">{mark ?? theme.words.sealMark}</span>
 
 <style>
   .seal {
@@ -21,5 +22,15 @@
     font-style: italic;
     font-size: calc(var(--s) * 0.42);
     font-family: var(--serif);
+  }
+  /* Jazz Age: the Storyteller's chip, red with a white-dashed rim. */
+  :global(:root[data-theme='jazz']) .seal {
+    border-radius: 50%;
+    background: radial-gradient(circle, #b3242f 0 52%, transparent 53%), repeating-conic-gradient(#b3242f 0 22deg, #f2e7c9 22deg 30deg);
+    box-shadow: 0 0 0 1px #6e141b, 0 2px 4px rgb(0 0 0 / 0.4);
+    font-style: normal;
+    font-family: var(--caps);
+    font-weight: 700;
+    font-size: calc(var(--s) * 0.3);
   }
 </style>

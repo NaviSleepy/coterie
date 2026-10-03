@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { theme } from '$lib/theme.svelte';
   import {
     ABILITY_KEYS,
     ATTRIBUTE_KEYS,
@@ -47,7 +48,7 @@
 </script>
 
 <section class="roll" aria-label="Next roll">
-  <h2 class="label">Next roll</h2>
+  <h2 class="label">{theme.words.rollPanel}</h2>
 
   <div class="pickers">
     <select bind:value={attribute} aria-label="Attribute">
@@ -64,7 +65,7 @@
   <div class="envelope">
     <WaxSeal />
     {#if character.difficultySealed}
-      <span>Difficulty <i>sealed by the Storyteller</i></span>
+      <span>Difficulty <i>{theme.words.sealed}</i></span>
     {:else}
       <span>Standard difficulty <i>unless the Storyteller seals another</i></span>
     {/if}
@@ -78,7 +79,7 @@
       <input type="checkbox" bind:checked={spendWillpower} disabled={willpowerUsed || character.willpowerTemporary === 0} />
       Spend Willpower (+1 success)
     </label>
-    <button class="btn solid" onclick={roll} disabled={rolling || down || !built.ok}>{rolling ? 'Rolling…' : 'Roll'}</button>
+    <button class="btn solid" onclick={roll} disabled={rolling || down || !built.ok}>{rolling ? 'Rolling…' : theme.words.rollButton}</button>
   </div>
   {#if down}<p class="note">Incapacitated. The character cannot act.</p>{/if}
   {#if !built.ok}<p class="note">{built.message}</p>{/if}

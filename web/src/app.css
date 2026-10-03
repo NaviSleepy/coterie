@@ -27,6 +27,164 @@
 
   --hunger: 0;
   --gutter: clamp(16px, 4vw, 48px);
+
+  /* What a skin (lib/theme.svelte.ts) can change beyond colour. */
+  --display: var(--serif);
+  --mono: ui-monospace, 'Courier New', monospace;
+  --script: var(--serif);
+  --solid: var(--oxblood);
+  --solid-ink: #fbeee6;
+  --solid-hover: var(--oxblood-deep);
+  --pip-size: 10px;
+  --pip-radius: 50%;
+  --pip-rotate: 0deg;
+  --pip-gap: 3px;
+  --die-radius: 0;
+  --vial-w: 17px;
+  --vial-h: 24px;
+  --vial-radius: 2px 2px 9px 9px;
+  --vial-skew: 0deg;
+  --bar-ink: var(--ink);
+  --surround-ink: var(--ink);
+}
+
+/* ── Skins ─────────────────────────────────────────────────────────────── */
+
+/* Classical: Elysium in marble. Terracotta, Tyrian purple, inscribed caps. */
+:root[data-theme='classical'] {
+  --cream: #efebe4;
+  --paper: #faf8f4;
+  --ink: #1c1a19;
+  --ink-soft: #5a544e;
+  --ink-faint: #8f877e;
+  --rule: #d8d0c4;
+  --gold: #b5532d;
+  --gold-soft: #d99a7c;
+  --oxblood: #6e1f4a;
+  --oxblood-deep: #521536;
+  --blush: #efe2e8;
+  --screen: #2a2521;
+  --screen-ink: #f1ebe2;
+  --screen-rule: #4d443d;
+  --display: 'Cinzel', var(--serif);
+  --caps: 'Cinzel', var(--serif);
+  --pip-radius: 0;
+  --pip-rotate: 45deg;
+  --pip-size: 8px;
+  --pip-gap: 5px;
+  --die-radius: 2px;
+}
+
+/* Dark Ages: Paris, 1197. Parchment leaves in a cold green crypt. */
+:root[data-theme='darkages'] {
+  --cream: #16211c;
+  --paper: #ede2c8;
+  --ink: #2a1d14;
+  --ink-soft: #5c4a3a;
+  --ink-faint: #8a7660;
+  --rule: #c9b48e;
+  --gold: #c9a961;
+  --gold-soft: #e0c88e;
+  --oxblood: #8e1b17;
+  --oxblood-deep: #6c1310;
+  --blush: #e6c9b8;
+  --screen: #1f3329;
+  --screen-ink: #efe4c8;
+  --screen-rule: #3c5a4a;
+  --display: 'Playfair Display', var(--serif);
+  --caps: 'Cinzel', var(--serif);
+  --script: 'Caveat', cursive;
+  --die-radius: 50%;
+  --vial-radius: 3px 3px 7px 7px;
+  --bar-ink: #efe4c8;
+  --surround-ink: #e0d4b4;
+}
+
+/* Toreador: a fashion quarterly. White space, Didone, one crimson. */
+:root[data-theme='toreador'] {
+  --cream: #f3efe8;
+  --paper: #ffffff;
+  --ink: #111111;
+  --ink-soft: #555555;
+  --ink-faint: #8a8a8a;
+  --rule: #d6d2cc;
+  --gold: #111111;
+  --gold-soft: #b9b4ad;
+  --oxblood: #c0102a;
+  --oxblood-deep: #990c21;
+  --blush: #f7e1e4;
+  --screen: #121212;
+  --screen-ink: #f4f1ec;
+  --screen-rule: #3a3a3a;
+  --serif: 'Jost', 'Helvetica Neue', Arial, sans-serif;
+  --display: 'Bodoni Moda', 'Didot', serif;
+  --caps: 'Jost', 'Helvetica Neue', Arial, sans-serif;
+  --vial-w: 9px;
+  --vial-h: 30px;
+  --vial-radius: 0;
+}
+
+/* Jazz Age: Chicago, 1927. Black lacquer, gold deco, green felt. */
+:root[data-theme='jazz'] {
+  --cream: #121110;
+  --paper: #1a1814;
+  --ink: #efe3c6;
+  --ink-soft: #c6b68f;
+  --ink-faint: #8c7f62;
+  --rule: #5a4a26;
+  --gold: #d4ad55;
+  --gold-soft: #e9cf8a;
+  --oxblood: #b3242f;
+  --oxblood-deep: #8a1a23;
+  --blush: #3a2d16;
+  --screen: #113a29;
+  --screen-ink: #f2e7c9;
+  --screen-rule: #2f5c46;
+  --serif: 'Josefin Sans', 'Futura', sans-serif;
+  --display: 'Limelight', 'Josefin Sans', serif;
+  --caps: 'Josefin Sans', 'Futura', sans-serif;
+  --solid: #d4ad55;
+  --solid-ink: #161208;
+  --solid-hover: #e9cf8a;
+  --pip-radius: 0;
+  --pip-rotate: 45deg;
+  --pip-size: 9px;
+  --pip-gap: 6px;
+  --die-radius: 4px;
+  --vial-w: 14px;
+  --vial-h: 32px;
+  --vial-radius: 0;
+}
+
+/* Sabbat: Montréal under siege. Bone, blackletter, a red that was scored in. */
+:root[data-theme='sabbat'] {
+  --cream: #121110;
+  --paper: #1b1a18;
+  --ink: #e8dfcf;
+  --ink-soft: #b0a595;
+  --ink-faint: #7d7468;
+  --rule: #3b2b2a;
+  --gold: #c3141f;
+  --gold-soft: #e0505a;
+  --oxblood: #d01a26;
+  --oxblood-deep: #9e121b;
+  --blush: #2c1416;
+  --screen: #161514;
+  --screen-ink: #e8dfcf;
+  --screen-rule: #3b2b2a;
+  --serif: 'Crimson Pro', Georgia, serif;
+  --display: 'Pirata One', 'UnifrakturCook', serif;
+  --caps: 'Courier Prime', 'Courier New', monospace;
+  --mono: 'Courier Prime', 'Courier New', monospace;
+  --solid: #b8121d;
+  --solid-ink: #f4ece0;
+  --solid-hover: #d01a26;
+  --pip-radius: 0;
+  --pip-size: 10px;
+  --vial-w: 5px;
+  --vial-h: 30px;
+  --vial-radius: 0;
+  --vial-skew: -18deg;
 }
 
 * {
@@ -139,11 +297,12 @@ button:focus-visible {
   background: color-mix(in oklab, var(--oxblood) 8%, transparent);
 }
 .btn.solid {
-  background: var(--oxblood);
-  color: #fbeee6;
+  background: var(--solid);
+  border-color: var(--solid);
+  color: var(--solid-ink);
 }
 .btn.solid:hover:not(:disabled) {
-  background: var(--oxblood-deep);
+  background: var(--solid-hover);
 }
 .btn.quiet {
   border-color: var(--rule);
@@ -175,4 +334,135 @@ button:focus-visible {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ── Skin details: headings, frames and rules that tokens alone can't draw ── */
+
+h1,
+h2,
+h3 {
+  font-family: var(--display);
+}
+
+/* Classical: inscribed caps and a terracotta lintel. */
+[data-theme='classical'] header.bar {
+  border-top: 6px solid var(--gold);
+}
+[data-theme='classical'] .sheet h2,
+[data-theme='classical'] .panel > h2,
+[data-theme='classical'] .panel header h2 {
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 1.05rem;
+}
+
+/* Dark Ages: the crypt around the leaves, gold rule under the masthead. */
+[data-theme='darkages'] header.bar {
+  border-bottom: 1px solid var(--gold);
+  box-shadow: 0 6px 0 -5px var(--gold);
+  color: var(--bar-ink);
+}
+[data-theme='darkages'] header.bar a,
+[data-theme='darkages'] header.bar .scene,
+[data-theme='darkages'] header.bar .at,
+[data-theme='darkages'] footer,
+[data-theme='darkages'] .ribbon + header.bar nav a {
+  color: var(--surround-ink) !important;
+}
+[data-theme='darkages'] main.screen-page > .status,
+[data-theme='darkages'] main.screen-page > .status b,
+[data-theme='darkages'] main.screen-page > .status button,
+[data-theme='darkages'] main.screen-page .dmpc-bar .btn.quiet,
+[data-theme='darkages'] main.screen-page .cards > .quiet,
+[data-theme='darkages'] main > .left > .switch .btn.quiet,
+[data-theme='darkages'] main.empty > p {
+  color: var(--surround-ink);
+  border-color: color-mix(in oklab, var(--gold), transparent 40%);
+}
+[data-theme='darkages'] header.bar .mark {
+  color: var(--gold) !important;
+}
+[data-theme='darkages'] .panel {
+  box-shadow: inset 0 0 0 5px var(--paper), inset 0 0 0 6px var(--rule);
+}
+[data-theme='darkages'] .sheet h2 {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-family: var(--caps);
+}
+[data-theme='darkages'] section.feed {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  padding: 20px;
+  background-image: repeating-linear-gradient(transparent 0 35px, color-mix(in oklab, var(--rule), transparent 40%) 35px 36px);
+}
+
+/* Toreador: masthead double rule, spaced sans caps, Didone names. */
+[data-theme='toreador'] header.bar {
+  border-bottom: 3px double var(--ink);
+}
+[data-theme='toreador'] header.bar .mark {
+  font-family: var(--display);
+}
+[data-theme='toreador'] .sheet h2,
+[data-theme='toreador'] .label,
+[data-theme='toreador'] .panel h2 {
+  font-family: var(--caps);
+  text-transform: uppercase;
+  letter-spacing: 0.32em;
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-variant: normal;
+}
+[data-theme='toreador'] .sheet h1 {
+  font-style: italic;
+  font-size: clamp(2.6rem, 6vw, 4rem);
+}
+
+/* Jazz Age: zigzag under the masthead, gold double frames. */
+[data-theme='jazz'] header.bar {
+  border-bottom: none;
+  padding-bottom: 30px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='10'%3E%3Cpolyline points='0,9 8,1 16,9' fill='none' stroke='%23d4ad55' stroke-width='1.5'/%3E%3C/svg%3E") 0 100% / 16px 10px repeat-x;
+}
+[data-theme='jazz'] header.bar .mark {
+  font-family: var(--display);
+  font-style: normal;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+}
+[data-theme='jazz'] .panel {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 5px var(--paper), inset 0 0 0 6px color-mix(in oklab, var(--gold), transparent 50%);
+}
+[data-theme='jazz'] h1,
+[data-theme='jazz'] h2 {
+  color: var(--gold);
+}
+
+/* Sabbat: a torn red edge, blackletter heads, typewritten labels. */
+[data-theme='sabbat'] header.bar {
+  border-bottom: none;
+  padding-bottom: 30px;
+  background: linear-gradient(var(--cream), var(--cream)) top / 100% calc(100% - 10px) no-repeat, #a8121c;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 96% calc(100% - 6px), 91% 100%, 85% calc(100% - 5px), 78% 100%, 71% calc(100% - 7px), 64% 100%, 57% calc(100% - 4px), 50% 100%, 43% calc(100% - 6px), 36% 100%, 29% calc(100% - 5px), 22% 100%, 15% calc(100% - 7px), 8% 100%, 3% calc(100% - 4px), 0 100%);
+}
+[data-theme='sabbat'] header.bar .mark {
+  font-family: var(--display);
+  font-style: normal;
+  color: var(--oxblood);
+}
+[data-theme='sabbat'] .label,
+[data-theme='sabbat'] .caps {
+  font-family: var(--mono);
+  font-variant: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+[data-theme='sabbat'] h1,
+[data-theme='sabbat'] h2 {
+  font-weight: 400;
+}
+[data-theme='sabbat'] .sheet .lineage {
+  color: var(--oxblood);
 }
