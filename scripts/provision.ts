@@ -194,7 +194,14 @@ async function waitForColumns(tableId: string) {
   throw new Error(`${tableId}: columns still processing after 60s`);
 }
 
+/** Scopes beyond the common four, per Function. */
+const EXTRA_SCOPES: Record<string, string[]> = {
+  // Adds the Storyteller to portrait files and deletes them with the character.
+  character: ['files.read', 'files.write'],
+};
+
 async function ensureFunction(id: string) {
+  const scopes = ['rows.read', 'rows.write', 'teams.read', 'teams.write', ...(EXTRA_SCOPES[id] ?? [])];
   const spec = {
     functionId: id,
     name: id,
@@ -205,13 +212,42 @@ async function ensureFunction(id: string) {
     logging: true,
     entrypoint: `functions/dist/${id}.js`,
     commands: 'npm ci --workspace functions --include-workspace-root && npm run build --workspace functions',
-    scopes: ['rows.read', 'rows.write', 'teams.read', 'teams.write'] as any[],
+    scopes: scopes as any[],
   };
-  // Create-only: an update that omits the Git provider fields can disconnect a
-  // Function from the repo, so an existing Function is left for the console.
-  if (await exists(() => fns.get({ functionId: id }))) return;
-  await fns.create(spec);
-  console.log(`+ function ${id}`);
+  const current: any = await fns.get({ functionId: id }).catch((e) => {
+    if ((e as { code?: number }).code === 404) return null;
+    throw e;
+  });
+  if (!current) {
+    await fns.create(spec);
+    console.log(`+ function ${id}`);
+    return;
+  }
+  const missing = scopes.filter((s) => !current.scopes.includes(s));
+  if (!missing.length) return;
+  // An update replaces every field, and one that omits the Git provider fields
+  // disconnects the Function from the repo, so send back everything it has.
+  await fns.update({
+    functionId: id,
+    name: current.name,
+    runtime: current.runtime,
+    execute: current.execute,
+    events: current.events,
+    schedule: current.schedule,
+    timeout: current.timeout,
+    enabled: current.enabled,
+    logging: current.logging,
+    entrypoint: current.entrypoint,
+    commands: current.commands,
+    scopes: [...current.scopes, ...missing],
+    installationId: current.installationId,
+    providerRepositoryId: current.providerRepositoryId,
+    providerBranch: current.providerBranch,
+    providerSilentMode: current.providerSilentMode,
+    providerRootDirectory: current.providerRootDirectory,
+    ...(current.specification ? { specification: current.specification } : {}),
+  });
+  console.log(`~ function ${id} scopes + ${missing.join(', ')}`);
 }
 
 /**

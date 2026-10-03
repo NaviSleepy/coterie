@@ -20,6 +20,12 @@
  *            on secrets about it, and its place in scenes. The rolls it made
  *            and its ledger stay as history, with a last ledger line saying
  *            who deleted it. Names the character, so a stray call can't.
+ *            Its portrait file goes too.
+ *   setPortrait  The owner points their character at a portrait they uploaded,
+ *            or clears it (fileId null). A browser can only grant roles it
+ *            holds, so the upload is readable by its owner alone; this adds
+ *            the Storyteller's read (and delete, for when the character goes)
+ *            with the server key, after checking the caller controls the file.
  *
  * Body (create):   chronicleId, profile: {name, concept?, nature?, demeanor?}, sheet: {...}
  * Body (adjust):   characterId, sheet: {...partial}
@@ -28,6 +34,7 @@
  * Body (approve):  characterId, revision
  * Body (reject):   characterId, note?
  * Body (delete):   characterId, name (the character's name, as a confirmation)
+ * Body (setPortrait): characterId, fileId (or null to remove)
  *
  *   Creation is held to the V20 budget (engine creationCost) for players. A
  *   sheet over it, or breaking a creation rule, is refused with 409
@@ -46,9 +53,10 @@ import { ID, Query } from 'node-appwrite';
 import { bloodPoolMax, creationCost, describeCost } from '../../../engine/src/index.ts';
 import { isStoryteller, loadCharacterFor, loadChronicle, requireMember, requireStoryteller, type Chronicle } from '../shared/auth.ts';
 import { encodePatch, parseJson, type Character, type CharacterPatch } from '../shared/codec.ts';
-import { badRequest, entry, forbidden, HttpError, int, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
+import { badRequest, entry, forbidden, HttpError, int, notFound, oneOf, optStr, str, type Ctx, type FilesLike } from '../shared/http.ts';
 import { ledgerId, mutateCharacter } from '../shared/mutate.ts';
-import { characterPerms, profilePerms, requestPerms, storytellerOnly } from '../shared/perms.ts';
+import { characterPerms, portraitPerms, profilePerms, requestPerms, storytellerOnly, update, user } from '../shared/perms.ts';
+import { PORTRAIT_TYPES, PORTRAITS_BUCKET_ID } from '../shared/schema.ts';
 import { checkSpecialties, PROPOSABLE, validateSheet } from '../shared/sheet.ts';
 import { isConflict, type Tx } from '../shared/store.ts';
 
@@ -379,13 +387,56 @@ async function deleteCharacter(ctx: Ctx, body: any) {
     if (!isConflict(e)) throw e;
     throw new HttpError(409, 'contended', 'Someone changed this sheet just now. Nothing was deleted — try again.');
   }
+  await dropPortrait(ctx, profile?.portrait);
   ctx.log(`delete ${id} v${version}: ${name}`);
   return { characterId: id, deleted: true };
 }
 
+function filesOf(ctx: Ctx): FilesLike {
+  if (!ctx.files) throw new Error('Storage is not available to this Function.');
+  return ctx.files;
+}
+
+/** Best effort: a file left behind costs storage, never access. */
+async function dropPortrait(ctx: Ctx, fileId: unknown) {
+  if (typeof fileId !== 'string' || !fileId || !ctx.files) return;
+  await ctx.files.deleteFile({ bucketId: PORTRAITS_BUCKET_ID, fileId }).catch(() => {});
+}
+
+async function setPortrait(ctx: Ctx, body: any) {
+  const { character, chronicle } = await loadCharacterFor(ctx, str(body, 'characterId', 36));
+  if (character.ownerId !== ctx.userId) throw forbidden('Only the character\'s own player sets its portrait.');
+  const profile = await ctx.store.find('profiles', character.$id);
+  if (!profile) throw notFound('Profile');
+  const previous = profile.portrait as string | undefined;
+
+  if (body.fileId === null) {
+    await ctx.store.update('profiles', character.$id, { portrait: '' });
+    await dropPortrait(ctx, previous);
+    return { characterId: character.$id, portrait: null };
+  }
+
+  const fileId = str(body, 'fileId', 36);
+  const files = filesOf(ctx);
+  let file;
+  try {
+    file = await files.getFile({ bucketId: PORTRAITS_BUCKET_ID, fileId });
+  } catch {
+    throw notFound('Portrait');
+  }
+  // Only the uploader's browser could have written update("user:<them>") on it.
+  if (!file.$permissions.includes(update(user(ctx.userId)))) throw forbidden('That portrait is not yours.');
+  if (file.mimeType && !PORTRAIT_TYPES.includes(file.mimeType)) throw badRequest('Portraits must be JPEG, PNG, GIF or WebP.');
+
+  await files.updateFile({ bucketId: PORTRAITS_BUCKET_ID, fileId, permissions: portraitPerms(chronicle.teamId, ctx.userId) });
+  await ctx.store.update('profiles', character.$id, { portrait: fileId });
+  if (previous && previous !== fileId) await dropPortrait(ctx, previous);
+  return { characterId: character.$id, portrait: fileId };
+}
+
 export async function handler(ctx: Ctx, body: any) {
-  const action = oneOf(body, 'action', ['create', 'adjust', 'propose', 'withdraw', 'approve', 'reject', 'delete', 'requestCreation', 'approveCreation', 'declineCreation', 'withdrawCreation'] as const);
-  return { create, adjust, propose, withdraw, approve, reject, delete: deleteCharacter, requestCreation, approveCreation, declineCreation, withdrawCreation }[action](ctx, body);
+  const action = oneOf(body, 'action', ['create', 'adjust', 'propose', 'withdraw', 'approve', 'reject', 'delete', 'requestCreation', 'approveCreation', 'declineCreation', 'withdrawCreation', 'setPortrait'] as const);
+  return { create, adjust, propose, withdraw, approve, reject, delete: deleteCharacter, requestCreation, approveCreation, declineCreation, withdrawCreation, setPortrait }[action](ctx, body);
 }
 
 export default entry('character', handler);

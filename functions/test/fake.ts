@@ -176,9 +176,32 @@ export class FakeTeams implements TeamsLike {
   }
 }
 
+/** In-memory Storage: just the calls the Functions make. */
+export class FakeFiles {
+  files = new Map<string, { $id: string; $permissions: string[]; mimeType: string; bucketId: string }>();
+  seed(fileId: string, permissions: string[], mimeType = 'image/png', bucketId = 'character-portraits') {
+    this.files.set(fileId, { $id: fileId, $permissions: permissions, mimeType, bucketId });
+  }
+  async getFile({ bucketId, fileId }: any) {
+    const f = this.files.get(fileId);
+    if (!f || f.bucketId !== bucketId) throw new AppwriteError(404, 'File not found');
+    return f;
+  }
+  async updateFile({ bucketId, fileId, permissions }: any) {
+    const f = await this.getFile({ bucketId, fileId });
+    f.$permissions = permissions;
+    return f;
+  }
+  async deleteFile({ bucketId, fileId }: any) {
+    await this.getFile({ bucketId, fileId });
+    this.files.delete(fileId);
+  }
+}
+
 export interface World {
   tables: FakeTables;
   teams: FakeTeams;
+  files: FakeFiles;
   as: (userId: string, dice?: number[]) => Ctx;
 }
 
@@ -186,11 +209,14 @@ export function world(): World {
   const tables = new FakeTables();
   const teams = new FakeTeams();
   const store = new Store(tables, teams);
+  const files = new FakeFiles();
   return {
     tables,
     teams,
+    files,
     as: (userId, dice = [7]) => ({
       store,
+      files,
       userId,
       die: scriptedDice(dice),
       now: () => new Date('2026-09-22T21:00:00Z'),

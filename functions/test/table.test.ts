@@ -177,6 +177,52 @@ describe('characters', () => {
   });
 });
 
+describe('portraits', () => {
+  const OWNER_ONLY = (u: string) => [`read("user:${u}")`, `update("user:${u}")`, `delete("user:${u}")`];
+
+  it("adds the Storyteller to a portrait its owner uploaded, and points the profile at it", async () => {
+    const w = ashenCourt();
+    w.files.seed('file_a', OWNER_ONLY(ISOLDE_PLAYER));
+    await character(w.as(ISOLDE_PLAYER), { action: 'setPortrait', characterId: ISOLDE, fileId: 'file_a' });
+    assert.deepEqual(w.files.files.get('file_a')!.$permissions, [
+      `read("user:${ISOLDE_PLAYER}")`, `update("user:${ISOLDE_PLAYER}")`, `delete("user:${ISOLDE_PLAYER}")`,
+      `read("team:${TEAM}/storyteller")`, `delete("team:${TEAM}/storyteller")`,
+    ]);
+    assert.equal(w.tables.row('profiles', ISOLDE)!.portrait, 'file_a');
+  });
+
+  it('replaces and removes, deleting the old file each time', async () => {
+    const w = ashenCourt();
+    w.files.seed('file_a', OWNER_ONLY(ISOLDE_PLAYER));
+    w.files.seed('file_b', OWNER_ONLY(ISOLDE_PLAYER));
+    await character(w.as(ISOLDE_PLAYER), { action: 'setPortrait', characterId: ISOLDE, fileId: 'file_a' });
+    await character(w.as(ISOLDE_PLAYER), { action: 'setPortrait', characterId: ISOLDE, fileId: 'file_b' });
+    assert.equal(w.files.files.has('file_a'), false);
+    await character(w.as(ISOLDE_PLAYER), { action: 'setPortrait', characterId: ISOLDE, fileId: null });
+    assert.equal(w.files.files.has('file_b'), false);
+    assert.equal(w.tables.row('profiles', ISOLDE)!.portrait, '');
+  });
+
+  it("refuses someone else's file, someone else's character, and a missing file", async () => {
+    const w = ashenCourt();
+    w.files.seed('dmitri_file', OWNER_ONLY(DMITRI_PLAYER));
+    w.files.seed('isolde_file', OWNER_ONLY(ISOLDE_PLAYER));
+    await rejects(character(w.as(ISOLDE_PLAYER), { action: 'setPortrait', characterId: ISOLDE, fileId: 'dmitri_file' }), 403);
+    assert.deepEqual(w.files.files.get('dmitri_file')!.$permissions, OWNER_ONLY(DMITRI_PLAYER), 'untouched');
+    await rejects(character(w.as(DMITRI_PLAYER), { action: 'setPortrait', characterId: ISOLDE, fileId: 'isolde_file' }), 403);
+    await rejects(character(w.as(ST), { action: 'setPortrait', characterId: ISOLDE, fileId: 'isolde_file' }), 403);
+    await rejects(character(w.as(ISOLDE_PLAYER), { action: 'setPortrait', characterId: ISOLDE, fileId: 'nope' }), 404);
+  });
+
+  it('deletes the portrait with the character', async () => {
+    const w = ashenCourt();
+    w.files.seed('file_a', OWNER_ONLY(ISOLDE_PLAYER));
+    await character(w.as(ISOLDE_PLAYER), { action: 'setPortrait', characterId: ISOLDE, fileId: 'file_a' });
+    await character(w.as(ST), { action: 'delete', characterId: ISOLDE, name: 'Isolde Marchetti' });
+    assert.equal(w.files.files.has('file_a'), false);
+  });
+});
+
 describe('NPCs', () => {
   const save = (w: any, who: string, npc: any, npcId?: string) =>
     chronicle(w.as(who), { action: 'saveNpc', chronicleId: CHRONICLE, npc, ...(npcId ? { npcId } : {}) });

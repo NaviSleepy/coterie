@@ -43,6 +43,11 @@ export function requestPerms(teamId: string, ownerId: string): string[] {
   return [read(user(ownerId)), read(storytellers(teamId))];
 }
 
+/** A portrait file: its owner reads and replaces it; the Storyteller reads it and may delete it with the character. */
+export function portraitPerms(teamId: string, ownerId: string): string[] {
+  return [read(user(ownerId)), update(user(ownerId)), remove(user(ownerId)), read(storytellers(teamId)), remove(storytellers(teamId))];
+}
+
 /** A secret: the Storyteller, plus exactly the users it has been revealed to. */
 export function secretPerms(teamId: string, visibleTo: string[]): string[] {
   return [read(storytellers(teamId)), ...visibleTo.map((id) => read(user(id)))];

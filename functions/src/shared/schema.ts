@@ -12,6 +12,8 @@
 
 export const DATABASE_ID = 'coterie';
 export const PORTRAITS_BUCKET_ID = 'character-portraits';
+/** What the portrait bucket accepts. */
+export const PORTRAIT_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 export type Column =
   | { key: string; type: 'string'; size: number; required?: boolean; array?: boolean; default?: string }
