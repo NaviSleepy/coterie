@@ -6,6 +6,7 @@
   import EquipmentPanel from './EquipmentPanel.svelte';
   import HungerPrompt from './HungerPrompt.svelte';
   import LibraryPanel from './LibraryPanel.svelte';
+  import CreationRequests from './CreationRequests.svelte';
   import ProposalPanel from './ProposalPanel.svelte';
   import RollFeed from './RollFeed.svelte';
   import RollPanel from './RollPanel.svelte';
@@ -38,6 +39,7 @@
   <main class="empty">
     <p>You have no one at this table yet.</p>
     {#if canCreate}<a class="btn solid" href={`${base}/new`}>Bring a character</a>{/if}
+    <CreationRequests {table} />
   </main>
 {:else}
   <main class="table">
@@ -50,6 +52,7 @@
         {/if}
         {#if canCreate}<a class="btn quiet" href={`${base}/new`}>Bring another character</a>{/if}
       </div>
+      <CreationRequests {table} />
       <Sheet {table} {character} />
       {#if !table.isStoryteller}{#key character.$id}<ProposalPanel {table} {character} />{/key}{/if}
       <LibraryPanel {table} />

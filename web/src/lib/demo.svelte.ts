@@ -15,7 +15,9 @@ import {
   bloodPoolMax,
   buildPool,
   canSpendWillpower,
+  creationCost,
   cryptoDie,
+  describeCost,
   feed,
   healDamage,
   remainingThisTurn,
@@ -96,12 +98,17 @@ export class DemoTable extends TableState {
     seals: {} as Record<string, AnyRow>,
     sealed: {} as Record<string, number>,
     proposals: {} as Record<string, AnyRow>,
+    creationRequests: {} as Record<string, AnyRow>,
     library: {} as Record<string, AnyRow>,
     npcs: {} as Record<string, AnyRow>,
   };
 
   constructor() {
     super(DEMO_ID, DEMO_PLAYER, 'Isolde’s player');
+  }
+
+  override get home() {
+    return '/demo';
   }
 
   override async open() {
@@ -169,6 +176,25 @@ export class DemoTable extends TableState {
     };
 
     const w = this.world;
+    // Isolde's player wants a second character, built well past the budget.
+    const vittoria = {
+      clan: 'Brujah', sect: 'Anarch Movement', generation: 10,
+      attributes: { strength: 3, dexterity: 5, stamina: 3, charisma: 3, manipulation: 2, appearance: 2, perception: 3, intelligence: 2, wits: 3 },
+      abilities: { athletics: 3, brawl: 4, melee: 5, alertness: 3, intimidation: 3, streetwise: 2, stealth: 2, investigation: 1 },
+      disciplines: [{ name: 'Celerity', level: 3 }, { name: 'Potence', level: 2 }],
+      backgrounds: [{ name: 'Allies', level: 2 }],
+      virtues: { conscience: 2, selfControl: 2, courage: 4 }, pathRating: 5, willpowerPermanent: 5,
+      merits: [{ name: 'Ambidextrous', points: 1 }], flaws: [{ name: 'Short Fuse', points: 2 }],
+    };
+    w.creationRequests = {
+      'demo-req1': row('demo-req1', {
+        chronicleId: DEMO_ID, ownerId: DEMO_PLAYER,
+        profile: JSON.stringify({ name: 'Vittoria Sforza', concept: 'Back-alley duelist' }),
+        sheet: JSON.stringify(vittoria),
+        cost: JSON.stringify(describeCost(creationCost(vittoria))),
+        status: 'pending', note: '',
+      }, 30),
+    };
     w.characters = {
       'demo-isolde': character('demo-isolde', DEMO_PLAYER, {
         title: 'Harpy',
@@ -335,6 +361,7 @@ export class DemoTable extends TableState {
     this.secrets = Object.fromEntries(Object.entries(w.secrets).filter(([, s]) => st || s.visibleTo.includes(this.me)));
     this.seals = Object.fromEntries(Object.entries(w.seals).filter(([, s]) => st || s.ownerId === this.me));
     this.proposals = Object.fromEntries(Object.entries(w.proposals).filter(([, p]) => st || p.ownerId === this.me));
+    this.creationRequests = Object.fromEntries(Object.entries(w.creationRequests).filter(([, r]) => st || r.ownerId === this.me));
     this.library = { ...w.library };
     this.npcs = st ? { ...w.npcs } : {};
   }
@@ -573,6 +600,49 @@ export class DemoTable extends TableState {
         return {};
       }
       case 'character': {
+        if (b.action === 'create' || b.action === 'requestCreation') {
+          const st = this.me === DEMO_ST;
+          const cost = creationCost(b.sheet ?? {});
+          if (!String(b.profile?.name ?? '').trim()) throw new Refusal('A character needs a name.');
+          if (b.action === 'create' && !st && !cost.ok) throw new Refusal(`This character needs the Storyteller's approval: ${describeCost(cost).join('; ')}.`);
+          if (b.action === 'requestCreation') {
+            const id = `demo-req${Date.now()}`;
+            w.creationRequests[id] = row(id, {
+              chronicleId: DEMO_ID, ownerId: this.me, profile: JSON.stringify(b.profile), sheet: JSON.stringify(b.sheet),
+              cost: JSON.stringify(describeCost(cost)), status: 'pending', note: '',
+            }, 0);
+            this.project();
+            return { requestId: id };
+          }
+          const id = `demo-c${Date.now()}`;
+          w.characters[id] = character(id, this.me, { ...b.sheet, bloodPool: Math.min(cryptoDie(), bloodPoolMax(b.sheet?.generation ?? 13)) });
+          this.profiles[id] = row(id, b.profile, 0);
+          this.project();
+          return { characterId: id };
+        }
+        if (['approveCreation', 'declineCreation', 'withdrawCreation'].includes(b.action)) {
+          const req = w.creationRequests[b.requestId];
+          if (!req) throw new Refusal('Request not found.');
+          const st = this.me === DEMO_ST;
+          if (b.action === 'withdrawCreation') {
+            if (!st && req.ownerId !== this.me) throw new Refusal('That request is not yours.');
+            delete w.creationRequests[req.$id];
+          } else if (!st) {
+            throw new Refusal('Only the Storyteller can do that.');
+          } else if (b.action === 'declineCreation') {
+            w.creationRequests[req.$id] = { ...req, status: 'declined', note: b.note ?? '' };
+          } else {
+            const id = `demo-c${Date.now()}`;
+            const sheet = parseJson<Partial<Character>>(req.sheet, {});
+            w.characters[id] = character(id, req.ownerId, { ...sheet, bloodPool: Math.min(cryptoDie(), bloodPoolMax(sheet.generation ?? 13)) });
+            this.profiles[id] = row(id, parseJson(req.profile, {}), 0);
+            delete w.creationRequests[req.$id];
+            this.project();
+            return { characterId: id, ownerId: req.ownerId };
+          }
+          this.project();
+          return {};
+        }
         const c = w.characters[b.characterId];
         if (!c) break;
         const st = this.me === DEMO_ST;

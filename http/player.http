@@ -380,3 +380,31 @@ Content-Type: application/json
     client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
   });
 %}
+
+### Creation: a player cannot seat a character over the creation budget
+POST {{endpoint}}/functions/character/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"create\",\"chronicleId\":\"{{chronicleId}}\",\"profile\":{\"name\":\"Overreach\"},\"sheet\":{\"abilities\":{\"brawl\":5,\"melee\":5,\"firearms\":5,\"athletics\":5},\"disciplines\":[{\"name\":\"Celerity\",\"level\":5}]}}" }
+
+> {%
+  client.test("over budget needs the Storyteller", () => {
+    client.assert(response.body.responseStatusCode === 409, `expected 409, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Creation: nor write a creation request directly
+POST {{endpoint}}/tablesdb/{{db}}/tables/creationRequests/rows
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+Content-Type: application/json
+
+{ "rowId": "unique()", "data": { "chronicleId": "{{chronicleId}}", "ownerId": "sec-player", "profile": "{}", "sheet": "{}", "cost": "[]", "status": "pending" } }
+
+> {%
+  client.test("requests are written only by the Function", () => {
+    client.assert(response.status === 401 || response.status === 403 || response.status === 404, `expected a refusal, got ${response.status}`);
+  });
+%}

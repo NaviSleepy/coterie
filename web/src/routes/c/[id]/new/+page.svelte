@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getContext } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, traitLabel } from '$engine/index.ts';
+  import { ABILITIES, ATTRIBUTES, bloodPerTurn, bloodPoolMax, CREATION_RULES, creationCost, traitLabel } from '$engine/index.ts';
   import type { TableState } from '$lib/table.svelte';
   import { dotMeaning, entriesOf, findEntry, gloss, parseRitual, sectNames } from '$lib/library';
 
@@ -18,9 +18,11 @@
   let abilities = $state<Record<string, number>>(Object.fromEntries(Object.values(ABILITIES).flat().map((k) => [k, 0])));
   let virtues = $state<Record<string, number>>({ conscience: 1, selfControl: 1, courage: 1 });
   let path = $state('');
-  let pathRating = $state(7);
-  let willpowerPermanent = $state(1);
+  /** Humanity (or a Path) and Willpower start where the Virtues put them; these are the dots bought on top. */
+  let pathExtra = $state(0);
+  let willpowerExtra = $state(0);
   let disciplines = $state<{ name: string; level: number }[]>([]);
+  let backgrounds = $state<{ name: string; level: number }[]>([]);
   let specialties = $state<{ trait: string; text: string }[]>([]);
   let merits = $state<{ name: string; points: number }[]>([]);
   let rituals = $state<{ name: string; level: number }[]>([]);
@@ -38,6 +40,18 @@
   const meritPoints = $derived(total(merits));
   const flawPoints = $derived(total(flaws));
 
+  const basePath = $derived((virtues.conscience ?? virtues.conviction ?? 1) + (virtues.selfControl ?? virtues.instinct ?? 1));
+  const pathRating = $derived(Math.min(10, basePath + pathExtra));
+  const willpowerPermanent = $derived(Math.min(10, (virtues.courage ?? 1) + willpowerExtra));
+
+  /** The same budget the server holds a player to. */
+  const cost = $derived(
+    creationCost({ template, generation, attributes, abilities, disciplines, backgrounds, virtues, pathRating, willpowerPermanent, merits, flaws }),
+  );
+  const rules = $derived(CREATION_RULES[template]);
+  const needsApproval = $derived(!table.isStoryteller && !cost.ok);
+  let sent = $state(false);
+
   const eligible = $derived(
     [...Object.entries(attributes), ...Object.entries(abilities)].filter(([, v]) => v >= 4).map(([k]) => k),
   );
@@ -45,12 +59,13 @@
   async function submit() {
     busy = true;
     const out = await table.act('character', {
-      action: 'create',
+      action: needsApproval ? 'requestCreation' : 'create',
       chronicleId: table.chronicleId,
       profile,
       sheet: {
         template, ...(template === 'dhampir' ? { dhampirConcept } : {}), clan, sect, sire, generation, attributes, abilities, virtues, path: path.trim() || 'Humanity', pathRating, willpowerPermanent,
         disciplines: disciplines.filter((d) => d.name.trim()),
+        backgrounds: backgrounds.filter((b) => b.name.trim()),
         merits: merits.filter((m) => m.name.trim()),
         rituals: rituals.filter((r) => r.name.trim()),
         flaws: flaws.filter((f) => f.name.trim()),
@@ -58,7 +73,8 @@
       },
     });
     busy = false;
-    if (out) await goto(table.isStoryteller ? `/c/${table.chronicleId}/screen` : `/c/${table.chronicleId}`);
+    if (out && needsApproval) sent = true;
+    else if (out) await goto(table.isStoryteller ? `${table.home}/screen` : table.home);
   }
 
   /** Paths of Enlightenment trade Conscience for Conviction and Self-Control for Instinct; the dots carry over. */
@@ -73,7 +89,7 @@
 </script>
 
 <main class="panel">
-  {#each ['clan', 'merit', 'flaw', 'discipline', 'path', 'archetype', 'concept', 'ritual'] as const as kind (kind)}
+  {#each ['clan', 'merit', 'flaw', 'discipline', 'background', 'path', 'archetype', 'concept', 'ritual'] as const as kind (kind)}
     <datalist id={`lib-${kind}`}>{#each entriesOf(table.library, kind) as e (e.$id)}<option value={e.name}></option>{/each}</datalist>
   {/each}
   {#if table.isStoryteller}
@@ -160,6 +176,17 @@
     {/each}
     <button type="button" class="btn quiet" onclick={() => (disciplines = [...disciplines, { name: '', level: 1 }])}>Add Discipline</button>
 
+    <h2>Backgrounds <span class="hint">— {rules.backgrounds} dots{#if rules.generationCosts}; Generation below 13th counts here whether you list it or not{/if}</span></h2>
+    {#each backgrounds as b, i (i)}
+      <div class="row">
+        <input bind:value={b.name} placeholder="Resources" aria-label="Background name" list="lib-background" />
+        <input type="number" min="1" max="5" bind:value={b.level} aria-label="Background dots" />
+        <button type="button" class="btn quiet" onclick={() => (backgrounds = backgrounds.filter((_, j) => j !== i))}>Remove</button>
+      </div>
+      {#if gloss(findEntry(table.library, 'background', b.name))}<p class="hint ref">{gloss(findEntry(table.library, 'background', b.name))}</p>{/if}
+    {/each}
+    <button type="button" class="btn quiet" onclick={() => (backgrounds = [...backgrounds, { name: '', level: 1 }])}>Add Background</button>
+
     <h2>Rituals <span class="hint">— thaumaturges and necromancers usually start with one</span></h2>
     {#each rituals as r, i (i)}
       <div class="row">
@@ -209,22 +236,128 @@
         <label>{traitLabel(k)} <input type="number" min="1" max="5" bind:value={virtues[k]} /></label>
       {/each}
       <label>Path <input bind:value={path} list="lib-path" placeholder="Humanity" />{#if gloss(findEntry(table.library, 'path', path))}<span class="hint">{gloss(findEntry(table.library, 'path', path))}</span>{/if}</label>
-      <label>{path.trim() || 'Humanity'} <input type="number" min="0" max="10" bind:value={pathRating} /></label>
-      <label>Willpower <input type="number" min="1" max="10" bind:value={willpowerPermanent} /></label>
+      <label>{path.trim() || 'Humanity'} <b class="derived">{pathRating}</b><span class="hint">{basePath} from the Virtues, plus <input class="small" type="number" min="0" max={10 - basePath} bind:value={pathExtra} aria-label="Extra Humanity or Path dots" /> bought</span></label>
+      <label>Willpower <b class="derived">{willpowerPermanent}</b><span class="hint">{virtues.courage ?? 1} from Courage, plus <input class="small" type="number" min="0" max={10 - (virtues.courage ?? 1)} bind:value={willpowerExtra} aria-label="Extra Willpower dots" /> bought</span></label>
     </div>
     <div class="row swaps">
       <button type="button" class="btn quiet" onclick={() => swapVirtue('conscience', 'conviction')}>{'conviction' in virtues ? 'Back to Conscience' : 'Conviction instead of Conscience'}</button>
       <button type="button" class="btn quiet" onclick={() => swapVirtue('selfControl', 'instinct')}>{'instinct' in virtues ? 'Back to Self-Control' : 'Instinct instead of Self-Control'}</button>
     </div>
 
-    <button class="btn solid submit" disabled={busy || !profile.name.trim()}>{busy ? (template === 'dhampir' ? 'Taking a seat…' : 'Rolling starting blood…') : table.isStoryteller ? 'Create DMPC' : 'Take a seat'}</button>
+    {#if sent}
+      <p class="sent">Sent. The Storyteller will look it over; you'll find it on your page, and the character takes its seat when they approve it. <a href={table.home}>Back to the table</a></p>
+    {:else}
+      {#if needsApproval}<p class="hint">This goes over the creation budget{cost.problems.length ? ' or breaks a creation rule' : ''}, so it needs the Storyteller's approval. You can trim it, or send it as it is.</p>{/if}
+      <button class="btn solid submit" disabled={busy || !profile.name.trim()}>{busy ? (needsApproval ? 'Sending…' : template === 'dhampir' ? 'Taking a seat…' : 'Rolling starting blood…') : table.isStoryteller ? 'Create DMPC' : needsApproval ? 'Send to the Storyteller for approval' : 'Take a seat'}</button>
+    {/if}
+    {#if table.error}<p class="error">{table.error}</p>{/if}
   </form>
+
+  <aside class="budget" class:over={!cost.ok} aria-label="Creation budget">
+    <h2>Budget</h2>
+    {#if table.isStoryteller}<p class="hint">A DMPC isn't held to it; it's here as a guide.</p>{/if}
+    {#each cost.lines as l (l.key)}
+      {#if l.budget || l.spent}
+        <div class="line" class:spending={l.freebies > 0}>
+          <span>{l.label}</span>
+          <span>{#if l.budget}{l.spent} / {l.budget}{:else}+{l.spent}{/if}{#if l.freebies}{' · '}{l.freebies} fp{/if}</span>
+        </div>
+        {#if l.groups}
+          <p class="groups">{l.groups.map((g) => `${g.name} ${g.spent}/${g.budget}`).join(' · ')}</p>
+        {/if}
+      {/if}
+    {/each}
+    <div class="line total">
+      <span>Freebies</span>
+      <span>{cost.freebiesSpent} / {cost.freebieBudget}</span>
+    </div>
+    {#if cost.flawRefund}<p class="groups">{rules.freebies} + {cost.flawRefund} from flaws</p>{/if}
+    <p class="left">{cost.overBy ? `${cost.overBy} over` : `${cost.freebiesLeft} left`}</p>
+    {#each cost.problems as p (p)}<p class="problem">{p}</p>{/each}
+    <p class="hint">Priorities pick themselves: the biggest pool goes where you spent the most.</p>
+  </aside>
 </main>
 
 <style>
   main {
-    max-width: 980px;
+    max-width: 1180px;
     margin: 32px auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 250px;
+    gap: 0 32px;
+    align-items: start;
+  }
+  main > :global(:not(form):not(aside)) {
+    grid-column: 1 / -1;
+  }
+  .budget {
+    position: sticky;
+    top: 16px;
+    display: grid;
+    gap: 4px;
+    border: 1px solid var(--rule);
+    padding: 14px 16px;
+    font-size: 0.95rem;
+  }
+  .budget h2 {
+    margin: 0 0 4px;
+  }
+  .budget .line {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .budget .spending span:last-child {
+    color: var(--oxblood);
+  }
+  .budget .groups {
+    text-transform: capitalize;
+    margin: 0 0 4px;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+  .budget .total {
+    border-top: 1px solid var(--rule);
+    padding-top: 6px;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  .budget .left {
+    margin: 0;
+    font-size: 1.3rem;
+  }
+  .budget.over .left,
+  .budget .problem {
+    color: var(--oxblood);
+  }
+  .budget .problem {
+    margin: 0;
+    font-size: 0.85rem;
+  }
+  .derived {
+    font-size: 1.2rem;
+    color: var(--ink);
+  }
+  input.small {
+    width: 3.5em;
+  }
+  .sent {
+    margin-top: 24px;
+    font-size: 1.05rem;
+  }
+  @media (max-width: 860px) {
+    main {
+      grid-template-columns: 1fr;
+    }
+    main > :global(h1),
+    main > :global(p.hint) {
+      order: -2;
+    }
+    .budget {
+      position: static;
+      order: -1;
+      margin-bottom: 16px;
+    }
   }
   h1 {
     font-weight: 500;
