@@ -243,6 +243,67 @@ describe('sect titles', () => {
   });
 });
 
+describe('the creation budget', () => {
+  // Five Abilities at 5 and Celerity 5: far past 15 freebies.
+  const greedy = { abilities: { brawl: 5, firearms: 5, melee: 5, athletics: 5, stealth: 5 }, disciplines: [{ name: 'Celerity', level: 5 }] };
+  const send = (w: any, user: string, action: string, sheet: any = greedy) =>
+    character(w.as(user, [4]), { action, chronicleId: CHRONICLE, profile: { name: 'Overreach' }, sheet });
+
+  it('refuses a player a character over budget, but takes one within it', async () => {
+    const w = ashenCourt();
+    await rejects(send(w, DMITRI_PLAYER, 'create'), 409);
+    const { characterId }: any = await send(w, DMITRI_PLAYER, 'create', { abilities: { brawl: 3 }, disciplines: [{ name: 'Potence', level: 2 }] });
+    assert.ok(w.tables.row('characters', characterId));
+  });
+
+  it("refuses Generation deeper than five dots can buy, even with freebies to spare", async () => {
+    const w = ashenCourt();
+    await rejects(send(w, DMITRI_PLAYER, 'create', { generation: 7 }), 409);
+  });
+
+  it('lets the Storyteller make an over-budget DMPC', async () => {
+    const w = ashenCourt();
+    const { characterId }: any = await send(w, ST, 'create');
+    assert.equal(w.tables.row('characters', characterId)!.ownerId, ST);
+  });
+
+  it('sends an over-budget character to the Storyteller, who approves it into the player\'s hands', async () => {
+    const w = ashenCourt();
+    const { requestId }: any = await send(w, DMITRI_PLAYER, 'requestCreation');
+    const req = w.tables.row('creationRequests', requestId)!;
+    assert.equal(req.status, 'pending');
+    assert.ok(JSON.parse(req.cost).some((l: string) => /over/.test(l)));
+    assert.deepEqual(req.$permissions, [`read("user:${DMITRI_PLAYER}")`, `read("team:${TEAM}/storyteller")`]);
+
+    await rejects(character(w.as(DMITRI_PLAYER), { action: 'approveCreation', requestId }), 403);
+    await rejects(character(w.as(ISOLDE_PLAYER), { action: 'withdrawCreation', requestId }), 403);
+
+    const { characterId, ownerId }: any = await character(w.as(ST, [4]), { action: 'approveCreation', requestId });
+    assert.equal(ownerId, DMITRI_PLAYER);
+    const row = w.tables.row('characters', characterId)!;
+    assert.equal(row.ownerId, DMITRI_PLAYER);
+    assert.equal(JSON.parse(row.abilities).brawl, 5);
+    assert.equal(w.tables.row('profiles', characterId)!.name, 'Overreach');
+    assert.equal(w.tables.row('creationRequests', requestId), undefined, 'the request is gone');
+  });
+
+  it('declines with a note, refuses to approve a declined request, and lets the player withdraw', async () => {
+    const w = ashenCourt();
+    const { requestId }: any = await send(w, DMITRI_PLAYER, 'requestCreation');
+    await character(w.as(ST), { action: 'declineCreation', requestId, note: 'Trim the Celerity.' });
+    assert.equal(w.tables.row('creationRequests', requestId)!.note, 'Trim the Celerity.');
+    await rejects(character(w.as(ST), { action: 'approveCreation', requestId }), 409);
+    await character(w.as(DMITRI_PLAYER), { action: 'withdrawCreation', requestId });
+    assert.equal(w.tables.row('creationRequests', requestId), undefined);
+  });
+
+  it('caps a player at three open requests', async () => {
+    const w = ashenCourt();
+    for (let i = 0; i < 3; i++) await send(w, DMITRI_PLAYER, 'requestCreation');
+    await rejects(send(w, DMITRI_PLAYER, 'requestCreation'), 409);
+  });
+});
+
 describe('dhampirs', () => {
   const create = (w: any, sheet: any, dice = [3]) =>
     character(w.as(DMITRI_PLAYER, dice), { action: 'create', chronicleId: CHRONICLE, profile: { name: 'Mara Kell' }, sheet });

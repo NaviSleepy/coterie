@@ -68,6 +68,7 @@ const WATCHED: TableId[] = [
   'seals',
   'presence',
   'proposals',
+  'creationRequests',
   'library',
   'npcs',
 ];
@@ -77,6 +78,10 @@ const PRESENT_WITHIN_MS = 90_000;
 
 export class TableState {
   readonly chronicleId: string;
+  /** Where this table's pages live: the demo overrides it. */
+  get home(): string {
+    return `/c/${this.chronicleId}`;
+  }
   me = $state('');
   myName = $state('');
 
@@ -91,6 +96,8 @@ export class TableState {
   presence = $state<Record<string, AnyRow>>({});
   /** Keyed by character id. The owner sees their own; the Storyteller sees all. */
   proposals = $state<Record<string, AnyRow>>({});
+  /** New characters over the creation budget, waiting for the Storyteller. The player sees their own. */
+  creationRequests = $state<Record<string, AnyRow>>({});
   /** The Storyteller's reference entries, readable by the whole table. */
   library = $state<Record<string, AnyRow>>({});
   /** The Storyteller's NPCs. Players' reads come back empty: the rows are behind the screen. */
@@ -209,7 +216,7 @@ export class TableState {
     if (!chronicle) throw new Error('This chronicle does not exist, or you are not at its table.');
     const by = [Query.equal('chronicleId', this.chronicleId), Query.limit(100)];
 
-    const [scene, characters, profiles, rolls, rollSecrets, secrets, seals, presence, proposals, library, npcs, memberships] = await Promise.all([
+    const [scene, characters, profiles, rolls, rollSecrets, secrets, seals, presence, proposals, creationRequests, library, npcs, memberships] = await Promise.all([
       chronicle.currentSceneId ? getRow('scenes', chronicle.currentSceneId) : Promise.resolve(null),
       listRows('characters', by),
       listRows('profiles', by),
@@ -219,6 +226,7 @@ export class TableState {
       listRows('seals', by),
       listRows('presence', by),
       listRows('proposals', by),
+      listRows('creationRequests', by),
       listAll('library', [Query.equal('chronicleId', this.chronicleId)]),
       listRows('npcs', by),
       teams.listMemberships({ teamId: chronicle.teamId }),
@@ -234,6 +242,7 @@ export class TableState {
     this.seals = byId(seals);
     this.presence = byId(presence);
     this.proposals = byId(proposals);
+    this.creationRequests = byId(creationRequests);
     this.library = byId(library);
     this.npcs = byId(npcs);
     this.members = memberships.memberships.map((m) => ({ userId: m.userId, name: m.userName || 'Someone', roles: m.roles }));
@@ -319,6 +328,7 @@ export class TableState {
       case 'seals':
       case 'presence':
       case 'proposals':
+      case 'creationRequests':
       case 'library':
       case 'npcs':
       case 'profiles': {

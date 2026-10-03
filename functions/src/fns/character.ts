@@ -28,18 +28,29 @@
  * Body (approve):  characterId, revision
  * Body (reject):   characterId, note?
  * Body (delete):   characterId, name (the character's name, as a confirmation)
+ *
+ *   Creation is held to the V20 budget (engine creationCost) for players. A
+ *   sheet over it, or breaking a creation rule, is refused with 409
+ *   needs-approval; the player can send it as a request instead:
+ *   requestCreation  Stores the sheet for the Storyteller. Up to three open.
+ *   approveCreation  Storyteller only. Creates it exactly as sent, owned by the player.
+ *   declineCreation  Storyteller only. Keeps the request, declined, with a note.
+ *   withdrawCreation The player (or the Storyteller) drops a request.
+ * Body (requestCreation):  same as create
+ * Body (approveCreation, withdrawCreation): requestId
+ * Body (declineCreation):  requestId, note?
  */
 
 import { ID, Query } from 'node-appwrite';
 
-import { bloodPoolMax } from '../../../engine/src/index.ts';
-import { loadCharacterFor, loadChronicle, requireMember, requireStoryteller } from '../shared/auth.ts';
+import { bloodPoolMax, creationCost, describeCost } from '../../../engine/src/index.ts';
+import { isStoryteller, loadCharacterFor, loadChronicle, requireMember, requireStoryteller, type Chronicle } from '../shared/auth.ts';
 import { encodePatch, parseJson, type Character, type CharacterPatch } from '../shared/codec.ts';
 import { badRequest, entry, forbidden, HttpError, int, notFound, oneOf, optStr, str, type Ctx } from '../shared/http.ts';
 import { ledgerId, mutateCharacter } from '../shared/mutate.ts';
-import { characterPerms, profilePerms, storytellerOnly } from '../shared/perms.ts';
+import { characterPerms, profilePerms, requestPerms, storytellerOnly } from '../shared/perms.ts';
 import { checkSpecialties, PROPOSABLE, validateSheet } from '../shared/sheet.ts';
-import { isConflict } from '../shared/store.ts';
+import { isConflict, type Tx } from '../shared/store.ts';
 
 function profileFields(input: any) {
   const t = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
@@ -53,14 +64,27 @@ function profileFields(input: any) {
   };
 }
 
-async function create(ctx: Ctx, body: any) {
-  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
-  await requireMember(ctx, chronicle);
+type Sheet = Required<Pick<Character, 'generation' | 'attributes' | 'abilities' | 'specialties' | 'virtues' | 'willpowerPermanent'>> & Record<string, unknown>;
 
-  const profile = profileFields(body.profile);
-  const sheet = validateSheet(body.sheet ?? {}, false) as Required<Pick<Character, 'generation' | 'attributes' | 'abilities' | 'specialties' | 'virtues' | 'willpowerPermanent'>> & Record<string, unknown>;
+function creationSheet(input: unknown): Sheet {
+  const sheet = validateSheet((input ?? {}) as Record<string, unknown>, false) as Sheet;
   checkSpecialties(sheet as any);
+  return sheet;
+}
 
+/**
+ * Writes a new character and its profile in one transaction, owned by
+ * `ownerId`. `alsoStage` adds writes to the same transaction (an approved
+ * request is deleted with it).
+ */
+async function insertCharacter(
+  ctx: Ctx,
+  chronicle: Chronicle,
+  ownerId: string,
+  profile: ReturnType<typeof profileFields>,
+  sheet: Sheet,
+  alsoStage?: (tx: Tx) => Promise<void>,
+) {
   const characterId = ID.unique();
   // V20 starts a vampire's pool on a die roll; the server rolls it. A dhampir's
   // blood is made by their own living body, so they start full.
@@ -68,7 +92,7 @@ async function create(ctx: Ctx, body: any) {
 
   const row = {
     chronicleId: chronicle.$id,
-    ownerId: ctx.userId,
+    ownerId,
     ...encodePatch(sheet),
     willpowerTemporary: sheet.willpowerPermanent,
     willpowerSpentTurnRef: -1,
@@ -85,16 +109,91 @@ async function create(ctx: Ctx, body: any) {
   };
 
   await ctx.store.transaction(async (tx) => {
-    await tx.create('characters', characterId, row, characterPerms(chronicle.teamId, ctx.userId));
-    await tx.create(
-      'profiles',
-      characterId,
-      { chronicleId: chronicle.$id, ...profile },
-      profilePerms(chronicle.teamId, ctx.userId),
-    );
+    await tx.create('characters', characterId, row, characterPerms(chronicle.teamId, ownerId));
+    await tx.create('profiles', characterId, { chronicleId: chronicle.$id, ...profile }, profilePerms(chronicle.teamId, ownerId));
+    await alsoStage?.(tx);
   });
 
   return { characterId, bloodPool };
+}
+
+async function create(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  await requireMember(ctx, chronicle);
+
+  const profile = profileFields(body.profile);
+  const sheet = creationSheet(body.sheet);
+  // A player's new character must fit the creation budget; one that doesn't
+  // goes to the Storyteller as a request. The Storyteller's own DMPCs are theirs to judge.
+  if (!isStoryteller(ctx, chronicle)) {
+    const cost = creationCost(sheet);
+    if (!cost.ok) {
+      throw new HttpError(409, 'needs-approval', `This character needs the Storyteller's approval: ${describeCost(cost).join('; ')}.`);
+    }
+  }
+  return insertCharacter(ctx, chronicle, ctx.userId, profile, sheet);
+}
+
+/** Pending requests a player may have open at one table. */
+const MAX_OPEN_REQUESTS = 3;
+
+async function requestCreation(ctx: Ctx, body: any) {
+  const chronicle = await loadChronicle(ctx, str(body, 'chronicleId', 36));
+  await requireMember(ctx, chronicle);
+  const profile = profileFields(body.profile);
+  const sheet = creationSheet(body.sheet);
+  const mine = await ctx.store.list('creationRequests', [Query.equal('chronicleId', chronicle.$id), Query.equal('ownerId', ctx.userId), Query.limit(10)]);
+  if (mine.filter((r) => r.status !== 'declined').length >= MAX_OPEN_REQUESTS) {
+    throw new HttpError(409, 'too-many-requests', 'You already have characters waiting for the Storyteller. Withdraw one first.');
+  }
+  const requestId = ID.unique();
+  await ctx.store.create(
+    'creationRequests',
+    requestId,
+    {
+      chronicleId: chronicle.$id,
+      ownerId: ctx.userId,
+      profile: JSON.stringify(profile),
+      sheet: JSON.stringify(sheet),
+      cost: JSON.stringify(describeCost(creationCost(sheet))),
+      status: 'pending',
+      note: '',
+    },
+    requestPerms(chronicle.teamId, ctx.userId),
+  );
+  return { requestId };
+}
+
+async function loadRequest(ctx: Ctx, body: any) {
+  const request = await ctx.store.find('creationRequests', str(body, 'requestId', 36));
+  if (!request) throw notFound('Request');
+  const chronicle = await loadChronicle(ctx, request.chronicleId);
+  return { request, chronicle };
+}
+
+async function approveCreation(ctx: Ctx, body: any) {
+  const { request, chronicle } = await loadRequest(ctx, body);
+  requireStoryteller(ctx, chronicle);
+  if (request.status !== 'pending') throw new HttpError(409, 'not-pending', 'That request was already declined.');
+  // Validated again: the stored sheet is the player's, and rules can change.
+  const profile = profileFields(parseJson(request.profile, {}));
+  const sheet = creationSheet(parseJson(request.sheet, {}));
+  const out = await insertCharacter(ctx, chronicle, request.ownerId, profile, sheet, (tx) => tx.remove('creationRequests', request.$id));
+  return { ...out, ownerId: request.ownerId };
+}
+
+async function declineCreation(ctx: Ctx, body: any) {
+  const { request, chronicle } = await loadRequest(ctx, body);
+  requireStoryteller(ctx, chronicle);
+  await ctx.store.update('creationRequests', request.$id, { status: 'declined', note: optStr(body, 'note', 280) ?? '' });
+  return { requestId: request.$id };
+}
+
+async function withdrawCreation(ctx: Ctx, body: any) {
+  const { request, chronicle } = await loadRequest(ctx, body);
+  if (request.ownerId !== ctx.userId && !isStoryteller(ctx, chronicle)) throw forbidden('That request is not yours.');
+  await ctx.store.remove('creationRequests', request.$id);
+  return { requestId: request.$id };
 }
 
 /** Merges a validated patch onto the sheet, keeping the derived limits true. */
@@ -281,8 +380,8 @@ async function deleteCharacter(ctx: Ctx, body: any) {
 }
 
 export async function handler(ctx: Ctx, body: any) {
-  const action = oneOf(body, 'action', ['create', 'adjust', 'propose', 'withdraw', 'approve', 'reject', 'delete'] as const);
-  return { create, adjust, propose, withdraw, approve, reject, delete: deleteCharacter }[action](ctx, body);
+  const action = oneOf(body, 'action', ['create', 'adjust', 'propose', 'withdraw', 'approve', 'reject', 'delete', 'requestCreation', 'approveCreation', 'declineCreation', 'withdrawCreation'] as const);
+  return { create, adjust, propose, withdraw, approve, reject, delete: deleteCharacter, requestCreation, approveCreation, declineCreation, withdrawCreation }[action](ctx, body);
 }
 
 export default entry('character', handler);

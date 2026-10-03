@@ -4,3 +4,4 @@ export * from './health.ts';
 export * from './dice.ts';
 export * from './blood.ts';
 export * from './traits.ts';
+export * from './creation.ts';

@@ -4,6 +4,7 @@
   import CoterieCard from './CoterieCard.svelte';
   import LibraryPanel from './LibraryPanel.svelte';
   import NpcPanel from './NpcPanel.svelte';
+  import CreationRequests from './CreationRequests.svelte';
   import ProposalsReview from './ProposalsReview.svelte';
   import StControls from './StControls.svelte';
 
@@ -73,6 +74,7 @@
       </section>
 
       <NpcPanel {table} bind:fighting />
+      <CreationRequests {table} />
       <ProposalsReview {table} />
       <LibraryPanel {table} />
 

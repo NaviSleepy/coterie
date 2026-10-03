@@ -277,6 +277,29 @@ export const TABLES = {
   },
 
   /**
+   * A new character a player built over the creation budget (or against a
+   * creation rule), waiting for the Storyteller. Approving creates the sheet
+   * exactly as sent, owned by the player; declining keeps the request, with a
+   * note, so the player can see why. Read by its owner and the Storyteller.
+   */
+  creationRequests: {
+    id: 'creationRequests',
+    name: 'Creation requests',
+    permissions: [],
+    columns: [
+      str('chronicleId', 36, { required: true }),
+      str('ownerId', 36, { required: true }),
+      json('profile'),
+      json('sheet'),
+      // The budget in words, as the Storyteller sees it: one line per section over.
+      json('cost'),
+      { key: 'status', type: 'enum', elements: ['pending', 'declined'], default: 'pending' },
+      str('note', 280),
+    ],
+    indexes: [byChronicle],
+  },
+
+  /**
    * The table's reference library: clans and bloodlines, merits, flaws,
    * Disciplines and their individual powers, Paths of Enlightenment, Nature and Demeanor
    * archetypes, dhampir concepts, rituals and rites, weapons and armor, what each dot

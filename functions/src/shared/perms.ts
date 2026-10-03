@@ -33,6 +33,11 @@ export function profilePerms(teamId: string, ownerId: string): string[] {
   return [read(user(ownerId)), read(storytellers(teamId)), update(user(ownerId))];
 }
 
+/** A creation request: the player who sent it and the Storyteller. */
+export function requestPerms(teamId: string, ownerId: string): string[] {
+  return [read(user(ownerId)), read(storytellers(teamId))];
+}
+
 /** A secret: the Storyteller, plus exactly the users it has been revealed to. */
 export function secretPerms(teamId: string, visibleTo: string[]): string[] {
   return [read(storytellers(teamId)), ...visibleTo.map((id) => read(user(id)))];
