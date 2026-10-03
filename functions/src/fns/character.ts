@@ -339,6 +339,8 @@ async function deleteCharacter(ctx: Ctx, body: any) {
   });
   const proposal = await ctx.store.find('proposals', id);
   const sealed = await ctx.store.find('sealedDifficulties', id);
+  const reckoning = await ctx.store.find('reckonings', id);
+  const reckoningSeal = await ctx.store.find('reckoningSeals', id);
   const version = character.version + 1;
 
   try {
@@ -362,6 +364,8 @@ async function deleteCharacter(ctx: Ctx, body: any) {
       if (profile) await tx.remove('profiles', id);
       if (proposal) await tx.remove('proposals', id);
       if (sealed) await tx.remove('sealedDifficulties', id);
+      if (reckoning) await tx.remove('reckonings', id);
+      if (reckoningSeal) await tx.remove('reckoningSeals', id);
       for (const s of seals) await tx.remove('seals', s.$id);
       for (const sc of scenes) {
         const initiative = parseJson<{ characterId?: string }[]>(sc.initiative, []).filter((e) => e.characterId !== id);

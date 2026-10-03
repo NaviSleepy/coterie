@@ -21,15 +21,23 @@
     return mine ? 'You' : (r.characterName?.split(' ')[0] ?? 'Someone');
   }
 
+  /** A degeneration check's note splits into the sin, in the Storyteller's words, and what it cost. */
+  function reckoning(r: any): { sin: string; change: string; fell: boolean } | null {
+    if (r.kind !== 'degeneration' || !r.note) return null;
+    const m = /^(.*) — (.+ (falls to|holds at) \d+)$/s.exec(r.note);
+    return m ? { sin: m[1], change: m[2], fell: m[3] === 'falls to' } : null;
+  }
+
   function detail(r: any): string {
     const parts: string[] = [];
     const d = r.revealedDifficulty ?? table.rollSecrets[r.$id]?.difficulty;
-    if (r.revealedDifficulty) parts.push(`Difficulty ${d} · revealed by the Storyteller`);
+    if (r.kind === 'degeneration' && r.revealedDifficulty) parts.push(`Difficulty ${d}`);
+    else if (r.revealedDifficulty) parts.push(`Difficulty ${d} · revealed by the Storyteller`);
     else if (table.isStoryteller && d) parts.push(`Difficulty ${d}`);
     if (r.woundPenalty) parts.push(`−${r.woundPenalty} wounds`);
     if (r.ones && r.outcome !== 'success') parts.push(`${r.ones === 1 ? 'a 1' : `${r.ones} 1s`} cancel`);
     if (r.willpowerSpent) parts.push('Willpower spent');
-    if (r.note) parts.push(r.note);
+    if (r.note && !reckoning(r)) parts.push(r.note);
     if (r.refusal) parts.push(r.refusal);
     return parts.join(' · ');
   }
@@ -61,6 +69,11 @@
         </div>
         <span class="verdict {r.outcome}">{verdict(r)}</span>
       </div>
+      {#if reckoning(r)}
+        {@const k = reckoning(r)!}
+        <p class="sin">“{k.sin}”</p>
+        <p class="change" class:fell={k.fell}>{k.change}</p>
+      {/if}
       {#if detail(r)}<p class="detail">{detail(r)}</p>{/if}
       {#if table.replayed[r.$id]}<p class="detail away">While you were away</p>{/if}
       {#if r.visibility === 'storyteller'}<p class="detail hidden-tag">Hidden from the table</p>{/if}
@@ -69,6 +82,18 @@
 </section>
 
 <style>
+  .sin {
+    margin: 6px 0 2px;
+    font-style: italic;
+    overflow-wrap: anywhere;
+  }
+  .change {
+    margin: 0;
+    font-weight: 600;
+  }
+  .change.fell {
+    color: var(--oxblood);
+  }
   header {
     display: flex;
     justify-content: space-between;

@@ -155,7 +155,15 @@ The V20 arithmetic lives in `engine/src/dice.ts`, once:
 - **Willpower** buys one automatic success after resolution, **once per turn**. It can't rescue a botch.
 - **The botch rule is the chronicle's choice.** Tables disagree about whether ones cancelling successes to exactly zero is a botch. The Storyteller picks at setup; the engine never assumes.
 
-`virtueCheck` (degeneration, frenzy, rötschreck) routes through the same pipeline. Degeneration is Storyteller-only and requires the sin as text. A failure drops the Path rating in the same committed version as the roll, and the fall is logged to the table's feed.
+`virtueCheck` (degeneration, frenzy, rötschreck) routes through the same pipeline.
+
+Degeneration is never one click. It takes three deliberate steps:
+
+1. The Storyteller names the sin in their own words and picks a difficulty. The app ships no Hierarchy of Sins text, only what the Storyteller writes. The sin goes into `reckonings`, which the character's player and the Storyteller can read. The difficulty goes into `reckoningSeals`, which only the Storyteller can read.
+2. The player sees a dark card with the sin and what's at stake, and presses and holds "Face it" until a bar fills. Letting go early cancels it. Space or Enter works too. Only the character's own player can face it, never the Storyteller on their behalf. A sin can be faced once: a second press finds nothing to roll, because the check runs inside the compare-and-swap.
+3. The server rolls it. A failure drops the Path rating in the same committed version as the roll, and the sin, the difficulty and the change are logged to the feed. The table gets a banner either way: a red one for a fall, a quieter one when the character holds. On the player's own screen, the lost dot glows, cracks and falls away.
+
+The Storyteller can withdraw a laid sin before it's faced.
 
 ## Concurrency: a real compare-and-swap
 

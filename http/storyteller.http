@@ -120,3 +120,80 @@ Content-Type: application/json
     client.assert(response.body.responseStatusCode === 200, `expected 200, got ${response.body.responseStatusCode}`);
   });
 %}
+
+### Degeneration: the Storyteller lays a sin before a player's character
+POST {{endpoint}}/functions/virtueCheck/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"kind\":\"degeneration\",\"action\":\"lay\",\"sin\":\"Left a witness in the river\",\"difficulty\":7}" }
+
+> {%
+  client.test("the Storyteller names the sin", () => {
+    client.assert(response.body.responseStatusCode === 200, `expected 200, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Degeneration: the player reads the sin…
+GET {{endpoint}}/tablesdb/{{db}}/tables/reckonings/rows/{{playerCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("the sin reaches its player", () => {
+    client.assert(response.status === 200, `expected 200, got ${response.status}`);
+    client.assert(response.body.sin === "Left a witness in the river");
+    client.assert(response.body.difficulty === undefined, "the difficulty is not on the sin's row");
+  });
+%}
+
+### …but not the difficulty
+GET {{endpoint}}/tablesdb/{{db}}/tables/reckoningSeals/rows/{{playerCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtPlayer}}
+
+> {%
+  client.test("the difficulty stays behind the screen until the roll", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### …and another player sees neither
+GET {{endpoint}}/tablesdb/{{db}}/tables/reckonings/rows/{{playerCharacterId}}
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtOther}}
+
+> {%
+  client.test("a sin is between the Storyteller and that player", () => {
+    client.assert(response.status === 404, `expected 404, got ${response.status}`);
+  });
+%}
+
+### Degeneration: the Storyteller cannot roll it for them in one click
+POST {{endpoint}}/functions/virtueCheck/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"kind\":\"degeneration\",\"action\":\"face\"}" }
+
+> {%
+  client.test("only the character's player faces it", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}
+
+### Degeneration: the Storyteller withdraws it
+POST {{endpoint}}/functions/virtueCheck/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStoryteller}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"characterId\":\"{{playerCharacterId}}\",\"kind\":\"degeneration\",\"action\":\"withdraw\"}" }
+
+> {%
+  client.test("a laid sin can be withdrawn before it is faced", () => {
+    client.assert(response.body.responseStatusCode === 200, `expected 200, got ${response.body.responseStatusCode}`);
+  });
+%}

@@ -72,6 +72,8 @@ const WATCHED: TableId[] = [
   'creationRequests',
   'library',
   'npcs',
+  'reckonings',
+  'reckoningSeals',
 ];
 
 const HEARTBEAT_MS = 30_000;
@@ -102,6 +104,9 @@ export class TableState {
   proposals = $state<Record<string, AnyRow>>({});
   /** New characters over the creation budget, waiting for the Storyteller. The player sees their own. */
   creationRequests = $state<Record<string, AnyRow>>({});
+  /** Sins laid before characters, keyed by character id; the seals (difficulties) only reach the Storyteller. */
+  reckonings = $state<Record<string, AnyRow>>({});
+  reckoningSeals = $state<Record<string, AnyRow>>({});
   /** The Storyteller's reference entries, readable by the whole table. */
   library = $state<Record<string, AnyRow>>({});
   /** The Storyteller's NPCs. Players' reads come back empty: the rows are behind the screen. */
@@ -220,7 +225,7 @@ export class TableState {
     if (!chronicle) throw new Error('This chronicle does not exist, or you are not at its table.');
     const by = [Query.equal('chronicleId', this.chronicleId), Query.limit(100)];
 
-    const [scene, characters, profiles, rolls, rollSecrets, secrets, seals, presence, proposals, creationRequests, library, npcs, memberships] = await Promise.all([
+    const [scene, characters, profiles, rolls, rollSecrets, secrets, seals, presence, proposals, creationRequests, library, npcs, reckonings, reckoningSeals, memberships] = await Promise.all([
       chronicle.currentSceneId ? getRow('scenes', chronicle.currentSceneId) : Promise.resolve(null),
       listRows('characters', by),
       listRows('profiles', by),
@@ -233,6 +238,8 @@ export class TableState {
       listRows('creationRequests', by),
       listAll('library', [Query.equal('chronicleId', this.chronicleId)]),
       listRows('npcs', by),
+      listRows('reckonings', by),
+      listRows('reckoningSeals', by),
       teams.listMemberships({ teamId: chronicle.teamId }),
     ]);
 
@@ -249,6 +256,8 @@ export class TableState {
     this.creationRequests = byId(creationRequests);
     this.library = byId(library);
     this.npcs = byId(npcs);
+    this.reckonings = byId(reckonings);
+    this.reckoningSeals = byId(reckoningSeals);
     this.members = memberships.memberships.map((m) => ({ userId: m.userId, name: m.userName || 'Someone', roles: m.roles }));
     this.settlePending();
   }
@@ -335,6 +344,8 @@ export class TableState {
       case 'creationRequests':
       case 'library':
       case 'npcs':
+      case 'reckonings':
+      case 'reckoningSeals':
       case 'profiles': {
         const map = this[table === 'rollSecrets' ? 'rollSecrets' : table] as Record<string, AnyRow>;
         if (deleted) delete map[row.$id];

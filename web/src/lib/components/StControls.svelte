@@ -19,6 +19,8 @@
   let hiddenLabel = $state('Perception + Alertness');
   let hiddenDifficulty = $state(7);
   let xp = $state(0);
+  const laid = $derived(table.reckonings[character.$id]);
+  const first = $derived(table.nameOf(character.$id).split(' ')[0] || 'them');
 
   // Direct edits: the Storyteller's changes go straight to the sheet, through the ledger.
   let draft = $state<Draft | null>(null);
@@ -85,15 +87,22 @@
 
     <div class="block">
       <h3 class="label">Degeneration</h3>
-      <p class="hint">Logged to the feed with the sin. A failure costs a point of {character.path}, and the table sees it fall.</p>
-      <textarea bind:value={sin} rows="2" placeholder="The sin that calls for it"></textarea>
-      <div class="row">
-        <input type="number" min="2" max="10" bind:value={degenDifficulty} aria-label="Difficulty" />
-        <button class="btn solid" disabled={!sin.trim()} onclick={async () => {
-          const ok = await table.act('virtueCheck', { characterId: character.$id, kind: 'degeneration', sin, difficulty: degenDifficulty });
-          if (ok) sin = '';
-        }}>Call for the check</button>
-      </div>
+      {#if laid}
+        <p class="laid">Waiting for {first} to face it: <q>{laid.sin}</q>{#if table.reckoningSeals[character.$id]}{' '}· difficulty {table.reckoningSeals[character.$id].difficulty}{/if}</p>
+        <div class="row">
+          <button class="btn quiet" onclick={() => table.act('virtueCheck', { characterId: character.$id, kind: 'degeneration', action: 'withdraw' })}>Withdraw it</button>
+        </div>
+      {:else}
+        <p class="hint">Name what {first} did, in your own words. {first}'s player faces it on their own screen; a failure costs a point of {character.path}, and the table sees it fall.</p>
+        <textarea bind:value={sin} rows="2" maxlength="280" placeholder="What did they do?" aria-label="The sin, in your words"></textarea>
+        <div class="row">
+          <label class="diff">Difficulty <input type="number" min="2" max="10" bind:value={degenDifficulty} /></label>
+          <button class="btn solid" disabled={!sin.trim() || character.pathRating <= 0} onclick={async () => {
+            const ok = await table.act('virtueCheck', { characterId: character.$id, kind: 'degeneration', action: 'lay', sin: sin.trim(), difficulty: degenDifficulty });
+            if (ok) sin = '';
+          }}>Lay it before {first}</button>
+        </div>
+      {/if}
       <div class="row">
         <button class="btn quiet" onclick={() => table.act('virtueCheck', { characterId: character.$id, kind: 'frenzy', difficulty })}>Frenzy check</button>
         <button class="btn quiet" onclick={() => table.act('virtueCheck', { characterId: character.$id, kind: 'rotschreck', difficulty })}>Rötschreck</button>
@@ -136,6 +145,15 @@
 </section>
 
 <style>
+  .laid {
+    margin: 0 0 8px;
+    font-style: italic;
+  }
+  .diff {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
   .between {
     justify-content: space-between;
     align-items: center;
