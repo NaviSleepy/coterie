@@ -67,7 +67,7 @@
       </p>
       {#if character.template !== 'dhampir' && character.generation >= 14}
         <p class="thin">{character.generation >= 15
-          ? 'Thin-blooded: 6 of 10 blood usable, two for one · Disciplines up to 3 · no ghouls, bonds or childer · sunlight does lethal, not aggravated · food stays down for an hour.'
+          ? 'Thin-blooded: 6 of 10 blood usable, two for one · Disciplines up to 3 · no ghouls, bonds or childer · sunlight does lethal, soaked with Stamina, at most 3 a turn, and Rötschreck from it is 2 easier to resist · food stays down for an hour.'
           : 'Thin-blooded: 8 of 10 blood usable · Disciplines up to 4.'}</p>
       {/if}
       {#if character.title}

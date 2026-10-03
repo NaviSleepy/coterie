@@ -1,5 +1,6 @@
 import type { CharacterState, EngineResult } from './types.ts';
 import { bloodPerTurn, bloodPoolMax } from './generation.ts';
+import { canSpendWillpower } from './traits.ts';
 
 /**
  * How thin blood changes spending, from V20's Flaws. `reserve` is the bottom
@@ -150,4 +151,45 @@ export function spentThisTurn(character: CharacterState, sceneTurn: number): num
 
 export function remainingThisTurn(character: CharacterState, sceneTurn: number): number {
   return bloodPerTurn(character.generation) - spentThisTurn(character, sceneTurn);
+}
+
+/** What reawakening the body costs: a Willpower point and five blood, never doubled. */
+export const REAWAKEN_BLOOD = 5;
+
+export interface ReawakenOutcome {
+  bloodPool: number;
+  willpowerTemporary: number;
+  willpowerSpentTurnRef: number;
+}
+
+/**
+ * Time of Thin Blood's "anomalous biological activity": a thin-blooded
+ * vampire spends a Willpower point and five blood to reawaken some mortal
+ * function for a night (digesting a meal, a heartbeat, the anatomy for a
+ * child). The five aren't doubled, but they can't come out of the reserve.
+ * It isn't a combat action, so the per-turn blood cap doesn't apply;
+ * Willpower keeps its once-a-turn rule.
+ */
+export function reawakenBody(
+  c: { generation: number; template?: string | null; bloodPool: number; willpowerTemporary: number; willpowerSpentTurnRef: number },
+  rules: BloodRules,
+  sceneTurn: number,
+): EngineResult<ReawakenOutcome> {
+  if (c.template === 'dhampir' || c.generation < 14) {
+    return { ok: false, reason: 'not-thin-blooded', message: 'Only the thin-blooded (14th and 15th Generation) can reawaken the body.' };
+  }
+  const wp = canSpendWillpower(c.willpowerTemporary, c.willpowerSpentTurnRef, sceneTurn);
+  if (!wp.ok) return { ok: false, reason: 'willpower', message: wp.message };
+  if (c.bloodPool < REAWAKEN_BLOOD) {
+    return { ok: false, reason: 'insufficient-blood', message: `Reawakening takes ${REAWAKEN_BLOOD} blood; there are ${c.bloodPool} in the pool.` };
+  }
+  if (c.bloodPool - REAWAKEN_BLOOD < rules.reserve) {
+    return { ok: false, reason: 'thin-blood-reserve', message: `Reawakening takes ${REAWAKEN_BLOOD} blood, and the last ${rules.reserve} only keep you rising. Feed first.` };
+  }
+  return {
+    ok: true,
+    bloodPool: c.bloodPool - REAWAKEN_BLOOD,
+    willpowerTemporary: c.willpowerTemporary - 1,
+    willpowerSpentTurnRef: sceneTurn,
+  };
 }

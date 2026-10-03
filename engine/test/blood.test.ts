@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { bloodRules, feed, remainingThisTurn, spendBlood, spentThisTurn, usableBlood } from '../src/blood.ts';
+import { bloodRules, feed, reawakenBody, remainingThisTurn, spendBlood, spentThisTurn, usableBlood } from '../src/blood.ts';
 import { bloodPerTurn, bloodPoolMax, disciplineCap, generationLimits, isThinBlooded, isValidGeneration } from '../src/generation.ts';
 import { EMPTY_TRACK } from '../src/health.ts';
 import type { CharacterState } from '../src/types.ts';
@@ -177,5 +177,17 @@ describe('thin blood', () => {
     }
     const low = spendBlood(isolde({ generation: 15, bloodPool: 5 }), 1, -1, bloodRules({ generation: 15 }));
     assert.ok(!low.ok && low.reason === 'thin-blood-reserve');
+  });
+
+  it('reawakens the body for a Willpower point and five blood, undoubled, never from the reserve', () => {
+    const base = { willpowerTemporary: 3, willpowerSpentTurnRef: -1 };
+    const ok = reawakenBody({ ...base, generation: 15, bloodPool: 9 }, bloodRules({ generation: 15 }), -1);
+    assert.ok(ok.ok && ok.bloodPool === 4 && ok.willpowerTemporary === 2);
+    const reserve = reawakenBody({ ...base, generation: 15, bloodPool: 8 }, bloodRules({ generation: 15 }), -1);
+    assert.ok(!reserve.ok && reserve.reason === 'thin-blood-reserve');
+    const strong = reawakenBody({ ...base, generation: 13, bloodPool: 10 }, bloodRules({ generation: 13 }), -1);
+    assert.ok(!strong.ok && strong.reason === 'not-thin-blooded');
+    const tired = reawakenBody({ ...base, willpowerTemporary: 0, generation: 14, bloodPool: 10 }, bloodRules({ generation: 14 }), -1);
+    assert.ok(!tired.ok && tired.reason === 'willpower');
   });
 });

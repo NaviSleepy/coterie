@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { bloodRules, usableBlood } from '$engine/index.ts';
+  import { bloodRules, isThinBlooded, REAWAKEN_BLOOD, usableBlood } from '$engine/index.ts';
   import type { Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
   import BloodPool from './BloodPool.svelte';
@@ -32,6 +32,22 @@
     }
   }
 
+  /** Time of Thin Blood: a thin-blood can buy back a mortal function for the night. */
+  const canReawaken = $derived(character.template !== 'dhampir' && isThinBlooded(character.generation));
+  let reawakening = $state(false);
+  let reawakenFor = $state('');
+  async function reawaken() {
+    refusal = null;
+    const out = await table.act('spendBlood', { characterId: character.$id, reawaken: true, reason: reawakenFor.trim() || undefined });
+    if (out) {
+      reawakening = false;
+      reawakenFor = '';
+    } else {
+      refusal = table.error;
+      table.error = null;
+    }
+  }
+
   const hurt = $derived(character.healthBashing + character.healthLethal > 0);
 </script>
 
@@ -51,6 +67,17 @@
       <button class="btn" onclick={spend} disabled={usable === 0}>Spend blood</button>
     </div>
   </div>
+  {#if canReawaken}
+    {#if reawakening}
+      <form class="reawaken" onsubmit={(e) => { e.preventDefault(); void reawaken(); }}>
+        <input bind:value={reawakenFor} placeholder="Eating, a heartbeat, a child…" aria-label="What to reawaken" maxlength="120" />
+        <button class="btn">Spend {REAWAKEN_BLOOD} blood + 1 Willpower</button>
+        <button type="button" class="btn quiet" onclick={() => (reawakening = false)}>Cancel</button>
+      </form>
+    {:else}
+      <button class="linkish" onclick={() => (reawakening = true)}>Reawaken the body for the night…</button>
+    {/if}
+  {/if}
   {#if refusal}
     <div class="refusal" role="alert">
       <span class="label">Spend refused</span>
@@ -64,6 +91,26 @@
 </section>
 
 <style>
+  .reawaken {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .reawaken input {
+    flex: 1;
+    min-width: 160px;
+  }
+  .linkish {
+    background: none;
+    border: none;
+    padding: 0;
+    margin-top: 6px;
+    color: var(--ink-faint);
+    text-decoration: underline dotted;
+    font-size: 0.85rem;
+    justify-self: start;
+  }
   .thin {
     margin: 4px 0 0;
     font-size: 0.88rem;

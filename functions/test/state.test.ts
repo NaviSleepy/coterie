@@ -166,4 +166,15 @@ describe('thin blood', () => {
     const out: any = await spendBlood(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, amount: 1 });
     assert.equal(out.bloodPool, 4);
   });
+
+  it('reawakens a thin-blood\'s body for a Willpower point and five blood, and no one else\'s', async () => {
+    const w = ashenCourt();
+    thin(w, 15, { bloodPool: 10, willpowerTemporary: 3, willpowerSpentTurnRef: -1 });
+    const out: any = await spendBlood(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, reawaken: true, reason: 'dinner with her mother' });
+    assert.equal(out.bloodPool, 5);
+    assert.equal(out.willpowerTemporary, 2);
+    assert.ok(w.tables.rows('ledger').some((r: any) => /reawakened the body \(dinner with her mother\)/.test(r.summary)));
+    await rejects(spendBlood(w.as(ISOLDE_PLAYER), { characterId: DMITRI, reawaken: true }), 403);
+    await rejects(spendBlood(w.as(DMITRI_PLAYER), { characterId: DMITRI, reawaken: true }), 422, 'not-thin-blooded');
+  });
 });

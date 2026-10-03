@@ -92,15 +92,38 @@ describe('character creation budget', () => {
   it('counts a thin-blooded Generation as its Flaw, once, and holds it to the thin-blood limits', () => {
     const fourteenth = creationCost({ ...base, generation: 14 });
     assert.equal(fourteenth.thinBloodFlaw, 2);
-    assert.equal(fourteenth.freebieBudget, 17);
+    assert.equal(fourteenth.freebieBudget, 20, 'Time of Thin Blood: 18, plus the Flaw');
     const listed = creationCost({ ...base, generation: 15, flaws: [{ name: 'Fifteenth Generation', points: 4 }] });
     assert.equal(listed.thinBloodFlaw, 0);
-    assert.equal(listed.freebieBudget, 19, 'listed once, not twice');
+    assert.equal(listed.freebieBudget, 22, 'listed once, not twice');
     const capped = creationCost({ ...base, generation: 15, flaws: [{ name: 'Thin Blood', points: 4 }] });
     assert.equal(capped.flawRefund, 7, 'still under the seven-point cap');
     const rules = creationCost({ ...base, generation: 15, disciplines: [{ name: 'Obfuscate', level: 4 }], backgrounds: [{ name: 'Generation', level: 1 }, { name: 'Status', level: 1 }] });
     assert.equal(rules.problems.length, 2);
     assert.equal(rules.blocked.length, 1);
     assert.equal(creationCost({ ...base, generation: 15, template: 'dhampir' }).thinBloodFlaw, 0);
+  });
+
+  it('holds the thin-blooded to Time of Thin Blood\'s budget: 6/5/3, 12/8/5, two Disciplines at ten, 18 freebies', () => {
+    const c = creationCost({ ...base, generation: 14, disciplines: [{ name: 'Celerity', level: 3 }], attributes: attrs({ strength: 4, dexterity: 4 }) });
+    assert.equal(c.budget, 'thinBlooded');
+    assert.equal(c.lines.find((l) => l.key === 'attributes')!.budget, 14);
+    assert.equal(c.lines.find((l) => l.key === 'disciplines')!.freebies, 10);
+    assert.equal(c.freebieBudget, 20, '18 plus the 2-point Flaw');
+    assert.equal(creationCost({ ...base, generation: 13 }).budget, 'vampire');
+    assert.equal(creationCost({ ...base, generation: 15, template: 'dhampir' }).budget, 'dhampir');
+  });
+
+  it('makes every 15th-Generation vampire Caitiff and keeps Insight for the thin-blooded', () => {
+    assert.ok(creationCost({ ...base, generation: 15, clan: 'Toreador' }).problems.some((p) => /Caitiff/.test(p)));
+    assert.equal(creationCost({ ...base, generation: 15, clan: 'Caitiff' }).problems.length, 0);
+    assert.equal(creationCost({ ...base, generation: 14, clan: 'Toreador' }).problems.length, 0);
+    assert.ok(creationCost({ ...base, generation: 12, backgrounds: [{ name: 'Insight', level: 2 }] }).problems.some((p) => /Insight/.test(p)));
+    assert.equal(creationCost({ ...base, generation: 15, backgrounds: [{ name: 'Insight', level: 2 }] }).problems.length, 0);
+  });
+
+  it('lets a campaign change the thin-blooded budget on its own', () => {
+    assert.deepEqual(cleanCreationOverrides({ thinBlooded: { freebies: 21 } }), { thinBlooded: { freebies: 21 } });
+    assert.equal(creationCost({ ...base, generation: 15 }, { thinBlooded: { freebies: 21 } }).freebieBudget, 25);
   });
 });
