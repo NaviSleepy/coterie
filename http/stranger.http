@@ -65,3 +65,17 @@ Content-Type: application/json
     client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
   });
 %}
+
+### Cannot raise the red card at a table they don't sit at
+POST {{endpoint}}/functions/chronicle/executions
+X-Appwrite-Project: {{project}}
+X-Appwrite-JWT: {{jwtStranger}}
+Content-Type: application/json
+
+{ "async": false, "body": "{\"action\":\"redCard\",\"chronicleId\":\"{{chronicleId}}\"}" }
+
+> {%
+  client.test("stranger cannot stop someone else's game", () => {
+    client.assert(response.body.responseStatusCode === 403, `expected 403, got ${response.body.responseStatusCode}`);
+  });
+%}

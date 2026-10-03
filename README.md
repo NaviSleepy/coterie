@@ -128,6 +128,12 @@ The player screen's right column shows two more panels, built from the library.
 
 "Create a DMPC" on the screen opens the same creation form, and the character is created with the Storyteller as its owner. It goes through the same validation and blood roll as anyone else's and has the same permissions: the Storyteller reads it, players don't, and nobody writes it except through Functions. The screen marks it DMPC. The Storyteller plays it from "My sheet", where the roll panel builds pools from its traits as it does for a player. There's no proposal step, because the Storyteller edits the sheet directly from the screen.
 
+### The red card
+
+Every screen at the table carries a red card in the corner. Anyone seated, players and Storyteller alike, can raise it with one tap. A banner then goes up for the whole table: the current thread stops, and nobody has to explain why. The Storyteller rewinds, skips past it or takes the scene somewhere else, then clears the card. Only the Storyteller can clear it.
+
+The card is anonymous by design. The `chronicle` Function's `redCard` action stores only *when* a card went up (`chronicles.redCardAt`), never who raised it. A second raise while one is already up changes nothing, so the timestamp can't give away who pressed it later. The raiser's own screen remembers that it was theirs, and nothing else does. No client can write the chronicle row directly, and someone not at the table gets a 403.
+
 ### The reference library is the Storyteller's words, not the book's
 
 Each chronicle has a library of clans and bloodlines, merits, flaws, Disciplines and their individual powers, Paths of Enlightenment, Backgrounds and house rules, written up by the Storyteller and readable by the whole table. An entry is a name, a cost for merits and flaws, a summary, and an optional page reference like `V20 p. 481` for anyone who owns the book. When a player picks a clan or a Path, or adds a merit or flaw while proposing changes or at character creation, the editor offers the library's names, fills in the cost, and shows the summary under the field. The sheet shows it as a tooltip. Attributes and Abilities can have a write-up too: a summary line, then a line per dot starting with that many bullets (`••• Good: …`). The sheet shows the whole ladder on hover with the character's rating marked, a tap opens the current dot's line, and the editors show it under each trait as it changes.

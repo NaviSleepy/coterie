@@ -583,6 +583,15 @@ export class DemoTable extends TableState {
         }
         break;
       case 'chronicle': {
+        if (b.action === 'redCard') {
+          if (!this.chronicle!.redCardAt) this.chronicle = { ...this.chronicle!, redCardAt: new Date().toISOString() };
+          return { redCardAt: this.chronicle!.redCardAt };
+        }
+        if (b.action === 'clearRedCard') {
+          if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller can do that.');
+          this.chronicle = { ...this.chronicle!, redCardAt: null };
+          return { redCardAt: null };
+        }
         if (b.action === 'update' && b.creationRules !== undefined) {
           if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller can do that.');
           let rules;
