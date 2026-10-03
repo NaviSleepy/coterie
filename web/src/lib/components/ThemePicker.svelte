@@ -5,8 +5,12 @@
 
 <label class="picker">
   <span class="caps">Theme</span>
-  <select value={theme.id} onchange={(e) => theme.set((e.currentTarget as HTMLSelectElement).value as ThemeId)} title={theme.current.mood}>
-    {#each THEMES as t (t.id)}
+  <select value={theme.id} onchange={(e) => {
+    const id = (e.currentTarget as HTMLSelectElement).value as ThemeId;
+    if (theme.id === 'malkavian') theme.toggleMalkavian();
+    theme.set(id);
+  }} title={theme.current.mood}>
+    {#each THEMES.filter((t) => !t.hidden || t.id === theme.id) as t (t.id)}
       <option value={t.id}>{t.name}</option>
     {/each}
   </select>

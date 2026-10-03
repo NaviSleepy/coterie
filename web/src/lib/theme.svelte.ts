@@ -5,7 +5,7 @@
  * lexicon: what the blood pool, the roll and the feed are called in its world.
  */
 
-export type ThemeId = 'camarilla' | 'classical' | 'darkages' | 'toreador' | 'jazz' | 'sabbat';
+export type ThemeId = 'camarilla' | 'classical' | 'darkages' | 'toreador' | 'jazz' | 'sabbat' | 'malkavian';
 
 export interface Lexicon {
   blood: string;
@@ -26,6 +26,8 @@ export interface Theme {
   /** Google Fonts css2 families, beyond the Cormorant every page loads. */
   fonts: string | null;
   words: Lexicon;
+  /** Not in the picker until found (the Malkavian skin: the Konami code). Never saved. */
+  hidden?: boolean;
 }
 
 const GOOGLE = 'https://fonts.googleapis.com/css2?display=swap&';
@@ -79,6 +81,22 @@ export const THEMES: Theme[] = [
     fonts: 'family=Pirata+One&family=Courier+Prime:wght@400;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400',
     words: { blood: 'Vitae', rollPanel: 'The rite', rollButton: 'Strike', feed: 'War party log', sealed: 'held by the Priest', sealMark: 'S' },
   },
+  {
+    id: 'malkavian',
+    name: 'Malkavian (?)',
+    mood: 'Everything slightly wrong, on purpose',
+    dark: false,
+    fonts: 'family=Special+Elite',
+    hidden: true,
+    words: {
+      blood: 'Blood Pond',
+      rollPanel: 'The next roll (probably)',
+      rollButton: 'Ask nicely',
+      feed: 'Things that happened, allegedly',
+      sealed: "hidden where even the Storyteller can't find it",
+      sealMark: '?',
+    },
+  },
 ];
 
 const KEY = 'coterie-theme';
@@ -87,7 +105,8 @@ const byId = (id: string | null | undefined) => THEMES.find((t) => t.id === id) 
 
 function read(): ThemeId {
   try {
-    return byId(localStorage.getItem(KEY)).id;
+    const t = byId(localStorage.getItem(KEY));
+    return t.hidden ? 'camarilla' : t.id;
   } catch {
     return 'camarilla';
   }
@@ -102,7 +121,24 @@ class ThemeState {
     return this.current.words;
   }
 
+  /** The theme to return to when the Malkavian visit ends. */
+  private sane: ThemeId = 'camarilla';
+
+  /** The Konami code: in, and out again. The Malkavian skin is for this visit only. */
+  toggleMalkavian(): boolean {
+    if (this.id === 'malkavian') {
+      this.id = this.sane;
+      apply(byId(this.sane));
+      return false;
+    }
+    this.sane = this.id;
+    this.id = 'malkavian';
+    apply(byId('malkavian'));
+    return true;
+  }
+
   set(id: ThemeId) {
+    if (byId(id).hidden) return;
     this.id = id;
     apply(byId(id));
     try {

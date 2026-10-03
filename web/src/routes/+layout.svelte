@@ -5,11 +5,21 @@
   import { session } from '$lib/session.svelte';
   import { apply, theme } from '$lib/theme.svelte';
   import ThemePicker from '$lib/components/ThemePicker.svelte';
+  import { listenForKonami } from '$lib/konami';
 
   let { children } = $props();
+  let whisper = $state<string | null>(null);
+  let whisperTimer: ReturnType<typeof setTimeout> | undefined;
+
   onMount(() => {
     apply(theme.current);
     void session.load();
+    return listenForKonami(() => {
+      const mad = theme.toggleMalkavian();
+      whisper = mad ? 'The Cobweb has noticed you.' : 'The voices quiet down. For now.';
+      clearTimeout(whisperTimer);
+      whisperTimer = setTimeout(() => (whisper = null), 3200);
+    });
   });
 </script>
 
@@ -19,6 +29,8 @@
 {:else}
   <p class="loading">Lighting the candles…</p>
 {/if}
+
+{#if whisper}<p class="whisper" role="status">{whisper}</p>{/if}
 
 <footer>
   <p class="skin"><ThemePicker /></p>
@@ -45,6 +57,27 @@
   }
   footer a {
     color: inherit;
+  }
+  .whisper {
+    position: fixed;
+    left: 50%;
+    top: 30%;
+    transform: translateX(-50%);
+    z-index: 60;
+    margin: 0;
+    padding: 14px 22px;
+    background: var(--screen);
+    color: var(--screen-ink);
+    font-style: italic;
+    font-size: 1.2rem;
+    letter-spacing: 0.04em;
+    pointer-events: none;
+    animation: whisper 3.2s ease both;
+  }
+  @keyframes whisper {
+    0% { opacity: 0; filter: blur(4px); }
+    15%, 75% { opacity: 1; filter: none; }
+    100% { opacity: 0; filter: blur(2px); }
   }
   .skin {
     margin: 0 0 12px;

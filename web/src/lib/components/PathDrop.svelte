@@ -18,6 +18,7 @@
     toreador: 'A correction is printed',
     jazz: 'The gold tarnishes',
     sabbat: 'The mark is scored',
+    malkavian: 'The number disagrees',
   };
   const first = $derived(name.split(' ')[0] || name);
 </script>
@@ -58,6 +59,13 @@
       <span class="new">{to}</span>
     </div>
     <p class="caption log">Deviation logged. {path} {from} → {to}.</p>
+  {:else if theme.id === 'malkavian'}
+    <div class="stage">
+      <span class="old">{from}</span>
+      <span class="wrong" aria-hidden="true">{Math.min(10, from + 1)}?</span>
+      <span class="new">{to}</span>
+    </div>
+    <p class="caption">The number went down. Or everything else went up. Either way, it's {to} now, probably.</p>
   {:else}
     <div class="stage">
       <span class="seal" aria-hidden="true"><i class="half left"></i><i class="half right"></i></span>
@@ -115,6 +123,26 @@
       opacity: 0;
       transform: translateY(-8px);
     }
+  }
+
+  /* Malkavian: the wrong answer arrives first. */
+  .malkavian .old {
+    text-decoration: line-through wavy #8fbf3a;
+  }
+  .wrong {
+    font-family: var(--display);
+    font-size: 2.2rem;
+    color: #8fbf3a;
+    animation: unsure 1.4s ease forwards;
+  }
+  @keyframes unsure {
+    0% { opacity: 0; transform: rotate(-8deg); }
+    40% { opacity: 1; transform: rotate(6deg); }
+    100% { opacity: 0.25; transform: rotate(-3deg) translateY(4px); text-decoration: line-through; }
+  }
+  .malkavian .new {
+    color: #c79bf0;
+    text-shadow: 1px 0 rgb(255 0 90 / 0.5), -1px 0 rgb(0 190 255 / 0.5);
   }
 
   /* Camarilla: the seal breaks. */

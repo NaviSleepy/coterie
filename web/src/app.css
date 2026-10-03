@@ -356,6 +356,28 @@ body.lights-out::after {
   }
 }
 
+/* Malkavian (hidden; the Konami code): everything slightly wrong, on purpose. */
+:root[data-theme='malkavian'] {
+  --cream: #efeaf3;
+  --paper: #f8f5fb;
+  --ink: #1e1430;
+  --ink-soft: #57476b;
+  --ink-faint: #8a7c9c;
+  --rule: #d4c8e0;
+  --gold: #8fbf3a;
+  --gold-soft: #b9db7c;
+  --oxblood: #7b2cbf;
+  --oxblood-deep: #5a1d90;
+  --blush: #eadff5;
+  --screen: #221632;
+  --screen-ink: #efe8f7;
+  --screen-rule: #43305c;
+  --display: 'Special Elite', 'Courier New', monospace;
+  --pip-radius: 40% 60% 55% 45%;
+  --die-radius: 3px 9px 4px 8px;
+  --vial-radius: 2px 8px 9px 3px;
+}
+
 /* ── Skin details: headings, frames and rules that tokens alone can't draw ── */
 
 h1,
@@ -485,4 +507,32 @@ h3 {
 }
 [data-theme='sabbat'] .sheet .lineage {
   color: var(--oxblood);
+}
+
+/* Malkavian: nothing sits quite straight, and the type sees double. */
+[data-theme='malkavian'] .panel:nth-of-type(odd) {
+  transform: rotate(-0.35deg);
+}
+[data-theme='malkavian'] .panel:nth-of-type(even) {
+  transform: rotate(0.3deg) translateX(2px);
+}
+[data-theme='malkavian'] h1,
+[data-theme='malkavian'] h2 {
+  text-shadow: 1px 0 rgb(255 0 90 / 0.45), -1px 0 rgb(0 190 255 / 0.45);
+}
+[data-theme='malkavian'] .dots > span:nth-child(3n) {
+  translate: 0 2px;
+}
+[data-theme='malkavian'] .die:nth-child(odd) {
+  rotate: -4deg;
+}
+[data-theme='malkavian'] header.bar .mark {
+  display: inline-block;
+  transform: rotate(-2deg);
+}
+[data-theme='malkavian'] header.bar .mark::after {
+  content: '?';
+  font-size: 0.6em;
+  vertical-align: super;
+  color: var(--gold);
 }
