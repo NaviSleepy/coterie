@@ -2,6 +2,10 @@
 
 **Play Vampire: The Masquerade online with your friends, all at one shared table.**
 
+### 🦇 [Open Coterie](https://coterie-staging.appwrite.network) · 🎲 [Try the demo, no account needed](https://coterie-staging.appwrite.network/demo) · ☕ [Support on Ko-fi](https://ko-fi.com/sleepynavi)
+
+![The Storyteller's screen in Coterie's Jazz Age theme: a scene with initiative order, an NPC, and hidden rolls behind the screen](docs/img/screenshot-jazz.png)
+
 Coterie is a free website for groups who play *Vampire: The Masquerade, 20th Anniversary Edition* (V20). It puts everything you'd normally have on paper (character sheets, dice, blood pools, the Storyteller's notes) into the browser, and it keeps everyone's screen in sync as you play. When someone rolls, spends blood or takes a wound, the whole table sees it straight away.
 
 It works on a laptop, a tablet or a phone. There's nothing to install.
@@ -12,10 +16,14 @@ It works on a laptop, a tablet or a phone. There's nothing to install.
 
 ## Try it
 
-- **See it in action without an account:** open the demo at `/demo` on the Coterie site. It's a sample table with a ready-made group of characters. You can switch between a player's view and the Storyteller's view, and nothing you do is saved.
-- **Play for real:** sign in, then either **start a campaign** (you become its Storyteller) or **join one** with the invite code your Storyteller gives you.
+**Website: [coterie-staging.appwrite.network](https://coterie-staging.appwrite.network)**
 
-The test version of the site lives at **coterie-staging.appwrite.network**.
+1. **Look around first: [open the demo](https://coterie-staging.appwrite.network/demo).** It's a sample table with a ready-made group of characters, and you don't need an account. Use the link at the top of the page to switch between a player's seat and the Storyteller's screen. Nothing you do there is saved, so click everything.
+2. **Play for real: [sign in](https://coterie-staging.appwrite.network).** Then do one of these:
+   - **Start a campaign.** You become its Storyteller, and you get an invite code to share with your players.
+   - **Join a campaign** with the invite code your Storyteller gives you, then build your character.
+
+> Coterie is still being tested. This is its test server, so things may change, and now and then a campaign may need to be reset. Bug reports and ideas are very welcome.
 
 ---
 
@@ -47,6 +55,8 @@ The test version of the site lives at **coterie-staging.appwrite.network**.
 - **The dawn warning.** In the half hour before *your* local sunrise, warm light creeps in from the edges of the screen as a reminder that it's getting late.
 
 ## Make it yours
+
+![The same Storyteller's screen in the default Camarilla theme: cream, gold and oxblood](docs/img/screenshot-camarilla.png)
 
 Everyone picks their own look from **Theme** at the top of the page:
 
