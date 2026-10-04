@@ -84,7 +84,7 @@ export const THEMES: Theme[] = [
   {
     id: 'daysleep',
     name: 'Daysleep',
-    mood: 'Dream stowaway: midnight navy, starlight and counting sheep',
+    mood: "Rem's dream stowaway: midnight navy, a periwinkle nightcap, starlight and counting sheep",
     dark: true,
     fonts: 'family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600;1,9..144,700&family=Nunito:wght@400;600;700',
     words: { blood: 'Blood', rollPanel: 'Counting sheep', rollButton: 'Drift off', feed: 'Dream journal', sealed: 'kept by the Storyteller while you sleep', sealMark: '' },
