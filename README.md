@@ -83,7 +83,11 @@ It doesn't include any text from the rulebooks; you and your Storyteller write t
 
 ## Is it official?
 
-No. Coterie is a free, unofficial fan project. *Vampire: The Masquerade* belongs to Paradox Interactive, and V20 is published by Onyx Path. Coterie isn't made or endorsed by either.
+<img src="docs/img/dark-pack.png" alt="Dark Pack" width="96" align="right" />
+
+No. Coterie is a free, unofficial fan project, made under Paradox Interactive's [Dark Pack agreement](https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement) for World of Darkness fan content. **Coterie is not official World of Darkness material**, and it isn't made or endorsed by Paradox Interactive or Onyx Path. It's free, with no purchases inside it, and it doesn't reproduce text from the books.
+
+Portions of the materials are the copyrights and trademarks of Paradox Interactive AB, and are used with permission. All rights reserved. For more information please visit [worldofdarkness.com](https://www.worldofdarkness.com).
 
 ---
 
