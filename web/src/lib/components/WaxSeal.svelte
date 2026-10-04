@@ -3,7 +3,11 @@
   let { size = 34, mark }: { size?: number; mark?: string } = $props();
 </script>
 
-<span class="seal" style:--s={`${size}px`} aria-hidden="true">{mark ?? theme.words.sealMark}</span>
+<span class="seal" style:--s={`${size}px`} aria-hidden="true">
+  {#if !mark && theme.id === 'daysleep'}
+    <svg class="eye" viewBox="0 0 24 24"><path d="M4 10 Q12 17 20 10" /><path d="M6 12.5 L4.5 15 M9.5 14.2 L9 17 M14.5 14.2 L15 17 M18 12.5 L19.5 15" /></svg>
+  {:else}{mark ?? theme.words.sealMark}{/if}
+</span>
 
 <style>
   .seal {
@@ -22,6 +26,20 @@
     font-style: italic;
     font-size: calc(var(--s) * 0.42);
     font-family: var(--serif);
+  }
+  /* Daysleep: a sleeping eye on a pale moon. */
+  :global(:root[data-theme='daysleep']) .seal {
+    border-radius: 50%;
+    background: #f3ecd6;
+    box-shadow: 0 0 14px rgb(243 236 214 / 0.3);
+  }
+  .eye {
+    width: 70%;
+    height: 70%;
+    fill: none;
+    stroke: #1b2148;
+    stroke-width: 1.8;
+    stroke-linecap: round;
   }
   /* Jazz Age: the Storyteller's chip, red with a white-dashed rim. */
   :global(:root[data-theme='jazz']) .seal {

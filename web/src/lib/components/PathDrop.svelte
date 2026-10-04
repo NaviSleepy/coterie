@@ -19,6 +19,7 @@
     jazz: 'The gold tarnishes',
     sabbat: 'The mark is scored',
     malkavian: 'The number disagrees',
+    daysleep: 'A star goes out',
   };
   const first = $derived(name.split(' ')[0] || name);
 </script>
@@ -59,6 +60,13 @@
       <span class="new">{to}</span>
     </div>
     <p class="caption log">Deviation logged. {path} {from} → {to}.</p>
+  {:else if theme.id === 'daysleep'}
+    <div class="stage">
+      <span class="stars" aria-hidden="true">{#each Array(from) as _, i (i)}<i class:lost={i === to}></i>{/each}</span>
+      <span class="old">{from}</span>
+      <span class="new">{to}</span>
+    </div>
+    <p class="caption">One of the little lights slips off the edge of the sky while you sleep, and the count comes up one short.</p>
   {:else if theme.id === 'malkavian'}
     <div class="stage">
       <span class="old">{from}</span>
@@ -123,6 +131,56 @@
       opacity: 0;
       transform: translateY(-8px);
     }
+  }
+
+  /* Daysleep: a star goes out and falls. */
+  .stars {
+    display: inline-flex;
+    gap: 6px;
+  }
+  .stars i {
+    position: relative;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #f2cf63;
+    box-shadow: 0 0 8px rgb(242 207 99 / 0.6);
+  }
+  .stars i.lost {
+    animation: shoot 1.8s 0.5s ease-in forwards;
+  }
+  .stars i.lost::after {
+    content: '';
+    position: absolute;
+    right: 70%;
+    top: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(to left, rgb(242 207 99 / 0.8), transparent);
+    animation: tail 1.8s 0.5s ease-in forwards;
+  }
+  @keyframes shoot {
+    to {
+      transform: translate(70px, 46px);
+      opacity: 0;
+      box-shadow: none;
+    }
+  }
+  @keyframes tail {
+    30% {
+      width: 40px;
+    }
+    to {
+      width: 0;
+    }
+  }
+  .daysleep .old {
+    font-size: 2rem;
+    color: var(--screen-ink);
+  }
+  .daysleep .new {
+    color: #f2cf63;
+    font-style: italic;
   }
 
   /* Malkavian: the wrong answer arrives first. */

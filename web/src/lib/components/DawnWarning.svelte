@@ -6,9 +6,8 @@
    * theirs, which stays in this browser.
    */
   import { onDestroy, onMount } from 'svelte';
-  import { dawnState, guessCoords, type Coords, type DawnState } from '$lib/dawn';
+  import { COORDS_KEY, dawnState, guessCoords, localCoords, type Coords, type DawnState } from '$lib/dawn';
 
-  const KEY = 'coterie-dawn-coords';
   const DISMISSED = 'coterie-dawn-dismissed';
 
   let coords = $state<Coords>(guessCoords(undefined, 0));
@@ -17,20 +16,10 @@
   let locating = $state(false);
   let timer: ReturnType<typeof setInterval> | undefined;
 
-  function load(): Coords {
-    try {
-      const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null');
-      if (saved && typeof saved.lat === 'number' && typeof saved.lon === 'number') return { lat: saved.lat, lon: saved.lon, source: 'device' };
-    } catch {
-      // No storage: guess.
-    }
-    return guessCoords(Intl.DateTimeFormat().resolvedOptions().timeZone, new Date().getTimezoneOffset());
-  }
-
   const tick = () => (dawn = dawnState(new Date(), coords));
 
   onMount(() => {
-    coords = load();
+    coords = localCoords();
     try {
       dismissed = localStorage.getItem(DISMISSED);
     } catch {
@@ -49,7 +38,7 @@
         // Two decimals is a neighbourhood, plenty for a sunrise.
         coords = { lat: Math.round(p.coords.latitude * 100) / 100, lon: Math.round(p.coords.longitude * 100) / 100, source: 'device' };
         try {
-          localStorage.setItem(KEY, JSON.stringify({ lat: coords.lat, lon: coords.lon }));
+          localStorage.setItem(COORDS_KEY, JSON.stringify({ lat: coords.lat, lon: coords.lon }));
         } catch {
           // Kept for this visit only.
         }

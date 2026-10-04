@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { dawnState, guessCoords, nextSunrise, sunriseOn } from '../src/lib/dawn.ts';
+import { dawnState, guessCoords, nextSunrise, sunriseOn, untilDawn } from '../src/lib/dawn.ts';
 
 const CHICAGO = { lat: 41.88, lon: -87.63 };
 const near = (a: Date, iso: string, minutes = 4) =>
@@ -33,6 +33,12 @@ describe('dawn', () => {
   it('says nothing in a polar night', () => {
     assert.equal(sunriseOn(new Date('2026-12-21T12:00:00Z'), 78.22, 15.63), null);
     assert.equal(dawnState(new Date('2026-12-21T06:00:00Z'), { lat: 78.22, lon: 15.63 }).minutes, null);
+  });
+
+  it('counts hours and minutes until dawn', () => {
+    const sunrise = sunriseOn(new Date('2026-10-03T12:00:00Z'), CHICAGO.lat, CHICAGO.lon)!;
+    assert.equal(untilDawn(new Date(sunrise.getTime() - (2 * 60 + 14) * 60_000), CHICAGO), '2 h 14 m');
+    assert.equal(untilDawn(new Date('2026-12-21T06:00:00Z'), { lat: 78.22, lon: 15.63 }), null);
   });
 
   it('guesses from the time zone, then the offset', () => {
