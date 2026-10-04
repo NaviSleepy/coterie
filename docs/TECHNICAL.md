@@ -169,6 +169,10 @@ A few rolls hatch something in the feed (`lib/dice-eggs.ts`):
 
 The flicker and the glow animation play only when a roll arrives live, never on reload. The flicker is skipped when someone prefers reduced motion. The eggs are decoration on rolls the server already made; they never change a result.
 
+### The roll strip
+
+When a roll lands, its result drops in across the top of the screen (`RollBanner.svelte`): who rolled, what, the dice and the verdict. Only the player who rolled and the Storyteller get the strip. Everyone at the table still sees the roll in the feed as usual, and hidden rolls never reach players at all. The Storyteller's strip marks those *Behind the screen*. The strip clears itself after seven seconds or on ×. It doesn't fire for rolls that were already there when the page loaded, for degeneration checks (they have their own banner), or for a roll already shown on the Old Sport roulette wheel.
+
 ### Old Sport
 
 A Jazz Age secret. While the Jazz Age skin is on, typing a new "Old Sport" into your private notes opens the back room (`lib/oldsport.svelte.ts`). From then on, pressing **Shoot** brings your dice to a roulette table with ten pockets, 1 to 10. You spin it by hand, one die per spin, or **Let it ride**. The server has already rolled the dice; the wheel only turns to each value in turn, and your own feed holds the roll back until you **Collect**, so the result isn't spoiled. It's kept in that browser, only applies in Jazz Age, and **Back to the dice** turns it off.

@@ -8,6 +8,7 @@
   import RedCard from '$lib/components/RedCard.svelte';
   import FallBanner from '$lib/components/FallBanner.svelte';
   import DawnWarning from '$lib/components/DawnWarning.svelte';
+  import RollBanner from '$lib/components/RollBanner.svelte';
 
   let { children } = $props();
 
@@ -29,6 +30,7 @@
 <RedCard {table} />
 <FallBanner {table} />
 <DawnWarning />
+<RollBanner {table} />
 
 {#if failed}
   <p class="failed error">{failed}</p>

@@ -23,7 +23,7 @@ The test version of the site lives at **coterie-staging.appwrite.network**.
 
 - **Make a character, with help.** A step-by-step form walks you through V20 character creation and keeps a running budget of your points. If you go over, you can trim it back or send it to your Storyteller to approve.
 - **Keep your sheet in one place.** Attributes, abilities, Disciplines and their powers, backgrounds, merits and flaws, rituals, gear, Humanity or Path, Willpower and health, all on one page. Hover over a dot to see what that rating means.
-- **Roll dice.** Pick what you're rolling and press the button. The site rolls the dice and everyone sees the result. Often only the Storyteller knows how hard the roll was until they choose to reveal it.
+- **Roll dice.** Pick what you're rolling and press the button. The site rolls the dice, and your result drops in across the top of your screen; your Storyteller sees it there too. Then it goes into the table's roll log for everyone. Often only the Storyteller knows how hard the roll was until they choose to reveal it.
 - **Track blood.** Spend blood, heal wounds, and watch the page itself get darker and redder as your character gets hungry.
 - **Ask for changes.** Want to raise a skill or buy a new merit? Propose it, and your Storyteller approves it.
 - **Upload a portrait** of your character. Only you and your Storyteller can see it.
