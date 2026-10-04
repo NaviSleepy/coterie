@@ -39,6 +39,9 @@
   --pip-radius: 50%;
   --pip-rotate: 0deg;
   --pip-gap: 3px;
+  --pip: var(--ink);
+  --pip-empty: var(--ink);
+  --panel-radius: 0;
   --die-radius: 0;
   --vial-w: 17px;
   --vial-h: 24px;
@@ -356,6 +359,38 @@ body.lights-out::after {
   }
 }
 
+/* Daysleep: a dream stowaway. Midnight navy, starlight, counting sheep. */
+:root[data-theme='daysleep'] {
+  --cream: #151a3b;
+  --paper: #1f2654;
+  --ink: #ecebf8;
+  --ink-soft: #b9b8d9;
+  --ink-faint: #8084ad;
+  --rule: #4a5293;
+  --gold: #f2cf63;
+  --gold-soft: #f7e09a;
+  --oxblood: #ea5a74;
+  --oxblood-deep: #c8435b;
+  --blush: #2c3470;
+  --screen: #262e62;
+  --screen-ink: #ecebf8;
+  --screen-rule: #4a5293;
+  --serif: 'Nunito', 'Helvetica Neue', Arial, sans-serif;
+  --display: 'Fraunces', Georgia, serif;
+  --caps: 'Nunito', 'Helvetica Neue', Arial, sans-serif;
+  --solid: #f2cf63;
+  --solid-ink: #1b2148;
+  --solid-hover: #f7e09a;
+  --pip: #f2cf63;
+  --pip-empty: #8084ad;
+  --pip-gap: 4px;
+  --panel-radius: 22px;
+  --die-radius: 10px;
+  --vial-w: 19px;
+  --vial-h: 19px;
+  --vial-radius: 50%;
+}
+
 /* Malkavian (hidden; the Konami code): everything slightly wrong, on purpose. */
 :root[data-theme='malkavian'] {
   --cream: #efeaf3;
@@ -535,4 +570,88 @@ h3 {
   font-size: 0.6em;
   vertical-align: super;
   color: var(--gold);
+}
+
+/* Daysleep: soft dashed pillows of panels under a scatter of stars. */
+[data-theme='daysleep'] .panel,
+[data-theme='daysleep'] section.roll {
+  border: 2px dashed var(--rule);
+  border-radius: var(--panel-radius);
+}
+[data-theme='daysleep'] section.roll {
+  background: var(--screen);
+}
+[data-theme='daysleep'] header.bar {
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 46px;
+  background:
+    radial-gradient(1.4px 1.4px at 3% 72%, #f2cf63 98%, transparent) ,
+    radial-gradient(1px 1px at 11% 86%, #ecebf8 98%, transparent),
+    radial-gradient(1.6px 1.6px at 19% 66%, #f2cf63 98%, transparent),
+    radial-gradient(1px 1px at 27% 90%, #ecebf8 98%, transparent),
+    radial-gradient(1.3px 1.3px at 36% 74%, #f2cf63 98%, transparent),
+    radial-gradient(1px 1px at 44% 84%, #b9b8d9 98%, transparent),
+    radial-gradient(1.7px 1.7px at 52% 68%, #f2cf63 98%, transparent),
+    radial-gradient(1px 1px at 61% 88%, #ecebf8 98%, transparent),
+    radial-gradient(1.4px 1.4px at 69% 72%, #f2cf63 98%, transparent),
+    radial-gradient(1px 1px at 77% 82%, #b9b8d9 98%, transparent),
+    radial-gradient(1.5px 1.5px at 85% 70%, #f2cf63 98%, transparent),
+    radial-gradient(1px 1px at 93% 88%, #ecebf8 98%, transparent),
+    radial-gradient(1.3px 1.3px at 98% 76%, #f2cf63 98%, transparent);
+}
+[data-theme='daysleep'] header.bar .mark {
+  color: var(--gold);
+  font-family: var(--display);
+  font-weight: 600;
+  text-transform: lowercase;
+}
+[data-theme='daysleep'] h1 {
+  font-weight: 700;
+}
+[data-theme='daysleep'] h2,
+[data-theme='daysleep'] .sheet h2 {
+  font-style: italic;
+  font-weight: 700;
+  color: var(--gold-soft);
+}
+[data-theme='daysleep'] .sheet .lineage,
+[data-theme='daysleep'] .label {
+  color: var(--gold);
+  font-variant: normal;
+}
+[data-theme='daysleep'] section.roll .label {
+  font-family: var(--serif);
+  letter-spacing: 0.04em;
+}
+[data-theme='daysleep'] .die {
+  border-color: var(--rule);
+}
+[data-theme='daysleep'] .die.ten {
+  background: var(--gold);
+  color: #1b2148;
+  border-color: var(--gold);
+}
+[data-theme='daysleep'] .die.one {
+  background: var(--oxblood);
+  border-color: var(--oxblood);
+}
+[data-theme='daysleep'] .portrait.empty {
+  border-radius: 50%;
+  aspect-ratio: 1;
+  border: none;
+  background: radial-gradient(circle at 68% 38%, var(--paper) 0 47%, transparent 48%), #f3ecd6;
+  box-shadow: 0 0 22px 2px rgb(243 236 214 / 0.25);
+}
+[data-theme='daysleep'] .portrait.empty span {
+  visibility: hidden;
+}
+[data-theme='daysleep'] .btn,
+[data-theme='daysleep'] .caps {
+  font-variant: normal;
+  letter-spacing: 0.02em;
+}
+[data-theme='daysleep'] .btn {
+  font-family: var(--serif);
+  font-weight: 600;
+  border-radius: 4px;
 }

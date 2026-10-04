@@ -129,7 +129,7 @@ The player screen's right column shows two more panels, built from the library.
 
 "Create a DMPC" on the screen opens the same creation form, and the character is created with the Storyteller as its owner. It goes through the same validation and blood roll as anyone else's and has the same permissions: the Storyteller reads it, players don't, and nobody writes it except through Functions. The screen marks it DMPC. The Storyteller plays it from "My sheet", where the roll panel builds pools from its traits as it does for a player. There's no proposal step, because the Storyteller edits the sheet directly from the screen.
 
-### Six skins
+### Seven skins
 
 Everyone picks their own look from **Theme** in the top bar or the page footer:
 
@@ -141,6 +141,7 @@ Everyone picks their own look from **Theme** in the top bar or the page footer:
 | Toreador | A fashion quarterly: Didone names, spaced sans-serif caps, one crimson. |
 | Jazz Age | Black lacquer, gold deco, a green-felt roll table, diamond pips and a poker-chip seal. |
 | Sabbat | Bone and blackletter, typewritten labels, square pips, slashed vitae and a torn red edge. |
+| Daysleep | A dream stowaway: midnight navy with a starfield, soft dashed panels, butter-yellow pips, round blood drops and a crescent moon for a portrait. Rolls are "Counting sheep" and **Drift off**, the feed is the "Dream journal", the difficulty sits behind a sleeping-eye seal, the masthead counts hours until your dawn, and a lost Path dot falls like a shooting star. |
 
 Each skin is a set of CSS tokens under `[data-theme]` in `app.css`: colours, fonts, pip, die and vial shapes, and the solid button. A skin also has a small lexicon in `lib/theme.svelte.ts`. For example, the roll is "Tonight's performance" and "Perform" in Toreador, and "The rite" and "Strike" in Sabbat. When a degeneration check fails, each skin shows its own moment: the seal breaks, the marble cracks, the ink runs, a correction is printed, the gold tarnishes, the mark is scored.
 

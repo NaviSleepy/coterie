@@ -2,6 +2,18 @@
   import { page } from '$app/state';
   import type { TableState } from '$lib/table.svelte';
   import ThemePicker from './ThemePicker.svelte';
+  import { theme } from '$lib/theme.svelte';
+  import { localCoords, untilDawn } from '$lib/dawn';
+
+  // Daysleep keeps an eye on the sky: hours until this player's sunrise, by the minute.
+  let dawn = $state<string | null>(null);
+  $effect(() => {
+    if (theme.id !== 'daysleep') return;
+    const tick = () => (dawn = untilDawn(new Date(), localCoords()));
+    tick();
+    const t = setInterval(tick, 60_000);
+    return () => clearInterval(t);
+  });
 
   let { table, base }: { table: TableState; base: string } = $props();
 
@@ -25,6 +37,7 @@
       {#if table.scene}Scene — {table.scene.name} · Turn {table.scene.turn}{:else}Between scenes{/if}
     </span>
   {/if}
+  {#if theme.id === 'daysleep' && dawn}<span class="dawn">Hours until dawn: {dawn}</span>{/if}
   <nav>
     {#if table.isStoryteller}
       {#if page.url.pathname.endsWith('/screen')}
@@ -72,6 +85,14 @@
     color: var(--screen-ink);
     padding: 0.2em 0.8em;
     font-size: 0.9rem;
+  }
+  .dawn {
+    margin-left: auto;
+    color: var(--ink);
+    font-size: 0.95rem;
+  }
+  .dawn + nav {
+    margin-left: 0;
   }
   nav {
     margin-left: auto;

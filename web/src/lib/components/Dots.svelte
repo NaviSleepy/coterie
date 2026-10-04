@@ -20,9 +20,10 @@
     height: var(--pip-size);
     border-radius: var(--pip-radius);
     transform: rotate(var(--pip-rotate));
-    border: 1px solid var(--ink);
+    border: 1px solid var(--pip-empty);
   }
   span span.on {
-    background: var(--ink);
+    background: var(--pip);
+    border-color: var(--pip);
   }
 </style>

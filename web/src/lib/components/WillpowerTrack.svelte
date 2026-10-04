@@ -39,6 +39,13 @@
   .on {
     background: var(--ink);
   }
+  .dot {
+    border-color: var(--pip-empty);
+  }
+  .dot.on {
+    background: var(--pip);
+    border-color: var(--pip);
+  }
   .sq.cap {
     border-color: var(--rule);
   }

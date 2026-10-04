@@ -96,3 +96,25 @@ export function guessCoords(timeZone: string | undefined, offsetMinutes: number)
   if (z) return { lat: z[0], lon: z[1], source: 'zone' };
   return { lat: 40, lon: (-offsetMinutes / 60) * 15, source: 'offset' };
 }
+
+/** Where the browser keeps a location the player chose to share. */
+export const COORDS_KEY = 'coterie-dawn-coords';
+
+/** This player's coordinates: the ones they shared, else a guess from the time zone. Browser only. */
+export function localCoords(): Coords {
+  try {
+    const saved = JSON.parse(localStorage.getItem(COORDS_KEY) ?? 'null');
+    if (saved && typeof saved.lat === 'number' && typeof saved.lon === 'number') return { lat: saved.lat, lon: saved.lon, source: 'device' };
+  } catch {
+    // No storage: guess.
+  }
+  return guessCoords(Intl.DateTimeFormat().resolvedOptions().timeZone, new Date().getTimezoneOffset());
+}
+
+/** "2 h 14 m" until the next sunrise, or null when there isn't one (polar night). */
+export function untilDawn(now: Date, c: Pick<Coords, 'lat' | 'lon'>): string | null {
+  const s = nextSunrise(now, c);
+  if (!s) return null;
+  const mins = Math.max(0, Math.round((s.getTime() - now.getTime()) / 60_000));
+  return `${Math.floor(mins / 60)} h ${mins % 60} m`;
+}

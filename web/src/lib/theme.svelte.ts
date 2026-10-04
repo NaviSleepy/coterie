@@ -5,7 +5,7 @@
  * lexicon: what the blood pool, the roll and the feed are called in its world.
  */
 
-export type ThemeId = 'camarilla' | 'classical' | 'darkages' | 'toreador' | 'jazz' | 'sabbat' | 'malkavian';
+export type ThemeId = 'camarilla' | 'classical' | 'darkages' | 'toreador' | 'jazz' | 'sabbat' | 'daysleep' | 'malkavian';
 
 export interface Lexicon {
   blood: string;
@@ -80,6 +80,14 @@ export const THEMES: Theme[] = [
     dark: true,
     fonts: 'family=Pirata+One&family=Courier+Prime:wght@400;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400',
     words: { blood: 'Vitae', rollPanel: 'The rite', rollButton: 'Strike', feed: 'War party log', sealed: 'held by the Priest', sealMark: 'S' },
+  },
+  {
+    id: 'daysleep',
+    name: 'Daysleep',
+    mood: 'Dream stowaway: midnight navy, starlight and counting sheep',
+    dark: true,
+    fonts: 'family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600;1,9..144,700&family=Nunito:wght@400;600;700',
+    words: { blood: 'Blood', rollPanel: 'Counting sheep', rollButton: 'Drift off', feed: 'Dream journal', sealed: 'kept by the Storyteller while you sleep', sealMark: '' },
   },
   {
     id: 'malkavian',
