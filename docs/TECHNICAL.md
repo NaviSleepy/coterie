@@ -169,6 +169,10 @@ A few rolls hatch something in the feed (`lib/dice-eggs.ts`):
 
 The flicker and the glow animation play only when a roll arrives live, never on reload. The flicker is skipped when someone prefers reduced motion. The eggs are decoration on rolls the server already made; they never change a result.
 
+### Old Sport
+
+A Jazz Age secret. While the Jazz Age skin is on, typing a new "Old Sport" into your private notes opens the back room (`lib/oldsport.svelte.ts`). From then on, pressing **Shoot** brings your dice to a roulette table with ten pockets, 1 to 10. You spin it by hand, one die per spin, or **Let it ride**. The server has already rolled the dice; the wheel only turns to each value in turn, and your own feed holds the roll back until you **Collect**, so the result isn't spoiled. It's kept in that browser, only applies in Jazz Age, and **Back to the dice** turns it off.
+
 ### A private notepad
 
 Every seat at the table has a notepad: on the player's screen next to the feed, and behind the Storyteller's screen. Use it for names, debts, and who lied to whom. It saves itself a moment after you stop typing, and again when you leave the page. Notes carry no stakes, so the client writes them directly, like presence. Each person has one row per chronicle, and its permissions name only its author. Other players can't read it, and neither can the Storyteller. A player's notes are just as private from the Storyteller as the Storyteller's are from the players.

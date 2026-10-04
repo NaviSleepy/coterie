@@ -1,6 +1,7 @@
 <script lang="ts">
   import { theme } from '$lib/theme.svelte';
   import { eggOf } from '$lib/dice-eggs';
+  import { oldSport } from '$lib/oldsport.svelte';
   import type { TableState } from '$lib/table.svelte';
   import { parseJson } from '$shared/codec.ts';
   import Die from './Die.svelte';
@@ -70,7 +71,7 @@
     <p class="empty">No dice have fallen yet.</p>
   {/if}
 
-  {#each table.rolls as r (r.$id)}
+  {#each table.rolls.filter((r) => !(oldSport.holding && table.fresh[r.$id] && r.characterId === oldSport.holding)) as r (r.$id)}
     {@const dice = parseJson<{ value: number; rerolled: boolean }[]>(r.dice, [])}
     {@const egg = eggFor(r)}
     {@const difficulty = r.revealedDifficulty ?? (table.isStoryteller ? (table.rollSecrets[r.$id]?.difficulty ?? null) : null)}
