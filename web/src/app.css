@@ -586,15 +586,15 @@ h3 {
   padding-bottom: 46px;
   background:
     radial-gradient(1.4px 1.4px at 3% 72%, #f2cf63 98%, transparent) ,
-    radial-gradient(1px 1px at 11% 86%, #ecebf8 98%, transparent),
+    radial-gradient(1.5px 1.5px at 11% 86%, #9fc4f0 98%, transparent),
     radial-gradient(1.6px 1.6px at 19% 66%, #f2cf63 98%, transparent),
     radial-gradient(1px 1px at 27% 90%, #ecebf8 98%, transparent),
     radial-gradient(1.3px 1.3px at 36% 74%, #f2cf63 98%, transparent),
-    radial-gradient(1px 1px at 44% 84%, #b9b8d9 98%, transparent),
+    radial-gradient(1.6px 1.6px at 44% 84%, #9fc4f0 98%, transparent),
     radial-gradient(1.7px 1.7px at 52% 68%, #f2cf63 98%, transparent),
     radial-gradient(1px 1px at 61% 88%, #ecebf8 98%, transparent),
     radial-gradient(1.4px 1.4px at 69% 72%, #f2cf63 98%, transparent),
-    radial-gradient(1px 1px at 77% 82%, #b9b8d9 98%, transparent),
+    radial-gradient(1.5px 1.5px at 77% 82%, #9fc4f0 98%, transparent),
     radial-gradient(1.5px 1.5px at 85% 70%, #f2cf63 98%, transparent),
     radial-gradient(1px 1px at 93% 88%, #ecebf8 98%, transparent),
     radial-gradient(1.3px 1.3px at 98% 76%, #f2cf63 98%, transparent);
@@ -635,12 +635,39 @@ h3 {
   background: var(--oxblood);
   border-color: var(--oxblood);
 }
+/* An empty portrait is Rem: a black, fluffy face with two glowing, half-lidded eyes that blink. */
 [data-theme='daysleep'] .portrait.empty {
+  position: relative;
   border-radius: 50%;
   aspect-ratio: 1;
   border: none;
-  background: radial-gradient(circle at 68% 38%, var(--paper) 0 47%, transparent 48%), #f3ecd6;
-  box-shadow: 0 0 22px 2px rgb(243 236 214 / 0.25);
+  background: radial-gradient(circle at 50% 55%, #1c1c22 58%, #0b0b0f 100%);
+  box-shadow: 0 0 0 3px #7d93e8, 0 0 22px rgb(159 196 240 / 0.35);
+}
+[data-theme='daysleep'] .portrait.empty::before,
+[data-theme='daysleep'] .portrait.empty::after {
+  content: '';
+  position: absolute;
+  top: 34%;
+  width: 27%;
+  height: 32%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 70%, #ffffff, #dff3fa 70%);
+  transform-origin: 50% 80%;
+  animation: rem-blink 7s infinite;
+}
+/* Heavy lids that droop toward the beak: half asleep, as ever. */
+[data-theme='daysleep'] .portrait.empty::before {
+  left: 19%;
+  clip-path: polygon(0 36%, 50% 40%, 100% 47%, 100% 100%, 0 100%);
+}
+[data-theme='daysleep'] .portrait.empty::after {
+  right: 19%;
+  clip-path: polygon(0 47%, 50% 40%, 100% 36%, 100% 100%, 0 100%);
+}
+@keyframes rem-blink {
+  0%, 93%, 100% { transform: scaleY(1); }
+  96% { transform: scaleY(0.08); }
 }
 [data-theme='daysleep'] .portrait.empty span {
   visibility: hidden;
@@ -654,4 +681,26 @@ h3 {
   font-family: var(--serif);
   font-weight: 600;
   border-radius: 4px;
+}
+
+/* Rem's nightcap on the masthead: periwinkle, wavy stripes, a star and a tassel. */
+[data-theme='daysleep'] header.bar .mark {
+  position: relative;
+}
+[data-theme='daysleep'] header.bar .mark::before {
+  content: '';
+  position: absolute;
+  left: -20px;
+  top: -27px;
+  width: 44px;
+  height: 39px;
+  transform: rotate(-18deg);
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 30'%3E%3Cpath d='M2 26 Q9 6 24 3 Q29 9 30 17 Q24 13 20 15 Q15 22 14 27 Z' fill='%236376dc'/%3E%3Cpath d='M6 20 Q11 17 13 21 M10 13 Q15 10 18 14 M16 7 Q21 5 24 9' stroke='%239fc4f0' stroke-width='1.6' fill='none'/%3E%3Cpath d='M2 26 Q8 28 14 27' stroke='%239fc4f0' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='30.5' cy='19' r='2.6' fill='%239fc4f0'/%3E%3Cpath d='M18 20 l0.8 1.6 1.7.2-1.2 1.2.3 1.7-1.6-.8-1.6.8.3-1.7-1.2-1.2 1.7-.2z' fill='%23bfe0ff'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+/* The roll panel in Rem's pajamas: faint wavy stripes. */
+[data-theme='daysleep'] section.roll {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Cpath d='M0 12 Q12 4 24 12 T48 12 M0 36 Q12 28 24 36 T48 36' stroke='%233a4593' stroke-width='5' fill='none' opacity='0.55'/%3E%3C/svg%3E") 0 0 / 48px 48px,
+    var(--screen);
 }
