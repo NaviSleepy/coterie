@@ -1,5 +1,5 @@
 /**
- * Permission strings, built in one place so the matrix in the README is
+ * Permission strings, built in one place so the matrix in docs/TECHNICAL.md is
  * something you can grep for. Same wire format as node-appwrite's
  * Permission/Role helpers; kept dependency-free so the tests can assert on
  * exact strings.

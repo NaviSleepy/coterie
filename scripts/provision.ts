@@ -14,7 +14,7 @@
  *
  * The key needs databases/tables/columns/indexes, buckets and functions write.
  * Connecting each Function to the GitHub repo (so pushes to main deploy) is a
- * one-time step in the console; see the README.
+ * one-time step in the console; see docs/TECHNICAL.md.
  */
 
 import { Client, Compression, Functions, ID, OrderBy, Query, Runtime, Storage, TablesDB, TablesDBIndexType } from 'node-appwrite';
