@@ -13,6 +13,8 @@
   import { healthOf, sheetOf, type Character } from '$shared/codec.ts';
   import type { TableState } from '$lib/table.svelte';
   import WaxSeal from './WaxSeal.svelte';
+  import RouletteTable from './RouletteTable.svelte';
+  import { oldSport } from '$lib/oldsport.svelte';
 
   let { table, character }: { table: TableState; character: Character } = $props();
 
@@ -34,18 +36,38 @@
   const willpowerUsed = $derived(table.turnRef >= 0 && character.willpowerSpentTurnRef === table.turnRef);
   const down = $derived(isIncapacitated(track));
 
+  type Rolled = { dice: { value: number; rerolled?: boolean }[]; outcome: string; netSuccesses: number; refusal?: string | null };
+  let wheel = $state<Rolled | null>(null);
+
   async function roll() {
     rolling = true;
-    await table.act('rollPool', {
+    // In the back room the feed holds this roll back until the wheel has shown it.
+    const toWheel = oldSport.active;
+    if (toWheel) oldSport.holding = character.$id;
+    const out = await table.act<Rolled>('rollPool', {
       characterId: character.$id,
       traits,
       specialty: useSpecialty && specialtyTrait ? specialtyTrait : undefined,
       spendWillpower,
     });
+    if (toWheel && out?.dice?.length && !out.refusal) wheel = out;
+    else oldSport.holding = null;
     spendWillpower = false;
     rolling = false;
   }
+
+  const verdictOf = (r: Rolled) =>
+    r.outcome === 'botch' ? 'Botch' : r.outcome === 'failure' ? 'Failure' : r.netSuccesses === 1 ? '1 success' : `${r.netSuccesses} successes`;
+
+  function collect() {
+    wheel = null;
+    oldSport.holding = null;
+  }
 </script>
+
+{#if wheel}
+  <RouletteTable dice={wheel.dice} verdict={verdictOf(wheel)} oncollect={collect} onretire={() => { oldSport.lock(); collect(); }} />
+{/if}
 
 <section class="roll" aria-label="Next roll">
   <h2 class="label">{theme.words.rollPanel}</h2>

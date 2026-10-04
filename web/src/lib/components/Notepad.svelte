@@ -7,6 +7,8 @@
   import { onDestroy, onMount } from 'svelte';
   import { NOTE_MAX, type TableState } from '$lib/table.svelte';
   import CoterieNotes from './CoterieNotes.svelte';
+  import { countPhrase, oldSport } from '$lib/oldsport.svelte';
+  import { theme } from '$lib/theme.svelte';
 
   let { table }: { table: TableState } = $props();
 
@@ -29,6 +31,7 @@
       .then((text) => {
         if (who !== table.me) return;
         body = saved = text;
+        sports = countPhrase(text);
         status = 'saved';
       })
       .catch(() => (status = 'failed'));
@@ -50,9 +53,19 @@
     timer = setTimeout(() => void save(), DEBOUNCE_MS);
   }
 
+  // Jazz Age: a fresh "Old Sport" in your own notes opens the back room.
+  let sports = 0;
+  let toast = $state<string | null>(null);
   function input() {
     status = 'dirty';
     schedule();
+    const n = countPhrase(body);
+    if (n > sports && theme.id === 'jazz' && !oldSport.unlocked) {
+      oldSport.unlock();
+      toast = 'Why, old sport. The back room is open. Your dice come to the wheel now.';
+      setTimeout(() => (toast = null), 4500);
+    }
+    sports = n;
   }
 
   const flush = () => void save();
@@ -89,6 +102,7 @@
       placeholder="Names, debts, who lied to whom…"
       aria-label="Your notes"
     ></textarea>
+    {#if toast}<p class="sport" role="status">{toast}</p>{/if}
     {#if body.length > NOTE_MAX * 0.9}<p class="hint">{body.length} / {NOTE_MAX} characters</p>{/if}
   </div>
   {#if sharedOpened}
@@ -133,6 +147,18 @@
   .tabs button.on {
     color: var(--ink);
     border-bottom-color: var(--oxblood);
+  }
+  .sport {
+    margin: 0;
+    padding: 8px 12px;
+    background: #113a29;
+    color: #e9cf8a;
+    border: 1px solid #d4ad55;
+    font-style: italic;
+    animation: sport 0.5s ease;
+  }
+  @keyframes sport {
+    from { opacity: 0; transform: translateY(-4px); }
   }
   .pane {
     display: grid;
