@@ -34,6 +34,8 @@
 
 <footer>
   <p class="skin"><ThemePicker /></p>
+  <!-- A tip jar, nothing more: Coterie is free and every feature stays free (the Dark Pack terms allow donations, not purchases). -->
+  <p class="kofi"><a href="https://ko-fi.com/sleepynavi" rel="noopener" target="_blank">☕ Enjoying Coterie? Support it on Ko-fi</a></p>
   <!-- Dark Pack: Paradox Interactive's fan-content programme. The logo and the notice below are what it asks for. -->
   <a class="darkpack" href="https://www.paradoxinteractive.com/games/world-of-darkness/community/dark-pack-agreement" rel="noopener" title="Made under the Dark Pack agreement">
     <img src="/dark-pack.png" alt="Dark Pack" width="56" height="56" />
@@ -82,6 +84,13 @@
     0% { opacity: 0; filter: blur(4px); }
     15%, 75% { opacity: 1; filter: none; }
     100% { opacity: 0; filter: blur(2px); }
+  }
+  .kofi {
+    margin: 0 0 14px;
+    font-size: 0.85rem;
+  }
+  .kofi a {
+    color: var(--ink-soft);
   }
   .darkpack {
     display: block;
