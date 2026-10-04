@@ -81,6 +81,10 @@ Coterie follows **V20**. It supports:
 
 It doesn't include any text from the rulebooks; you and your Storyteller write the descriptions in your own words.
 
+## Support Coterie
+
+Coterie is free, and every feature is free for everyone. If it's made your game nights better and you'd like to say thanks, you can **[buy me a coffee on Ko-fi](https://ko-fi.com/sleepynavi)** ☕. Tips help keep the servers running. They're entirely optional, and they never unlock anything.
+
 ## Is it official?
 
 <img src="docs/img/dark-pack.png" alt="Dark Pack" width="96" align="right" />
