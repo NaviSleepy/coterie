@@ -199,7 +199,7 @@ A new chronicle starts with a copy of a starter chronicle's library, so its Stor
 
 ## Dice
 
-`rollPool` takes trait names, never numbers. A player sends `{"traits": ["dexterity", "firearms"]}`. The Function reads the sheet from the database, sums the dots, reads marked health for the wound penalty, reads temporary Willpower, checks any claimed specialty against the 4-dot rule, and rolls every die with `crypto.getRandomValues`, using rejection sampling so a d10 from a byte carries no modulo bias.
+`rollPool` takes trait names, never numbers. A player sends `{"traits": ["dexterity", "firearms"]}`. A Discipline goes in by the name the sheet gives it, `"discipline:Dominate"`, either with an Attribute (`["manipulation", "discipline:Dominate"]`) or on its own. A Discipline the sheet doesn't list is refused, not rolled as zero, and specialties never apply to one. The Function reads the sheet from the database, sums the dots, reads marked health for the wound penalty, reads temporary Willpower, checks any claimed specialty against the 4-dot rule, and rolls every die with `crypto.getRandomValues`, using rejection sampling so a d10 from a byte carries no modulo bias.
 
 A player who sends `basePool`, `difficulty`, `modifier`, `label` or `visibility` gets a **403**, not a silently ignored field, so the attack specs can assert on it. Those are the Storyteller's inputs.
 

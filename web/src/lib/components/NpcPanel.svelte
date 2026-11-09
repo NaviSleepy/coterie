@@ -5,7 +5,7 @@
    * and stay hidden unless the Storyteller shows them. NPCs ticked "in the
    * fight" roll into initiative with the coterie.
    */
-  import { ABILITIES, ATTRIBUTES, applyDamage, traitLabel, woundLevel, woundPenalty, type DamageType } from '$engine/index.ts';
+  import { ABILITIES, ATTRIBUTES, applyDamage, disciplineKey, traitLabel, woundLevel, woundPenalty, type DamageType } from '$engine/index.ts';
   import { parseJson } from '$shared/codec.ts';
   import type { AnyRow } from '$lib/appwrite';
   import type { TableState } from '$lib/table.svelte';
@@ -161,8 +161,8 @@
 
       {#if open === n.$id && draft}
         <div class="roll">
-          <select bind:value={roll.a} aria-label="First trait">{#each [...ATTR_KEYS, ...ABIL_KEYS] as k (k)}<option value={k}>{traitLabel(k)}</option>{/each}</select>
-          <select bind:value={roll.b} aria-label="Second trait"><option value="">—</option>{#each [...ABIL_KEYS, ...ATTR_KEYS] as k (k)}<option value={k}>{traitLabel(k)}</option>{/each}</select>
+          <select bind:value={roll.a} aria-label="First trait">{#each [...ATTR_KEYS, ...ABIL_KEYS] as k (k)}<option value={k}>{traitLabel(k)}</option>{/each}{#if n.disciplines?.some((d) => d.name?.trim())}<optgroup label="Disciplines">{#each n.disciplines.filter((d) => d.name?.trim()) as d (d.name)}<option value={disciplineKey(d.name)}>{d.name} {d.level}</option>{/each}</optgroup>{/if}</select>
+          <select bind:value={roll.b} aria-label="Second trait"><option value="">—</option>{#each [...ABIL_KEYS, ...ATTR_KEYS] as k (k)}<option value={k}>{traitLabel(k)}</option>{/each}{#if n.disciplines?.some((d) => d.name?.trim())}<optgroup label="Disciplines">{#each n.disciplines.filter((d) => d.name?.trim()) as d (d.name)}<option value={disciplineKey(d.name)}>{d.name} {d.level}</option>{/each}</optgroup>{/if}</select>
           <label>Diff <input type="number" min="2" max="10" bind:value={roll.difficulty} /></label>
           <label><input type="checkbox" bind:checked={roll.willpower} /> WP</label>
           <label><input type="checkbox" bind:checked={roll.shown} /> show table</label>

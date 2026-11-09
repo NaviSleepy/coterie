@@ -150,5 +150,6 @@ export function sheetOf(c: Character): TraitSheet {
     virtues: c.virtues,
     specialties: c.specialties,
     willpowerPermanent: c.willpowerPermanent,
+    disciplines: c.disciplines ?? [],
   };
 }

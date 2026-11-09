@@ -23,7 +23,9 @@
  *
  * Body:
  *   characterId     required, unless the Storyteller rolls for an NPC with npcId
- *   traits          one or two trait keys; required unless the ST sends basePool
+ *   traits          one or two trait keys; required unless the ST sends basePool.
+ *                   A Discipline is "discipline:<name as on the sheet>", alone
+ *                   or with an Attribute — e.g. ["wits", "discipline:Auspex"]
  *   specialty       a trait key from `traits` to claim its specialty (4+ dots, checked)
  *   spendWillpower  once per turn, checked against the scene
  *   — Storyteller only —
