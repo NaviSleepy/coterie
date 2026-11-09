@@ -27,6 +27,12 @@
   const changes = $derived(draft ? changesFrom(character, draft) : {});
   const lines = $derived(draft ? describe(character, changes) : []);
 
+  /** Temporary Willpower, through the ledger like any adjustment; the server keeps it within 0 and the permanent rating. */
+  function setWillpower(n: number) {
+    const value = Math.max(0, Math.min(character.willpowerPermanent, n));
+    void table.act('character', { action: 'adjust', characterId: character.$id, sheet: { willpowerTemporary: value } });
+  }
+
   async function saveSheet() {
     const out = await table.act('character', { action: 'adjust', characterId: character.$id, sheet: changes });
     if (out) draft = null;
@@ -106,6 +112,16 @@
       <div class="row">
         <button class="btn quiet" onclick={() => table.act('virtueCheck', { characterId: character.$id, kind: 'frenzy', difficulty })}>Frenzy check</button>
         <button class="btn quiet" onclick={() => table.act('virtueCheck', { characterId: character.$id, kind: 'rotschreck', difficulty })}>Rötschreck</button>
+      </div>
+    </div>
+
+    <div class="block">
+      <h3 class="label">Willpower</h3>
+      <p class="hint">{character.willpowerTemporary} of {character.willpowerPermanent} left. Give it back as the story allows: a night's rest, acting to their Nature, a moment of real triumph.</p>
+      <div class="row">
+        <button class="btn quiet" aria-label="Take a point of Willpower" disabled={character.willpowerTemporary <= 0} onclick={() => setWillpower(character.willpowerTemporary - 1)}>− 1</button>
+        <button class="btn" aria-label="Give a point of Willpower" disabled={character.willpowerTemporary >= character.willpowerPermanent} onclick={() => setWillpower(character.willpowerTemporary + 1)}>+ 1</button>
+        <button class="btn quiet" disabled={character.willpowerTemporary >= character.willpowerPermanent} onclick={() => setWillpower(character.willpowerPermanent)}>Restore to full</button>
       </div>
     </div>
 

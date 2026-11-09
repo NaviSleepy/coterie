@@ -108,13 +108,15 @@ export function rollPool(request: RollRequest, context: RollContext): RollResult
 
   let outcome = resolveOutcome(net, ones, botchRule);
 
-  // Willpower buys one automatic success, added after the dice resolve. It
-  // cannot turn a botch into anything — spend it and the botch still lands.
+  // Willpower buys one automatic success that 1s cannot cancel. The 1s cancel
+  // the dice's own successes first (never below zero), then the Willpower
+  // success is added on top, so a roll with Willpower spent always succeeds
+  // at least once and can't botch.
   const willpowerSpent =
     request.spendWillpower === true && context.character.willpowerTemporary > 0;
-  if (willpowerSpent && outcome !== 'botch') {
-    net += 1;
-    outcome = net > 0 ? 'success' : outcome;
+  if (willpowerSpent) {
+    net = Math.max(0, net) + 1;
+    outcome = 'success';
   }
 
   return {
