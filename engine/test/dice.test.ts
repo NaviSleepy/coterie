@@ -143,14 +143,33 @@ describe('willpower', () => {
     assert.equal(r.willpowerSpent, true);
   });
 
-  it('cannot turn a botch into a success — the botch still lands', () => {
+  it('adds its success on top of the dice: 1s cannot cancel it', () => {
+    // 9 is a success, the two 1s cancel it (and could cancel no more); Willpower still adds one.
     const r = rollPool(
       { basePool: 3, difficulty: 8, spendWillpower: true },
       { character: healthy, die: scriptedDice([1, 1, 9]) },
     );
-    assert.equal(r.outcome, 'botch');
-    assert.equal(r.netSuccesses, -1);
+    assert.equal(r.outcome, 'success');
+    assert.equal(r.netSuccesses, 1);
     assert.equal(r.willpowerSpent, true);
+  });
+
+  it('saves a roll that would have botched', () => {
+    const r = rollPool(
+      { basePool: 3, difficulty: 6, spendWillpower: true },
+      { character: healthy, die: scriptedDice([1, 3, 4]) },
+    );
+    assert.equal(r.outcome, 'success');
+    assert.equal(r.netSuccesses, 1);
+  });
+
+  it('stacks with the dice: three hits and Willpower is four', () => {
+    const r = rollPool(
+      { basePool: 4, difficulty: 6, spendWillpower: true },
+      { character: healthy, die: scriptedDice([7, 8, 9, 2]) },
+    );
+    assert.equal(r.netSuccesses, 4);
+    assert.equal(r.outcome, 'success');
   });
 
   it('is not spent when the pool is empty', () => {

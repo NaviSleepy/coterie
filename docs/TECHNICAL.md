@@ -207,7 +207,7 @@ The V20 arithmetic lives in `engine/src/dice.ts`, once:
 
 - **Ones subtract.** Each 1 cancels a success, including a 1 on a specialty reroll.
 - **Specialties reroll 10s**, cumulatively, capped at 20 deep so a pathological roll can't hang the Function.
-- **Willpower** buys one automatic success after resolution, **once per turn**. It can't rescue a botch.
+- **Willpower** buys one automatic success, **once per turn**, that 1s can't cancel. The 1s cancel the dice's own successes first (never below zero), then the Willpower success is added, so a roll with Willpower spent always gets at least one success and can't botch. The Storyteller restores temporary Willpower from a character's controls on the screen (−1, +1, Restore to full); it goes through `character.adjust` and the ledger, and the server keeps it between 0 and the permanent rating.
 - **The botch rule is the chronicle's choice.** Tables disagree about whether ones cancelling successes to exactly zero is a botch. The Storyteller picks at setup; the engine never assumes.
 
 `virtueCheck` (degeneration, frenzy, rötschreck) routes through the same pipeline.
