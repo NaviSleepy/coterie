@@ -4,6 +4,7 @@
     ABILITY_KEYS,
     ATTRIBUTE_KEYS,
     buildPool,
+    disciplineKey,
     isIncapacitated,
     specialtyApplies,
     traitLabel,
@@ -27,7 +28,12 @@
   const sheet = $derived(sheetOf(character));
   const track = $derived(healthOf(character));
   const penalty = $derived(woundPenalty(track));
-  const traits = $derived(ability ? [attribute, ability] : [attribute]);
+  const disciplines = $derived((character.disciplines ?? []).filter((d) => d.name?.trim()));
+  // A picked Discipline the sheet no longer has (deleted, renamed) falls back to none.
+  $effect(() => {
+    if (ability.startsWith('discipline:') && !disciplines.some((d) => disciplineKey(d.name) === ability)) ability = '';
+  });
+  const traits = $derived([attribute, ability].filter(Boolean));
   const built = $derived(buildPool(sheet, traits));
   const pool = $derived(built.ok ? Math.max(0, built.pool.basePool - penalty) : 0);
   const specialtyTrait = $derived(
@@ -74,11 +80,19 @@
 
   <div class="pickers">
     <select bind:value={attribute} aria-label="Attribute">
+      <option value="">— no Attribute —</option>
       {#each ATTRIBUTE_KEYS as key (key)}<option value={key}>{traitLabel(key)} {character.attributes[key] ?? 1}</option>{/each}
     </select>
-    <select bind:value={ability} aria-label="Ability">
+    <select bind:value={ability} aria-label="Ability or Discipline">
       <option value="">— no Ability —</option>
-      {#each ABILITY_KEYS as key (key)}<option value={key}>+ {traitLabel(key)} {character.abilities[key] ?? 0}</option>{/each}
+      <optgroup label="Abilities">
+        {#each ABILITY_KEYS as key (key)}<option value={key}>+ {traitLabel(key)} {character.abilities[key] ?? 0}</option>{/each}
+      </optgroup>
+      {#if disciplines.length}
+        <optgroup label="Disciplines">
+          {#each disciplines as d (d.name)}<option value={disciplineKey(d.name)}>+ {d.name} {d.level}</option>{/each}
+        </optgroup>
+      {/if}
     </select>
     {#if penalty}<span class="chip warn">− {woundLevel(track)} {penalty}</span>{/if}
     <span class="total">= {pool} {pool === 1 ? 'die' : 'dice'}</span>

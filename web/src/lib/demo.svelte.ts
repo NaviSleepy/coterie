@@ -532,7 +532,7 @@ export class DemoTable extends TableState {
     if (this.me !== DEMO_ST) throw new Refusal('Only the Storyteller rolls for NPCs.');
     const n = this.world.npcs[b.npcId];
     if (!n) throw new Refusal('No such NPC.');
-    const sheet = { attributes: parseJson(n.attributes, {}), abilities: parseJson(n.abilities, {}), virtues: {}, specialties: [], willpowerPermanent: n.willpowerMax };
+    const sheet = { attributes: parseJson(n.attributes, {}), abilities: parseJson(n.abilities, {}), virtues: {}, specialties: [], willpowerPermanent: n.willpowerMax, disciplines: parseJson(n.disciplines, []) };
     const built = buildPool(sheet as any, b.traits ?? []);
     if (!built.ok) throw new Refusal(built.message);
     const health = { bashing: n.healthBashing, lethal: n.healthLethal, aggravated: n.healthAggravated };

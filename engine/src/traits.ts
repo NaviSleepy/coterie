@@ -50,17 +50,44 @@ export interface TraitSheet {
   virtues: Partial<Record<VirtueKey, number>>;
   specialties: Specialty[];
   willpowerPermanent: number;
+  /** Named, as the sheet writes them. Absent on sheets that never roll one. */
+  disciplines?: { name: string; level: number }[];
+}
+
+/**
+ * A Discipline goes into a pool as `discipline:<name>`, the name as the sheet
+ * writes it ("discipline:Dominate", "discipline:Thaumaturgy (Path of Blood)").
+ * Disciplines aren't a fixed catalogue — Storytellers write their own — so the
+ * key carries the name and the sheet is what proves the character has it.
+ */
+export const DISCIPLINE_PREFIX = 'discipline:';
+
+export function disciplineKey(name: string): string {
+  return DISCIPLINE_PREFIX + name.trim();
+}
+
+function disciplineName(key: string): string {
+  return key.slice(DISCIPLINE_PREFIX.length).trim();
+}
+
+const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+function findDiscipline(sheet: TraitSheet, key: string) {
+  const name = disciplineName(key);
+  return (sheet.disciplines ?? []).find((d) => same(d.name, name));
 }
 
 /** "animalKen" → "Animal Ken". The UI and the roll label share this. */
 export function traitLabel(key: string): string {
   if (key === 'selfControl') return 'Self-Control';
   if (key === 'willpower') return 'Willpower';
+  if (key.startsWith(DISCIPLINE_PREFIX)) return disciplineName(key);
   const spaced = key.replace(/([A-Z])/g, ' $1');
   return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }
 
-export function traitKind(key: string): 'attribute' | 'ability' | 'virtue' | 'willpower' | undefined {
+export function traitKind(key: string): 'attribute' | 'ability' | 'virtue' | 'willpower' | 'discipline' | undefined {
+  if (key.startsWith(DISCIPLINE_PREFIX) && disciplineName(key)) return 'discipline';
   if (ATTRIBUTE_KEYS.includes(key)) return 'attribute';
   if (ABILITY_KEYS.includes(key)) return 'ability';
   if ((VIRTUES as readonly string[]).includes(key)) return 'virtue';
@@ -78,13 +105,17 @@ export function traitDots(sheet: TraitSheet, key: string): number {
       return sheet.virtues[key as VirtueKey] ?? 0;
     case 'willpower':
       return sheet.willpowerPermanent;
+    case 'discipline':
+      return findDiscipline(sheet, key)?.level ?? 0;
     default:
       return 0;
   }
 }
 
-/** Specialties are legal only at 4+ dots, and only for a trait that has one. */
+/** Specialties are legal only on Attributes and Abilities, at 4+ dots, and only for a trait that has one. */
 export function specialtyApplies(sheet: TraitSheet, key: string): boolean {
+  const kind = traitKind(key);
+  if (kind !== 'attribute' && kind !== 'ability') return false;
   return traitDots(sheet, key) >= 4 && sheet.specialties.some((s) => s.trait === key);
 }
 
@@ -96,7 +127,8 @@ export interface PoolSpec {
 
 /**
  * One or two traits, summed off the sheet. Accepts the shapes V20 actually
- * uses: Attribute + Ability, a lone Attribute, a Virtue, or Willpower. Anything
+ * uses: Attribute + Ability, a lone Attribute, a Virtue, or Willpower — and
+ * for powers, Attribute + Discipline or a Discipline alone. Anything
  * else — two Abilities, an unknown key, the same trait twice — is refused
  * rather than guessed at, because a pool the Storyteller didn't expect is a
  * pool a player found a way to inflate.
@@ -113,13 +145,17 @@ export function buildPool(
   if (kinds.some((k) => k === undefined)) {
     return { ok: false, message: `Unknown trait: ${traits.find((t) => !traitKind(t))}.` };
   }
-  if (new Set(traits).size !== traits.length) {
+  const missing = traits.find((t) => traitKind(t) === 'discipline' && !findDiscipline(sheet, t));
+  if (missing) {
+    return { ok: false, message: `No ${disciplineName(missing)} on the sheet.` };
+  }
+  if (new Set(traits.map((t) => t.toLowerCase())).size !== traits.length) {
     return { ok: false, message: 'The same trait cannot be counted twice.' };
   }
   if (traits.length === 2) {
     const shape = [...kinds].sort().join('+');
-    if (shape !== 'ability+attribute') {
-      return { ok: false, message: 'Two-trait pools are an Attribute plus an Ability.' };
+    if (shape !== 'ability+attribute' && shape !== 'attribute+discipline') {
+      return { ok: false, message: 'Two-trait pools are an Attribute plus an Ability or a Discipline.' };
     }
   }
   if (specialty !== undefined && !traits.includes(specialty)) {
@@ -132,7 +168,7 @@ export function buildPool(
     ok: true,
     pool: {
       basePool: traits.reduce((sum, t) => sum + traitDots(sheet, t), 0),
-      label: ordered.map(traitLabel).join(' + '),
+      label: ordered.map((t) => (traitKind(t) === 'discipline' ? findDiscipline(sheet, t)!.name : traitLabel(t))).join(' + '),
       specialtyApplies: specialty !== undefined && specialtyApplies(sheet, specialty),
     },
   };

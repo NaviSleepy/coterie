@@ -6,6 +6,7 @@ import {
   ATTRIBUTE_KEYS,
   buildPool,
   canSpendWillpower,
+  disciplineKey,
   traitLabel,
   turnRef,
   virtueForCheck,
@@ -22,6 +23,10 @@ const isolde: TraitSheet = {
     { trait: 'firearms', text: 'Pistols' },
   ],
   willpowerPermanent: 5,
+  disciplines: [
+    { name: 'Dominate', level: 3 },
+    { name: 'Thaumaturgy (Path of Blood)', level: 2 },
+  ],
 };
 
 describe('the catalogue', () => {
@@ -131,5 +136,41 @@ describe('turn references', () => {
       bloodSpentTurnRef: -1,
     };
     assert.equal(spendBlood(c, 1, turnRef(null)).ok, true);
+  });
+});
+
+describe('Disciplines in a pool', () => {
+  it('sums an Attribute and a Discipline, labelled the way the sheet names it', () => {
+    const out = buildPool(isolde, ['discipline:dominate', 'manipulation']);
+    assert.ok(out.ok);
+    if (!out.ok) return;
+    assert.equal(out.pool.basePool, 3);
+    assert.equal(out.pool.label, 'Manipulation + Dominate');
+  });
+
+  it('rolls a Discipline alone, path names and all', () => {
+    const out = buildPool(isolde, [disciplineKey('Thaumaturgy (Path of Blood)')]);
+    assert.ok(out.ok);
+    if (out.ok) assert.deepEqual([out.pool.basePool, out.pool.label], [2, 'Thaumaturgy (Path of Blood)']);
+  });
+
+  it('refuses a Discipline the sheet does not have, rather than rolling zero', () => {
+    const out = buildPool(isolde, ['wits', 'discipline:Celerity']);
+    assert.equal(out.ok, false);
+    if (!out.ok) assert.match(out.message, /No Celerity/);
+    assert.equal(buildPool({ ...isolde, disciplines: undefined }, ['discipline:Dominate']).ok, false);
+  });
+
+  it('refuses Discipline pairings that are not Attribute + Discipline', () => {
+    assert.equal(buildPool(isolde, ['discipline:Dominate', 'subterfuge']).ok, false);
+    assert.equal(buildPool(isolde, ['discipline:Dominate', disciplineKey('Thaumaturgy (Path of Blood)')]).ok, false);
+    assert.equal(buildPool(isolde, ['discipline:Dominate', 'discipline:dominate']).ok, false);
+    assert.equal(buildPool(isolde, ['discipline:', 'wits']).ok, false);
+  });
+
+  it('never lets a specialty ride on a Discipline', () => {
+    const out = buildPool({ ...isolde, specialties: [{ trait: 'discipline:Dominate', text: 'Commands' }], disciplines: [{ name: 'Dominate', level: 5 }] }, ['manipulation', 'discipline:Dominate'], 'discipline:Dominate');
+    assert.ok(out.ok);
+    if (out.ok) assert.equal(out.pool.specialtyApplies, false);
   });
 });

@@ -51,7 +51,7 @@ export function npcHealth(n: Pick<Npc, 'healthBashing' | 'healthLethal' | 'healt
 
 /** Enough of a sheet for pool-building: NPCs have no virtues or specialties here. */
 export function npcSheet(n: Npc): TraitSheet {
-  return { attributes: n.attributes, abilities: n.abilities, virtues: {}, specialties: [], willpowerPermanent: n.willpowerMax };
+  return { attributes: n.attributes, abilities: n.abilities, virtues: {}, specialties: [], willpowerPermanent: n.willpowerMax, disciplines: n.disciplines };
 }
 
 type Rec = Record<string, unknown>;

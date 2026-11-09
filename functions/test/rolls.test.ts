@@ -90,6 +90,33 @@ describe('rollPool — the player path', () => {
   });
 });
 
+describe('rollPool — Disciplines', () => {
+  const withDominate = () => {
+    const w = ashenCourt();
+    const { $id, $createdAt, $updatedAt, $permissions, ...isolde } = w.tables.row('characters', ISOLDE)!;
+    w.tables.seed('characters', ISOLDE, { ...isolde, disciplines: JSON.stringify([{ name: 'Dominate', level: 3 }]) }, $permissions);
+    return w;
+  };
+
+  it('rolls an Attribute plus a Discipline off the sheet', async () => {
+    const w = withDominate();
+    const roll = await rollPool(w.as(ISOLDE_PLAYER, [8, 7, 2, 2, 2]), {
+      characterId: ISOLDE,
+      traits: ['wits', 'discipline:Dominate'],
+    });
+    assert.equal(roll.label, 'Wits + Dominate');
+    assert.equal(roll.basePool, 6);
+    assert.equal(roll.pool, 5); // − Hurt 1
+    assert.equal(w.tables.row('rolls', roll.rollId)!.label, 'Wits + Dominate');
+  });
+
+  it("refuses a Discipline the character doesn't have, and writes nothing", async () => {
+    const w = withDominate();
+    await rejects(rollPool(w.as(ISOLDE_PLAYER), { characterId: ISOLDE, traits: ['wits', 'discipline:Potence'] }), 400);
+    assert.equal(w.tables.rows('rolls').length, 0);
+  });
+});
+
 describe('rollPool — Willpower', () => {
   it('spends one point and stamps the turn', async () => {
     const w = ashenCourt();
